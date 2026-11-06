@@ -246,11 +246,6 @@
     min-height: 44px;
   }
 }
-.review-save-status {
-  margin-top: var(--ui-space-5);
-  color: var(--ui-muted);
-  font-size: 0.875rem;
-}
 @media (max-width: 560px) {
   #review-panel > .panel {
     padding: var(--ui-space-4);
@@ -258,9 +253,6 @@
   .review-item .ui-choice {
     padding: 8px 6px;
   }
-}
-#review-message {
-  z-index: 2;
 }
 #review-year-warning {
   white-space: normal;
@@ -277,10 +269,6 @@
   opacity: 1;
   color: var(--ui-text);
   background: var(--ui-surface-muted);
-}
-.review-export-actions {
-  margin: 24px 0;
-  flex-wrap: wrap;
 }
 #review-preview {
   padding: 25px;

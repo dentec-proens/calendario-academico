@@ -1,7 +1,7 @@
 import { reviewIsCurrent } from '#src/domain/calendar/base.ts';
 import { reviewEditable } from '#src/domain/calendar/lifecycle.ts';
 import { calendarSchemaVersion } from '#src/domain/calendar/model.ts';
-import { useEffect, useRef, useState, type SetStateAction } from 'react';
+import { useEffect, useRef, useState, type ReactNode, type SetStateAction } from 'react';
 import { useFormDrafts } from '../../shared/forms/drafts.tsx';
 import { reviews } from '../../shared/convex/reviews.ts';
 import { nativeError } from '../../shared/convex/errors.ts';
@@ -25,6 +25,7 @@ export default function ReviewEditor({
   userId,
   onMessage,
   onWorkChange,
+  renderSummary,
 }: {
   opened: ReviewSupport;
   userId: string;
@@ -32,6 +33,8 @@ export default function ReviewEditor({
   onWorkChange?: (pending: boolean) => void;
   /** Reports an outcome; confirmations are the default tone. */
   onMessage: (message: string, tone?: NoticeTone) => void;
+  /** What precedes the form, given the criteria confirmed in the form so far. */
+  renderSummary: (reviewedCount: number) => ReactNode;
 }) {
   const [conclusionEditable, setConclusionEditable] = useState(false);
   const [previewData, setPreviewData] = useState<{
@@ -78,7 +81,8 @@ export default function ReviewEditor({
   // Someone else's parecer is read only; a draft in progress stays, for assuming it back.
   const heldBy =
     opened.assignee && opened.assignee.id !== userId ? opened.assignee.name : undefined;
-  const readOnly = !reviewEditable(opened.status) || !!heldBy;
+  const locked = !reviewEditable(opened.status);
+  const readOnly = locked || !!heldBy;
   useEffect(() => {
     onWorkChange?.(dirty || pending);
   }, [dirty, pending, onWorkChange]);
@@ -224,8 +228,10 @@ export default function ReviewEditor({
         </Notice>
       ) : null}
       <ReviewFormView
+        summary={renderSummary(draft.entries.filter((entry) => entry.reviewed).length)}
         draft={draft}
         busy={busy}
+        locked={locked}
         readOnly={readOnly}
         heldBy={heldBy}
         pending={pending ? 'save' : exporting ? 'export' : ''}

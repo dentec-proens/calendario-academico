@@ -76,6 +76,8 @@ Em **Aguardando análise**, a coluna **Envio** mostra há quanto tempo o envio e
 
 A fila não tem coluna Campus: o nome gerado já o traz, e a coluna deixaria o nome estreito demais com a barra lateral em 1280 px. O badge de situação também sai da linha, porque a aba informa isso. A aba fica em `situacao`, validado em `web/app/search.ts` com todas as situações de calendário, e cada tela restringe o valor ao que lista. A trilha de `WorkspaceLayout` repassa só `situacao` e `campus`, nunca avisos pontuais como `aviso`. **Aguardando análise** e **Em análise** mostram quantos calendários há sob os filtros atuais, pela consulta `reviewQueueCounts`, limitada a 99 (acima disso, **99+**); sem calendários, a aba fica sem número. A aba selecionada usa o azul das visões selecionadas. As setas nas abas partem da aba focada, porque a URL muda de forma assíncrona. O painel da aba não recebe `tabindex`, porque o filtro de campus garante nele um elemento focável.
 
+A página do parecer (`ReviewPage`) separa identificação e ações de ciclo de vida, resumo do estado (`ReviewSummary`), formulário (`ReviewFormView`) e barra fixa de salvar e exportar. O motivo que bloqueia a conclusão vem de `conclusionBlock` (`src/domain/reviews/conclusion-block.ts`), a mesma função que a mutation aplica. Ações ocasionais usam `ActionMenu` (`web/components/ui/ActionMenu.tsx`), com o CSS próprio em `action-menu.css`.
+
 **Abrir parecer**, em `/calendarios`, fica na célula de situação e não em **Ações**: com ele, a coluna de ações ocuparia o espaço do nome. **Abrir calendário**, na fila, abre em outra aba, porque a volta do editor não leva à fila.
 
 ## Formulários e navegação

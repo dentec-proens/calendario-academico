@@ -40,6 +40,7 @@ const initial = {
     campus: support.calendar.campus ?? '',
   },
   catalogueRevision: 1,
+  baseCompatible: true,
   initialConclusion: initialConclusion(support),
   assignee: null,
   review: null,
@@ -77,7 +78,8 @@ const user: Bootstrap['user'] = {
   id: 'synthetic-reviewer' as Id<'users'>,
   name: 'Parecerista de teste',
   email: 'parecer@example.invalid',
-  role: 'PARECERISTA',
+  // Reviewers are the usual case; a test opens the page with ?role=ADMIN for what only they see.
+  role: new URLSearchParams(location.search).get('role') === 'ADMIN' ? 'ADMIN' : 'PARECERISTA',
   active: true,
   campusId: null,
   inviteExpiresAt: null,
@@ -111,7 +113,40 @@ const calendars: Bootstrap['calendars'] = [
   },
 ];
 
-function query(reference: FunctionReference<'query'>, args: { status?: string } = {}) {
+/** Filled by `publishResubmission`: a second round that answers the returned first one. */
+let submissions: ReturnType<typeof returnedRound> | null = null;
+function returnedRound() {
+  const round = (sequence: number, decisions: unknown[]) => ({
+    id: `synthetic-round-${sequence}`,
+    sequence,
+    submittedAt: '2026-10-23T15:00:00Z',
+    submittedBy: 'Campus de teste',
+    decisions,
+    ...(sequence > 1 ? { previousSubmissionId: `synthetic-round-${sequence - 1}` } : {}),
+  });
+  return {
+    page: [
+      round(2, []),
+      round(1, [
+        {
+          action: 'returned',
+          at: '2026-10-22T15:00:00Z',
+          by: { id: user.id, name: user.name },
+          note: 'Ajustar a semana letiva.',
+        },
+      ]),
+    ],
+    isDone: true,
+    continueCursor: '',
+    defaultBases: ['synthetic-round-1'],
+    related: [],
+  };
+}
+
+function query(
+  reference: FunctionReference<'query'>,
+  args: { status?: string; submissionId?: string } = {},
+) {
   switch (getFunctionName(reference)) {
     case 'reviews:review':
       return structuredClone(snapshot);
@@ -157,7 +192,25 @@ function query(reference: FunctionReference<'query'>, args: { status?: string } 
         : { enviado: count, em_revisao: none };
     }
     case 'calendars:calendarSubmissions':
-      return { page: [], isDone: true, continueCursor: '', defaultBases: [], related: [] };
+      return (
+        submissions ?? {
+          page: [],
+          isDone: true,
+          continueCursor: '',
+          defaultBases: [],
+          related: [],
+        }
+      );
+    case 'calendars:submissionContent': {
+      const { state } = reviewRecord();
+      return {
+        // The second round confirmed the week the first one left open.
+        state: { ...state, weekConfirmed: args.submissionId === 'synthetic-round-2' },
+        institutionalSnapshot: [],
+        documentSnapshot: [],
+        catalogueRevision: 1,
+      };
+    }
     default:
       throw new Error(`Consulta sintética não implementada: ${getFunctionName(reference)}`);
   }
@@ -251,6 +304,14 @@ export const convex = {
 window.reviewUiTest = {
   calls,
   publishAssignee: (name: string) => setAssignee('synthetic-colleague' as Id<'users'>, name),
+  publishResubmission() {
+    submissions = returnedRound();
+    publish();
+  },
+  publishStatus(status: Support['status']) {
+    snapshot.status = status;
+    publish();
+  },
   publishReview(processNumber: string) {
     if (!snapshot.review) throw new Error('Salve uma revisão antes da atualização remota.');
     snapshot.review = {
@@ -320,6 +381,8 @@ declare global {
     reviewUiTest: {
       calls: typeof calls;
       publishAssignee: (name: string) => void;
+      publishResubmission: () => void;
+      publishStatus: (status: Support['status']) => void;
       publishReview: (processNumber: string) => void;
       publishLegacy2027Review: () => void;
       publishInternalDates: () => void;

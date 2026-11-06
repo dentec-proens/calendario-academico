@@ -1,6 +1,15 @@
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { useQuery } from 'convex/react';
-import { Archive, ArchiveRestore, CheckCheck, RotateCcw, Send, Stamp, Undo2 } from 'lucide-react';
+import {
+  Archive,
+  ArchiveRestore,
+  CheckCheck,
+  Ellipsis,
+  RotateCcw,
+  Send,
+  Stamp,
+  Undo2,
+} from 'lucide-react';
 import {
   actionLabels,
   canTransition,
@@ -12,6 +21,7 @@ import {
 } from '#src/domain/calendar/lifecycle.ts';
 import { modalityLabels } from '#src/domain/calendar/modalities.ts';
 import type { Id } from '../../../convex/_generated/dataModel.js';
+import { ActionMenu, ActionMenuItem } from '../../components/ui/ActionMenu.tsx';
 import { Button } from '../../components/ui/Button.tsx';
 import { TextAreaField, TextField } from '../../components/ui/Field.tsx';
 import { Notice } from '../../components/ui/Notice.tsx';
@@ -99,6 +109,8 @@ export default function LifecycleActions({
   submitIssues = [],
   className = '',
   placement = 'header',
+  menuActions = [],
+  primaryActions,
 }: {
   calendar: LifecycleCalendar;
   role: LifecycleRole;
@@ -116,6 +128,10 @@ export default function LifecycleActions({
   className?: string;
   /** The footer of the review step repeats only the submission, as the step's conclusion. */
   placement?: 'header' | 'footer';
+  /** Occasional actions, kept in a menu instead of beside the main ones. */
+  menuActions?: readonly LifecycleAction[];
+  /** The actions shown as primary; by default, all but returning and withdrawing. */
+  primaryActions?: readonly LifecycleAction[];
 }) {
   const [form, setForm] = useState<'return' | 'publish' | null>(null);
   const [pending, setPending] = useState(false);
@@ -134,6 +150,7 @@ export default function LifecycleActions({
       : 'skip',
   );
   if (!actions.length) return null;
+  const inMenu = actions.filter((action) => menuActions.includes(action));
   const issueCount = pendencies(submitIssues.length);
   // The dialog lists the first issues only; its buttons stay in view and the rest are a step away.
   const listedIssues =
@@ -229,27 +246,55 @@ export default function LifecycleActions({
   return (
     <div className={`lifecycle-actions ${className}`}>
       <div className="actions">
-        {actions.map((action) => {
-          const Icon = icons[action] ?? Send;
-          const reason = unavailable?.[action];
-          return (
-            <Button
-              key={action}
-              type="button"
-              data-lifecycle-action={placement === 'header' ? action : undefined}
-              data-lifecycle-footer-action={placement === 'footer' ? action : undefined}
-              variant={action === 'return' || action === 'withdraw' ? 'secondary' : 'primary'}
-              disabled={pending || !!reason}
-              aria-describedby={reason ? `${idPrefix}lifecycle-${action}-unavailable` : undefined}
-              aria-expanded={
-                action === 'return' || action === 'publish' ? form === action : undefined
-              }
-              onClick={() => start(action)}
-            >
-              <Icon aria-hidden="true" size={18} /> {actionLabels[action]}
-            </Button>
-          );
-        })}
+        {actions
+          .filter((action) => !inMenu.includes(action))
+          .map((action) => {
+            const Icon = icons[action] ?? Send;
+            const reason = unavailable?.[action];
+            return (
+              <Button
+                key={action}
+                type="button"
+                data-lifecycle-action={placement === 'header' ? action : undefined}
+                data-lifecycle-footer-action={placement === 'footer' ? action : undefined}
+                variant={
+                  (primaryActions?.includes(action) ??
+                  (action !== 'return' && action !== 'withdraw'))
+                    ? 'primary'
+                    : 'secondary'
+                }
+                disabled={pending || !!reason}
+                aria-describedby={reason ? `${idPrefix}lifecycle-${action}-unavailable` : undefined}
+                aria-expanded={
+                  action === 'return' || action === 'publish' ? form === action : undefined
+                }
+                onClick={() => start(action)}
+              >
+                <Icon aria-hidden="true" size={18} /> {actionLabels[action]}
+              </Button>
+            );
+          })}
+        {inMenu.length ? (
+          <ActionMenu
+            label="Mais ações"
+            disabled={pending}
+            trigger={<Ellipsis aria-hidden="true" size={18} />}
+          >
+            {inMenu.map((action) => {
+              const Icon = icons[action] ?? Send;
+              return (
+                <ActionMenuItem
+                  key={action}
+                  data-lifecycle-action={action}
+                  disabled={!!unavailable?.[action]}
+                  onClick={() => start(action)}
+                >
+                  <Icon aria-hidden="true" size={18} /> {actionLabels[action]}
+                </ActionMenuItem>
+              );
+            })}
+          </ActionMenu>
+        ) : null}
       </div>
       {actions.map((action) =>
         unavailable?.[action] ? (

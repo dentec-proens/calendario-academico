@@ -1,9 +1,8 @@
-import type { RefObject, FormEvent } from 'react';
-import { Copy, Download, ExternalLink, Eye, Pencil, Save } from 'lucide-react';
+import type { FormEvent, ReactNode, RefObject } from 'react';
+import { ChevronDown, Copy, Download, Eye, FileCode2, FileText, Pencil, Save } from 'lucide-react';
+import { ActionMenu, ActionMenuItem } from '../../components/ui/ActionMenu.tsx';
 import { Button } from '../../components/ui/Button.tsx';
 import { TextField } from '../../components/ui/Field.tsx';
-import { calendarName } from '#src/domain/calendar/label.ts';
-import { editorUrl } from '#src/app/routes.ts';
 import ReviewCriterion from './ReviewCriterion.tsx';
 import { ReviewPreview } from './review-export.tsx';
 import { FormFeedback } from '../../shared/forms/FormFeedback.tsx';
@@ -11,9 +10,13 @@ import type { ReviewDraft, ReviewEntry, ReviewDocument } from './review-values.t
 import { Notice } from '../../components/ui/Notice.tsx';
 
 interface Props {
+  /** What precedes the form: the state of the parecer and its comparison. */
+  summary: ReactNode;
   draft: ReviewDraft;
   busy: boolean;
   /** The review is saved only while the calendar is submitted or under review. */
+  locked: boolean;
+  /** Locked, or held by someone else. */
   readOnly: boolean;
   /** Who holds the parecer, when it is someone else. */
   heldBy?: string;
@@ -35,8 +38,10 @@ interface Props {
 }
 
 export default function ReviewFormView({
+  summary,
   draft,
   busy,
+  locked,
   readOnly,
   heldBy,
   pending,
@@ -54,102 +59,9 @@ export default function ReviewFormView({
 }: Props) {
   const opened = draft.opened;
   const dirty = draft.dirty;
-  const reviewedCount = draft.entries.filter((entry) => entry.reviewed).length;
   return (
     <div id="review-content">
-      <h2 id="review-heading">
-        {opened.calendar.name === calendarName(opened.calendar.year, opened.calendar.campus)
-          ? opened.calendar.name
-          : `${opened.calendar.campus} · ${opened.calendar.name}`}
-      </h2>
-      <p id="review-progress">
-        {reviewedCount} de {opened.criteria.length} critérios conferidos.
-      </p>
-      {opened.rulesetVersion && (
-        <p>
-          Conjunto de regras: {opened.rulesetVersion}. Confira o planejamento e a execução
-          documental separadamente.
-        </p>
-      )}
-      <p id="review-conflicts">
-        {opened.conflicts.length
-          ? `${opened.conflicts.length} conflito(s) de inclusão/exclusão: ${opened.conflicts.map((conflict) => conflict.date).join(', ')}. Confira no editor.`
-          : opened.countError || 'Nenhum conflito de inclusão/exclusão identificado.'}
-      </p>
-      <p id="review-author">
-        {opened.review
-          ? `Último registro: ${opened.review.reviewer.name} · ${new Date(opened.review.updatedAt).toLocaleString('pt-BR')} · Revisão ${opened.review.revision}${opened.stale ? ' — DESATUALIZADA: calendário ou base institucional mudou.' : ''}`
-          : 'Ainda não há revisão humana registrada.'}
-      </p>
-      <a
-        id="review-editor"
-        href={editorUrl(opened.calendar.id, 'calendar')}
-        target="_blank"
-        rel="noopener"
-      >
-        <ExternalLink size={16} aria-hidden="true" /> Abrir calendário em outra aba
-      </a>
-      <div className="review-save-status" role="status">
-        {heldBy
-          ? `Parecer com ${heldBy}: assuma-o para alterar.`
-          : readOnly
-            ? 'Parecer em consulta: só pode ser alterado com o calendário enviado ou em revisão.'
-            : dirty
-              ? 'Há alterações por salvar. Confirmar um critério não salva o parecer.'
-              : opened.review
-                ? 'Todas as alterações foram salvas.'
-                : 'O parecer ainda não foi salvo.'}
-      </div>
-      <div className="actions review-export-actions">
-        <Button
-          type="button"
-          id="preview-review"
-          variant="secondary"
-          disabled={busy}
-          onClick={() => {
-            void exportReview('preview');
-          }}
-        >
-          <Eye size={18} aria-hidden="true" /> Visualizar parecer
-        </Button>
-        <Button
-          type="button"
-          id="download-review-html"
-          variant="secondary"
-          disabled={busy}
-          onClick={() => {
-            void exportReview('html');
-          }}
-        >
-          <Download size={18} aria-hidden="true" /> Baixar HTML
-        </Button>
-        <Button
-          type="button"
-          id="download-review-txt"
-          variant="secondary"
-          disabled={busy}
-          onClick={() => {
-            void exportReview('txt');
-          }}
-        >
-          <Download size={18} aria-hidden="true" /> Baixar TXT
-        </Button>
-        <Button
-          type="button"
-          id="copy-review"
-          variant="secondary"
-          disabled={busy}
-          onClick={() => {
-            void exportReview('copy');
-          }}
-        >
-          <Copy size={18} aria-hidden="true" /> Copiar para o SEI
-        </Button>
-        <Button type="submit" form="review-form" disabled={busy || readOnly}>
-          <Save size={18} aria-hidden="true" />{' '}
-          {pending === 'save' ? 'Salvando parecer…' : 'Salvar parecer'}
-        </Button>
-      </div>
+      {summary}
       <form id="review-form" onSubmit={submit}>
         <div className="row-form">
           <TextField
@@ -171,10 +83,20 @@ export default function ReviewFormView({
             onValueChange={(value) => changeField('applicableNorm', value)}
           />
         </div>
-        <p className="help">
-          A busca por nome e categoria pode omitir registros ou relacionar itens indevidos; confira
-          as evidências antes de concluir.
-        </p>
+        <div className="review-criteria-heading">
+          <h3>Critérios</h3>
+          {opened.rulesetVersion ? (
+            <p className="help">
+              Conjunto de regras: {opened.rulesetVersion}. Confira o planejamento e a execução
+              documental separadamente.
+            </p>
+          ) : null}
+          <p className="help">
+            A busca por nome e categoria pode omitir registros ou relacionar itens indevidos;
+            confira as evidências antes de concluir. Use as observações para registrar evidências ou
+            justificar sua avaliação quando necessário.
+          </p>
+        </div>
         {!opened.sameYear ? (
           <Notice tone="warning" id="review-year-warning" announce="polite">
             Referência: Parecer SEI 3959640 ({opened.source.year}), páginas 1 e 2. Confira a norma
@@ -231,19 +153,90 @@ export default function ReviewFormView({
             Reavaliei as conclusões anteriores considerando a nova versão do calendário/base.
           </label>
         ) : null}
-        <p className="help">
-          Use as observações para registrar evidências ou justificar sua avaliação quando
-          necessário.
-        </p>
-        <Button type="submit" disabled={busy || readOnly}>
-          {pending === 'save' ? 'Salvando parecer…' : 'Salvar parecer'}
-        </Button>
       </form>
-      <p className="help">
-        Salve o parecer antes de exportar. Confira a formatação ao colar no SEI.
-      </p>
       <FormFeedback error={error} />
       <ReviewPreview document={preview} previewRef={previewRef} />
+      <p className="help review-disclaimer">
+        A revisão apoia o parecer; assinatura e tramitação ocorrem no SEI. Não constitui aprovação
+        institucional. Confira a formatação ao colar no SEI.
+      </p>
+      <div className="review-bar">
+        <div className="review-save-status" role="status">
+          {heldBy
+            ? `Parecer com ${heldBy}: assuma-o para alterar.`
+            : readOnly
+              ? 'Parecer em consulta: só pode ser alterado com o calendário enviado ou em revisão.'
+              : dirty
+                ? 'Há alterações por salvar. Confirmar um critério não salva o parecer.'
+                : opened.review
+                  ? 'Todas as alterações foram salvas.'
+                  : 'O parecer ainda não foi salvo.'}
+        </div>
+        <div className="actions">
+          {/* Nothing to read or export until a review is saved. */}
+          {opened.review ? (
+            <>
+              <Button
+                type="button"
+                id="preview-review"
+                variant="secondary"
+                disabled={busy}
+                onClick={() => {
+                  void exportReview('preview');
+                }}
+              >
+                <Eye size={18} aria-hidden="true" /> Visualizar
+              </Button>
+              <ActionMenu
+                disabled={busy}
+                trigger={
+                  <>
+                    <Download size={18} aria-hidden="true" /> Exportar
+                    <ChevronDown size={16} aria-hidden="true" />
+                  </>
+                }
+              >
+                {locked ? null : (
+                  <ActionMenuItem id="copy-review" onClick={() => void exportReview('copy')}>
+                    <Copy size={18} aria-hidden="true" /> Copiar para o SEI
+                  </ActionMenuItem>
+                )}
+                <ActionMenuItem id="download-review-html" onClick={() => void exportReview('html')}>
+                  <FileCode2 size={18} aria-hidden="true" /> Baixar HTML
+                </ActionMenuItem>
+                <ActionMenuItem id="download-review-txt" onClick={() => void exportReview('txt')}>
+                  <FileText size={18} aria-hidden="true" /> Baixar TXT
+                </ActionMenuItem>
+              </ActionMenu>
+              {/* With nothing left to save, copying to the SEI is what remains to do here. */}
+              {locked ? (
+                <Button
+                  type="button"
+                  id="copy-review"
+                  disabled={busy}
+                  onClick={() => {
+                    void exportReview('copy');
+                  }}
+                >
+                  <Copy size={18} aria-hidden="true" /> Copiar para o SEI
+                </Button>
+              ) : null}
+            </>
+          ) : null}
+          {locked ? null : (
+            <Button
+              type="submit"
+              form="review-form"
+              // Secondary with nothing to save, leaving the emphasis to the next step of the flow.
+              variant={dirty || !opened.review ? 'primary' : 'secondary'}
+              disabled={busy || readOnly}
+            >
+              <Save size={18} aria-hidden="true" />{' '}
+              {pending === 'save' ? 'Salvando parecer…' : 'Salvar parecer'}
+            </Button>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

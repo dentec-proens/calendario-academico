@@ -314,7 +314,7 @@ test('the review list states each parecer and names the next step', async ({
   await expect(row.locator('[data-review-assignee]')).toHaveText('Sem responsável');
   await expect(action).toHaveText('Ver parecer');
   await page.locator('[data-assume-review="synthetic-review"]').click();
-  await expect(page.locator('#review-assignee')).toContainText('Você é responsável');
+  await expect(page.locator('#review-assignee')).toHaveText('Você');
   const item = page.locator('#review-items > li').first();
   await item.locator('[data-choice="ATENDIDO"]').click();
   await item.locator('[data-confirm-criterion]').click();
@@ -343,11 +343,11 @@ test('a parecer held by a colleague is read only until assumed, and keeps the dr
   await page.locator('#review-process').fill('Processo do rascunho local');
   await expect(save).toBeEnabled();
   await page.evaluate(() => window.reviewUiTest.publishAssignee('Fulana'));
-  await expect(page.locator('#review-assignee')).toContainText('Fulana é responsável');
+  await expect(page.locator('#review-assignee')).toHaveText('Fulana');
   await expect(save).toBeDisabled();
   await page.locator('#assume-review').click();
   await page.getByRole('alertdialog').getByRole('button', { name: 'Assumir parecer' }).click();
-  await expect(page.locator('#review-assignee')).toContainText('Você é responsável');
+  await expect(page.locator('#review-assignee')).toHaveText('Você');
   await expect(save).toBeEnabled();
   await expect(page.locator('#review-process')).toHaveValue('Processo do rascunho local');
 });
@@ -396,3 +396,156 @@ test('the tabs count what awaits review and stay quiet when nothing does', async
     page.getByRole('tab', { name: 'Concluídos' }).locator('[data-queue-count]'),
   ).toHaveCount(0);
 });
+
+test('the parecer opens with its state and offers exporting once a review is saved', async ({
+  page,
+  fixtureServer,
+}) => {
+  const origin = new URL(await fixtureServer('review')).origin;
+  await page.goto(origin + '/revisoes/synthetic-review');
+  await expect(page.locator('#review-progress')).toHaveText(/^0 de \d+$/);
+  // The synthetic calendar has no periods, so the count is unavailable and the notice says why.
+  await expect(page.locator('#review-conflicts')).toHaveText('A conferir');
+  await expect(page.locator('#review-conflicts-notice')).toContainText('Contagem indisponível');
+  await expect(page.locator('#review-comparison-headline')).toHaveText('Primeiro envio');
+  await expect(page.locator('#review-status')).toContainText('Envio 1');
+  const preview = page.locator('#preview-review');
+  await expect(preview).toHaveCount(0);
+  await page.locator('button[form="review-form"]').click();
+  await expect(preview).toBeVisible();
+  await page.getByRole('button', { name: 'Exportar' }).click();
+  await expect(page.getByRole('menuitem', { name: 'Copiar para o SEI' })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: 'Baixar HTML' })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: 'Baixar TXT' })).toBeVisible();
+});
+
+test('a first submission keeps its history a click away; a resubmission opens what changed', async ({
+  page,
+  fixtureServer,
+}) => {
+  const origin = new URL(await fixtureServer('review')).origin;
+  await page.goto(origin + '/revisoes/synthetic-review');
+  const panel = page.locator('#review-comparison-panel');
+  const toggle = page.locator('#toggle-comparison');
+  await expect(toggle).toHaveText('Ver histórico');
+  await expect(panel).toBeHidden();
+  await page.evaluate(() => window.reviewUiTest.publishResubmission());
+  await expect(page.locator('#review-comparison-headline')).toHaveText('1 alteração');
+  await expect(panel).toBeVisible();
+  await expect(page.locator('#submission-comparison-title')).toHaveText(
+    'Alterações desde o envio 1',
+  );
+  await expect(panel).toContainText('Ajustar a semana letiva.');
+  await toggle.click();
+  await expect(panel).toBeHidden();
+  await expect(toggle).toHaveText('Ver alterações');
+});
+
+test('a new edit retires the confirmation that the parecer was saved', async ({
+  page,
+  fixtureServer,
+}) => {
+  const origin = new URL(await fixtureServer('review')).origin;
+  await page.goto(origin + '/revisoes/synthetic-review');
+  await page.locator('button[form="review-form"]').click();
+  await expect(page.locator('#review-message')).toContainText('Parecer salvo');
+  await page.locator('#review-process').fill('23354.000006/2027-06');
+  await expect(page.locator('#review-message')).toBeEmpty();
+});
+
+test('saving stays in reach and the outcome in view along the long list of criteria', async ({
+  page,
+  fixtureServer,
+}) => {
+  await page.setViewportSize({ width: 1360, height: 800 });
+  const origin = new URL(await fixtureServer('review')).origin;
+  await page.goto(origin + '/revisoes/synthetic-review');
+  const save = page.locator('button[form="review-form"]');
+  await expect(save).toBeInViewport();
+  const item = page.locator('#review-items > li').nth(10);
+  await item.scrollIntoViewIfNeeded();
+  await expect(save).toBeInViewport();
+  await save.click();
+  await expect(page.locator('#review-message')).toContainText('Parecer salvo');
+  await expect(page.locator('#review-message')).toBeInViewport();
+});
+
+test('concluding states why it is unavailable until the review allows it', async ({
+  page,
+  fixtureServer,
+}) => {
+  const origin = new URL(await fixtureServer('review')).origin;
+  await page.goto(origin + '/revisoes/synthetic-review');
+  await expect(page.locator('#review-progress')).toBeVisible();
+  await page.evaluate(() => window.reviewUiTest.publishStatus('em_revisao'));
+  const conclude = page.locator('[data-lifecycle-action="conclude"]');
+  const reason = page.locator('#lifecycle-conclude-unavailable');
+  await expect(conclude).toBeDisabled();
+  await expect(reason).toContainText('Salve o parecer deste envio');
+  const item = page.locator('#review-items > li').first();
+  await item.locator('[data-choice="ATENDIDO"]').click();
+  await item.locator('[data-confirm-criterion]').click();
+  await expect(reason).toContainText('Salve ou descarte as alterações');
+  await page.locator('button[form="review-form"]').click();
+  await expect(page.locator('#review-message')).toContainText('Parecer salvo');
+  await expect(reason).toContainText(/^Faltam \d+ critérios:/);
+  await expect(conclude).toBeDisabled();
+});
+
+test('a parecer that can no longer change leaves copying to the SEI as the main action', async ({
+  page,
+  fixtureServer,
+}) => {
+  const origin = new URL(await fixtureServer('review')).origin;
+  await page.goto(origin + '/revisoes/synthetic-review');
+  const save = page.locator('button[form="review-form"]');
+  await save.click();
+  await expect(page.locator('#review-message')).toContainText('Parecer salvo');
+  await page.evaluate(() => window.reviewUiTest.publishStatus('revisado'));
+  await expect(page.locator('#copy-review')).toHaveClass(/ui-button--primary/);
+  await expect(save).toHaveCount(0);
+  await expect(page.locator('[data-lifecycle-action="reopen"]')).toHaveClass(
+    /ui-button--secondary/,
+  );
+});
+
+test('withdrawing, which only the administration sees here, stays in the actions menu', async ({
+  page,
+  fixtureServer,
+}) => {
+  const origin = new URL(await fixtureServer('review')).origin;
+  await page.goto(origin + '/revisoes/synthetic-review?role=ADMIN');
+  await expect(page.locator('[data-lifecycle-action="return"]')).toBeVisible();
+  await page.getByRole('button', { name: 'Mais ações' }).click();
+  await page.locator('[data-lifecycle-action="withdraw"]').click();
+  await expect(page.getByRole('alertdialog')).toContainText('Recolher envio');
+});
+
+for (const [width, height] of [
+  [1360, 800],
+  [390, 844],
+]) {
+  test(`the fixed bar never covers a control reached by keyboard at ${width}px`, async ({
+    page,
+    fixtureServer,
+  }) => {
+    await page.setViewportSize({ width, height });
+    const origin = new URL(await fixtureServer('review')).origin;
+    await page.goto(origin + '/revisoes/synthetic-review');
+    // Saved, the bar has all its buttons and is at its tallest.
+    await page.locator('button[form="review-form"]').click();
+    await expect(page.locator('#preview-review')).toBeVisible();
+    await page.locator('#review-process').focus();
+    for (let step = 0; step < 40; step++) {
+      await page.keyboard.press('Tab');
+      const covered = await page.evaluate(() => {
+        const focused = document.activeElement as HTMLElement;
+        if (focused.closest('.review-bar') || !focused.closest('#review-form')) return false;
+        const { left, width, bottom } = focused.getBoundingClientRect();
+        const bar = document.querySelector('.review-bar')!.getBoundingClientRect();
+        return left + width / 2 > bar.left && bottom > bar.top;
+      });
+      expect(covered, `focused control ${step} is under the bar`).toBe(false);
+    }
+  });
+}

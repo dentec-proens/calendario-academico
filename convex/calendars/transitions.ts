@@ -8,6 +8,7 @@ import {
   type LifecycleAction,
 } from '../../src/domain/calendar/lifecycle';
 import { rulesetVersion } from '../../src/domain/policies/registry';
+import { conclusionBlock } from '../../src/domain/reviews/conclusion-block';
 import { reviewCriteriaFor } from '../../src/domain/reviews/criteria';
 import type { Doc, Id } from '../_generated/dataModel';
 import type { MutationCtx } from '../_generated/server';
@@ -204,21 +205,13 @@ export async function applyTransition(ctx: MutationCtx, user: Member, request: T
     case 'reopen': {
       const submission = await submissionRow(ctx, row.currentSubmissionId);
       if (request.action === 'conclude') {
-        if (!compatibility.compatible)
-          fail('A base institucional mudou depois do envio. Devolva o calendário ao campus.', 409);
-        if (!reviewMatches(submission._id) || !reviewCurrent())
-          fail('Salve o parecer deste envio antes de concluir a revisão.', 409);
-        const criteria = reviewCriteriaFor(row.year);
-        const entries = review!.entries;
-        if (
-          criteria.some((criterion) => {
-            const entry = entries.find((item) => item.id === criterion.id);
-            return !entry?.reviewed || entry.status === 'PENDENTE';
-          })
-        )
-          fail('Confira e confirme todos os critérios do parecer antes de concluir.', 409);
-        if (entries.some((entry) => entry.status === 'NAO_ATENDIDO'))
-          fail('Há critério não atendido. Devolva o calendário ao campus para ajuste.', 409);
+        const block = conclusionBlock({
+          baseCompatible: compatibility.compatible,
+          reviewCurrent: reviewMatches(submission._id) && reviewCurrent(),
+          criteria: reviewCriteriaFor(row.year),
+          entries: review?.entries ?? [],
+        });
+        if (block) fail(block, 409);
       }
       await appendDecision(ctx, submission, {
         action: request.action === 'conclude' ? 'concluded' : 'reopened',

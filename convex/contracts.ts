@@ -300,6 +300,7 @@ export const reviewSupportDto = v.object({
   countError: v.union(v.string(), v.null()),
   initialConclusion: v.string(),
   catalogueRevision: v.number(),
+  baseCompatible: v.boolean(),
   review: v.union(reviewDto, v.null()),
   stale: v.boolean(),
   baseIdentity: v.optional(v.string()),

@@ -69,18 +69,6 @@
 .review-queue-assignee {
   font-size: 0.8125rem;
 }
-.review-assignment {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--ui-space-2) var(--ui-space-4);
-  margin-block: var(--ui-space-4);
-}
-.review-assignment p {
-  margin: 0;
-}
-
 .review-queue-submission {
   display: grid;
   gap: 2px;
@@ -123,5 +111,219 @@
 @container calendar-list (min-width: 860px) {
   .review-queue-actions {
     justify-items: end;
+  }
+}
+
+/* The parecer: who and what at the top, its state at a glance, the form, and saving always in reach. */
+#review-panel > .panel {
+  --review-inset: 24px;
+}
+@media (max-width: 560px) {
+  #review-panel > .panel {
+    --review-inset: var(--ui-space-4);
+  }
+}
+#review-message:not(:empty) {
+  position: sticky;
+  top: var(--ui-space-3);
+  z-index: 3;
+  margin-bottom: var(--ui-space-4);
+}
+.review-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--ui-space-3);
+  margin-bottom: var(--ui-space-4);
+}
+.review-header__identity {
+  flex: 1 1 20rem;
+  min-width: 0;
+}
+.review-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+#review-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px var(--ui-space-2);
+  margin: var(--ui-space-2) 0 0;
+  color: var(--ui-muted);
+  font-size: 0.875rem;
+}
+#review-editor {
+  text-decoration: none;
+}
+/* The lifecycle's buttons sit beside the link, while its forms take a line of their own. */
+.review-lifecycle {
+  display: contents;
+}
+.review-lifecycle > .actions {
+  margin-inline-start: auto;
+}
+.review-lifecycle > .lifecycle-form,
+.review-lifecycle > .lifecycle-unavailable {
+  flex: 1 0 100%;
+}
+.review-lifecycle > .lifecycle-unavailable {
+  margin: 0;
+  color: var(--ui-muted);
+  font-size: 0.875rem;
+  text-align: end;
+}
+
+.review-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 1px;
+  margin: 0 0 var(--ui-space-4);
+  overflow: hidden;
+  border: 1px solid var(--ui-border-soft);
+  border-radius: var(--ui-radius-panel);
+  background: var(--ui-border-soft);
+}
+.review-summary__item {
+  display: grid;
+  align-content: start;
+  gap: 2px;
+  min-width: 0;
+  padding: var(--ui-space-3) var(--ui-space-4);
+  background: var(--ui-surface);
+}
+.review-summary dt {
+  color: var(--ui-muted);
+  font-size: 0.8125rem;
+}
+.review-summary dd {
+  display: grid;
+  justify-items: start;
+  gap: 2px;
+  margin: 0;
+  min-width: 0;
+}
+.review-summary small {
+  color: var(--ui-muted);
+  font-size: 0.8125rem;
+}
+.review-summary__value {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.review-summary__value[data-tone='success'] {
+  color: var(--ui-action);
+}
+.review-summary__value[data-tone='warning'] {
+  color: var(--ui-warning);
+}
+.review-summary progress {
+  width: 100%;
+  height: 6px;
+  margin-top: var(--ui-space-2);
+  overflow: hidden;
+  border: 0;
+  border-radius: 999px;
+  background: var(--ui-surface-muted);
+  appearance: none;
+}
+.review-summary progress::-webkit-progress-bar {
+  background: var(--ui-surface-muted);
+}
+.review-summary progress::-webkit-progress-value {
+  background: var(--ui-action);
+}
+.review-summary progress::-moz-progress-bar {
+  background: var(--ui-action);
+}
+#root .review-summary__action {
+  min-height: 44px;
+  margin-block: -8px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--ui-info);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+#review-content > .ui-notice {
+  margin-bottom: var(--ui-space-4);
+}
+.review-comparison {
+  margin-bottom: var(--ui-space-4);
+  padding: var(--ui-space-4);
+  border: 1px solid var(--ui-border-soft);
+  border-radius: var(--ui-radius-panel);
+}
+.review-criteria-heading {
+  margin-block: var(--ui-space-4) var(--ui-space-3);
+  padding-top: var(--ui-space-4);
+  border-top: 1px solid var(--ui-border-soft);
+}
+.review-criteria-heading h3 {
+  margin: 0 0 var(--ui-space-1);
+}
+.review-criteria-heading .help {
+  margin: 0;
+}
+.review-disclaimer {
+  margin-block: var(--ui-space-4) 0;
+}
+
+/* Saving stays in reach along the criteria; a focused control is never left under the bar. */
+html:has(.review-bar) {
+  scroll-padding-bottom: 120px;
+}
+/* Narrow, the bar's status and buttons wrap and take more height. */
+@media (max-width: 600px) {
+  html:has(.review-bar) {
+    scroll-padding-bottom: 190px;
+  }
+}
+.review-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-space-2) var(--ui-space-4);
+  margin: var(--ui-space-3) calc(-1 * var(--review-inset)) calc(-1 * var(--review-inset));
+  padding: 12px var(--review-inset);
+  border-top: 1px solid var(--ui-border-soft);
+  border-radius: 0 0 10px 10px;
+  background: var(--ui-surface);
+}
+.review-bar .review-save-status {
+  flex: 1 1 16rem;
+  margin: 0;
+  color: var(--ui-muted);
+  font-size: 0.875rem;
+}
+.review-bar .ui-button {
+  margin: 0;
+}
+/* On a short screen a fixed bar would cover what is being filled. */
+@media (max-height: 560px) {
+  .review-bar {
+    position: static;
+  }
+}
+@media (max-width: 600px) {
+  .review-lifecycle > .actions {
+    margin-inline-start: 0;
+  }
+  .review-lifecycle > .lifecycle-unavailable {
+    text-align: start;
   }
 }

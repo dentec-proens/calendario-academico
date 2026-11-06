@@ -1,0 +1,34 @@
+.ui-action-menu {
+  z-index: 40;
+}
+.ui-action-menu__popup {
+  min-width: 200px;
+  max-width: calc(100vw - 32px);
+  padding: 6px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-panel);
+  background: var(--ui-surface);
+  box-shadow: var(--ui-shadow-floating);
+}
+.ui-action-menu__popup:focus {
+  outline: none;
+}
+.ui-action-menu__item {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-2);
+  min-height: 44px;
+  padding: 8px 10px;
+  border-radius: var(--ui-radius);
+  color: var(--ui-text);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+.ui-action-menu__item[data-highlighted] {
+  background: var(--ui-surface-muted);
+}
+.ui-action-menu__item[data-disabled] {
+  color: var(--ui-muted);
+  cursor: not-allowed;
+}

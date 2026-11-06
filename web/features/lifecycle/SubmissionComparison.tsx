@@ -25,11 +25,16 @@ const decisionLabels: Record<string, string> = {
   published: 'Publicado',
 };
 
-function useSubmissions(calendarId: string) {
-  return useQuery(functions.calendars.calendarSubmissions, {
-    id: calendarId as Id<'calendars'>,
-    paginationOpts: { numItems: 100, cursor: null },
-  });
+function useSubmissions(calendarId: string, enabled = true) {
+  return useQuery(
+    functions.calendars.calendarSubmissions,
+    enabled
+      ? {
+          id: calendarId as Id<'calendars'>,
+          paginationOpts: { numItems: 100, cursor: null },
+        }
+      : 'skip',
+  );
 }
 
 /** A submission copy never changes, so its subscription stays quiet during autosave. */
@@ -109,23 +114,25 @@ export function ReturnComparison({
 }
 
 /**
- * The reviewer's panel: the changes since a returned submission (or since the published calendar
- * this new version replaces), a selector for another pair in the chain and the submission history.
+ * The pair of submissions the reviewer compares: by default the changes since a returned
+ * submission, or since the published calendar this new version would replace.
  */
-export default function SubmissionComparison({ calendarId }: { calendarId: string }) {
-  const listing = useSubmissions(calendarId);
-  const [choice, setChoice] = useState<{ base?: string; target?: string }>({});
+export function useSubmissionComparison(calendarId: string, enabled = true) {
+  const listing = useSubmissions(calendarId, enabled);
+  // A base of null is the reviewer's choice not to compare; undefined follows the default.
+  const [choice, setChoice] = useState<{ base?: string | null; target?: string }>({});
   const page = listing?.page ?? [];
   const latest = page[0];
   const target = choice.target ?? latest?.id;
   // A returned calendar's default base is the returned submission itself, which is the latest:
   // the reviewer then compares it with the round it answered.
-  const base =
-    choice.base ??
+  const defaultBase =
     listing?.defaultBases.find((id) => id !== target) ??
     page.find((submission) => submission.id === target)?.previousSubmissionId;
+  const base = choice.base === undefined ? defaultBase : (choice.base ?? undefined);
   const baseSide = useSubmissionSide(calendarId, base);
-  const targetSide = useSubmissionSide(calendarId, target);
+  // Without a base nothing is compared, so a first submission does not load its copy.
+  const targetSide = useSubmissionSide(calendarId, base ? target : undefined);
   const diff = useMemo(
     () =>
       baseSide && targetSide && base !== target
@@ -133,8 +140,46 @@ export default function SubmissionComparison({ calendarId }: { calendarId: strin
         : null,
     [base, baseSide, target, targetSide],
   );
+  return { listing, page, target, base, hasDefaultBase: !!defaultBase, diff, choice, setChoice };
+}
+
+export type SubmissionComparisonState = ReturnType<typeof useSubmissionComparison>;
+
+/** One line about the pair compared, for where the details are a click away. */
+export function comparisonHeadline({
+  listing,
+  page,
+  target,
+  base,
+  hasDefaultBase,
+  diff,
+}: SubmissionComparisonState) {
+  if (!listing) return { value: 'Carregando…' };
+  if (!base || base === target)
+    return { value: hasDefaultBase || base ? 'Sem comparação' : 'Primeiro envio' };
+  const sequence = page.find((submission) => submission.id === base)?.sequence;
+  const detail = sequence ? `desde o envio ${sequence}` : 'desde o calendário publicado';
+  if (!diff) return { value: 'Carregando…', detail };
+  const changes = diff.campusChanges + diff.baseChanges;
+  return {
+    value: !changes
+      ? 'Nenhuma alteração'
+      : `${changes} ${changes === 1 ? 'alteração' : 'alterações'}`,
+    detail,
+  };
+}
+
+/** The reviewer's panel: what changed in the pair, the choice of another pair and the history. */
+export default function SubmissionComparison({
+  calendarId,
+  comparison,
+}: {
+  calendarId: string;
+  comparison: SubmissionComparisonState;
+}) {
+  const { listing, page, target, base, hasDefaultBase, diff, choice, setChoice } = comparison;
   if (!listing) return <p className="help">Carregando os envios…</p>;
-  if (!latest) return null;
+  if (!page.length) return null;
   const options = [
     ...page.map((submission) => ({
       id: submission.id,
@@ -150,9 +195,10 @@ export default function SubmissionComparison({ calendarId }: { calendarId: strin
   const baseSubmission = page.find((submission) => submission.id === base);
   const baseNote = baseSubmission?.decisions.findLast((decision) => decision.action === 'returned');
   const targetSequence = page.find((submission) => submission.id === target)?.sequence;
+  const firstSubmission = !base && !hasDefaultBase;
   return (
     <section
-      className="submission-comparison panel"
+      className="submission-comparison review-comparison"
       id="submission-comparison"
       aria-labelledby="submission-comparison-title"
     >
@@ -161,64 +207,78 @@ export default function SubmissionComparison({ calendarId }: { calendarId: strin
           ? `Alterações desde o envio ${baseSubmission.sequence}`
           : base
             ? 'Alterações desde o calendário publicado'
-            : 'Primeiro envio'}
+            : firstSubmission
+              ? 'Primeiro envio'
+              : 'Sem comparação'}
       </h3>
       {baseNote?.note ? (
         <Notice tone="warning" title={`Nota da devolução do envio ${baseSubmission!.sequence}`}>
           <p className="return-note-text">{baseNote.note}</p>
         </Notice>
       ) : null}
-      <div className="diff-pair">
-        <label>
-          Comparar de
-          <select
-            id="diff-base"
-            value={base ?? ''}
-            onChange={(event) => setChoice({ ...choice, base: event.target.value || undefined })}
-          >
-            <option value="">Sem comparação</option>
-            {options
-              .filter((option) => !option.withdrawn && option.id !== target)
-              .map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.label}
-                </option>
-              ))}
-          </select>
-        </label>
-        <label>
-          Até
-          <select
-            id="diff-target"
-            value={target}
-            onChange={(event) => setChoice({ ...choice, target: event.target.value })}
-          >
-            {options.map((option) => (
-              <option key={option.id} value={option.id}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
       {base === target ? (
         <p className="help">Escolha dois envios diferentes para comparar.</p>
-      ) : !base ? (
+      ) : firstSubmission ? (
         <p className="help">
           Primeiro envio deste calendário, sem envio anterior nem calendário publicado para
           comparar.
         </p>
+      ) : !base ? (
+        <p className="help">Escolha um envio para comparar.</p>
       ) : diff ? (
         <DiffView diff={diff} />
       ) : (
         <p className="help">Carregando a comparação…</p>
       )}
+      {options.length > 1 ? (
+        <details className="submission-pair">
+          <summary>Comparar outros envios</summary>
+          <div className="diff-pair">
+            <label>
+              Comparar de
+              <select
+                id="diff-base"
+                value={base ?? ''}
+                onChange={(event) => setChoice({ ...choice, base: event.target.value || null })}
+              >
+                <option value="">Sem comparação</option>
+                {options
+                  .filter((option) => !option.withdrawn && option.id !== target)
+                  .map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.label}
+                    </option>
+                  ))}
+              </select>
+            </label>
+            <label>
+              Até
+              <select
+                id="diff-target"
+                value={target}
+                onChange={(event) => setChoice({ ...choice, target: event.target.value })}
+              >
+                {options.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        </details>
+      ) : null}
       {!listing.isDone ? (
         <p className="help">
           Mostrando os 100 envios mais recentes. Os anteriores continuam registrados.
         </p>
       ) : null}
-      <SubmissionHistory calendarId={calendarId} submissions={page} current={targetSequence} />
+      <SubmissionHistory
+        calendarId={calendarId}
+        submissions={page}
+        current={targetSequence}
+        open={firstSubmission}
+      />
     </section>
   );
 }
@@ -283,13 +343,16 @@ function SubmissionHistory({
   calendarId,
   submissions,
   current,
+  open,
 }: {
   calendarId: string;
   submissions: Submission[];
   current?: number;
+  /** Starts open when the history is all there is to show. */
+  open: boolean;
 }) {
   return (
-    <details className="submission-history" id="submission-history">
+    <details className="submission-history" id="submission-history" open={open}>
       <summary>Histórico de envios</summary>
       <ol reversed>
         {submissions.map((submission) => (

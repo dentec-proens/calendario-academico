@@ -55,6 +55,7 @@ test('review with a pending confirmed criterion', async ({ page, fixtureServer }
   const item = page.locator('#review-items > li').first();
   await expect(item.locator('textarea')).toBeEnabled();
   await expect(item.locator('textarea')).toBeHidden();
+  await item.evaluate((element) => element.scrollIntoView({ block: 'center' }));
   await expect(item).toHaveScreenshot('review-criterion-collapsed.png');
   await item.locator('[data-choice="ATENDIDO"]').click();
   await item.locator('.review-item__notes summary').click();

@@ -207,6 +207,7 @@ export const review = query({
       calendar: { ...support.calendar, id: record.id, campus: record.state.campus },
       initialConclusion: initialConclusion(support),
       catalogueRevision: compatibility.snapshot.revision,
+      baseCompatible: compatibility.compatible,
       review: prior ? reviewDto(prior) : null,
       baseIdentity: compatibility.identity,
       rulesetVersion: rulesetVersion(record.state),

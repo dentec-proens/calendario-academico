@@ -1,7 +1,5 @@
 import { useState } from 'react';
-import { UserCheck } from 'lucide-react';
 import type { Id } from '../../../convex/_generated/dataModel.js';
-import { Button } from '../../components/ui/Button.tsx';
 import type { NoticeTone } from '../../components/ui/Notice.tsx';
 import { nativeError } from '../../shared/convex/errors.ts';
 import { reviews } from '../../shared/convex/reviews.ts';
@@ -38,40 +36,42 @@ export default function ReviewAssignment({
   }
   const mine = assignee?.id === userId;
   return (
-    <div className="review-assignment">
-      <p id="review-assignee">
+    <>
+      <span id="review-assignee" className="review-summary__value">
+        {!assignee ? 'Ninguém ainda' : mine ? 'Você' : assignee.name}
+      </span>
+      <small>
         {!assignee
-          ? 'Sem responsável: quem salvar o parecer passa a ser responsável por ele.'
-          : mine
-            ? 'Você é responsável por este parecer.'
-            : `${assignee.name} é responsável por este parecer desde ${updatedLabel(assignee.at)}.`}
-      </p>
+          ? 'Quem salvar o parecer passa a ser responsável.'
+          : `Desde ${updatedLabel(assignee.at)}`}
+      </small>
       {mine ? (
-        <Button
+        <button
           id="release-review"
-          variant="secondary"
-          pending={pending}
+          type="button"
+          className="review-summary__action"
+          disabled={pending}
           onClick={() => {
             if (busyReason) onMessage(busyReason, 'warning');
             else void run(() => reviews.release(calendarId), 'Parecer liberado.');
           }}
         >
           Liberar parecer
-        </Button>
+        </button>
       ) : (
-        <Button
+        <button
           id="assume-review"
-          variant="secondary"
-          pending={pending}
+          type="button"
+          className="review-summary__action"
+          disabled={pending}
           onClick={() => {
             if (assignee) void assumeReview(calendarId, assignee);
             else void run(() => reviews.assume(calendarId, null), 'Parecer assumido.');
           }}
         >
-          <UserCheck size={18} aria-hidden="true" />
           Assumir parecer
-        </Button>
+        </button>
       )}
-    </div>
+    </>
   );
 }
