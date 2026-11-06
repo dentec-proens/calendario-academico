@@ -11,7 +11,8 @@ import { Notice, type NoticeTone } from '../../components/ui/Notice.tsx';
 import { useAppSession } from '../../app/session.tsx';
 import LifecycleActions, { CalendarStatusBadge } from '../lifecycle/LifecycleActions.tsx';
 import SubmissionComparison from '../lifecycle/SubmissionComparison.tsx';
-import { statusLabels } from '#src/domain/calendar/lifecycle.ts';
+import { reviewEditable, statusLabels } from '#src/domain/calendar/lifecycle.ts';
+import ReviewAssignment from './ReviewAssignment.tsx';
 
 export default function ReviewPage() {
   const calendarId = useFeatureRoute().calendarId || '';
@@ -97,10 +98,22 @@ export default function ReviewPage() {
                 para consulta e exportação. Reabra a revisão para alterá-lo.
               </Notice>
             ) : null}
+            {reviewEditable(opened.status) ? (
+              <ReviewAssignment
+                calendarId={opened.calendar.id}
+                assignee={opened.assignee}
+                userId={info.user.id}
+                busyReason={
+                  reviewWork ? 'Salve ou descarte as alterações antes de liberar o parecer.' : ''
+                }
+                onMessage={report}
+              />
+            ) : null}
             {opened.submission ? <SubmissionComparison calendarId={opened.calendar.id} /> : null}
             <ReviewEditor
               key={`${opened.calendar.id}:${opened.submission?.id ?? ''}`}
               opened={opened}
+              userId={info.user.id}
               onMessage={report}
               onWorkChange={setReviewWork}
             />

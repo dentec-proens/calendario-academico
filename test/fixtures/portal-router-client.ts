@@ -43,6 +43,7 @@ export function portalReview(id: string): Awaited<ReturnType<typeof reviews.get>
   );
   return {
     ...support,
+    assignee: null,
     criteria: support.criteria.map((criterion) => ({
       ...criterion,
       initial: { ...criterion.initial, status: reviewStatus(criterion.initial.status) },

@@ -1,6 +1,7 @@
 import type { Doc, Id } from '../_generated/dataModel';
 import { documentDto } from '../documents/model';
 import { reviewCriteriaFor } from '../../src/domain/reviews/criteria';
+import { reviewEditable } from '../../src/domain/calendar/lifecycle';
 import type { Context } from '../lib/shared';
 import { iso } from '../lib/shared';
 
@@ -19,6 +20,13 @@ export async function reviewRow(ctx: Context, id: Id<'calendars'>) {
     .query('reviews')
     .withIndex('by_calendarId', (q) => q.eq('calendarId', id))
     .unique();
+}
+
+/** The holder counts only while the parecer can change; afterwards the saved author tells it. */
+export function reviewAssignee(row: Doc<'calendars'>) {
+  return row.assignee && reviewEditable(row.status)
+    ? { id: row.assignee.id, name: row.assignee.name, at: iso(row.assignee.at) }
+    : null;
 }
 
 /** What the review list shows without rebuilding the analysis: progress and calendar drift. */

@@ -73,8 +73,13 @@ export const summary = v.object({
   updatedByName: v.optional(v.string()),
   deletedAt: v.optional(v.string()),
 });
+export const reviewAssignee = v.union(
+  v.null(),
+  v.object({ id: v.id('users'), name: v.string(), at: v.string() }),
+);
 export const reviewQueueItem = v.object({
   ...summary.fields,
+  assignee: reviewAssignee,
   submission: v.union(
     v.null(),
     v.object({
@@ -249,6 +254,7 @@ const criterion = v.object({
   initial: v.object({ ...reviewEntry.fields, finding: v.string() }),
 });
 export const reviewSupportDto = v.object({
+  assignee: reviewAssignee,
   rulesetVersion: v.optional(v.string()),
   source: v.object({
     id: v.string(),

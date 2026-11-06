@@ -10,6 +10,15 @@ export const reviews = {
     request(() =>
       convex.mutation(functions.reviews.saveReview, { id: id as Id<'calendars'>, body }),
     ),
+  assume: (id: string, expectedAssigneeId: Id<'users'> | null) =>
+    request(() =>
+      convex.mutation(functions.reviews.assumeReview, {
+        id: id as Id<'calendars'>,
+        expectedAssigneeId,
+      }),
+    ),
+  release: (id: string) =>
+    request(() => convex.mutation(functions.reviews.releaseReview, { id: id as Id<'calendars'> })),
   export: (id: string, revision: number) =>
     request(() =>
       convex.query(functions.reviews.exportReview, { id: id as Id<'calendars'>, revision }),

@@ -12,7 +12,7 @@ for (const [path, name] of [
     const origin = new URL(await fixtureServer('portal')).origin;
     await page.goto(origin + path);
     if (path === '/revisoes') {
-      await expect(page.getByRole('link', { name: 'Iniciar parecer' })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Assumir parecer' })).toBeVisible();
       await expect(page.locator('[data-review-label]')).toHaveText('Parecer não iniciado');
       await expect(page.locator('.page-action')).toHaveCount(0);
     } else if (path === '/calendarios/lixeira')

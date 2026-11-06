@@ -311,8 +311,10 @@ test('the review list states each parecer and names the next step', async ({
   const row = page.locator('#review-calendars > li').first();
   const action = page.locator('[data-open-review="synthetic-review"]');
   await expect(row.locator('[data-review-label]')).toHaveText('Parecer não iniciado');
-  await expect(action).toHaveText('Iniciar parecer');
-  await action.click();
+  await expect(row.locator('[data-review-assignee]')).toHaveText('Sem responsável');
+  await expect(action).toHaveText('Ver parecer');
+  await page.locator('[data-assume-review="synthetic-review"]').click();
+  await expect(page.locator('#review-assignee')).toContainText('Você é responsável');
   const item = page.locator('#review-items > li').first();
   await item.locator('[data-choice="ATENDIDO"]').click();
   await item.locator('[data-confirm-criterion]').click();
@@ -325,7 +327,29 @@ test('the review list states each parecer and names the next step', async ({
     /^Em andamento · 1 de \d+ critérios conferidos$/,
   );
   await expect(row).toContainText('Rev. 1');
+  await expect(row.locator('[data-review-assignee]')).toContainText('Com você');
   await expect(action).toHaveText('Continuar parecer');
+  await page.locator('[data-release-review="synthetic-review"]').click();
+  await expect(row.locator('[data-review-assignee]')).toHaveText('Sem responsável');
+});
+
+test('a parecer held by a colleague is read only until assumed, and keeps the draft', async ({
+  page,
+  fixtureServer,
+}) => {
+  const origin = new URL(await fixtureServer('review')).origin;
+  await page.goto(origin + '/revisoes/synthetic-review');
+  const save = page.getByRole('button', { name: 'Salvar parecer' }).first();
+  await page.locator('#review-process').fill('Processo do rascunho local');
+  await expect(save).toBeEnabled();
+  await page.evaluate(() => window.reviewUiTest.publishAssignee('Fulana'));
+  await expect(page.locator('#review-assignee')).toContainText('Fulana é responsável');
+  await expect(save).toBeDisabled();
+  await page.locator('#assume-review').click();
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Assumir parecer' }).click();
+  await expect(page.locator('#review-assignee')).toContainText('Você é responsável');
+  await expect(save).toBeEnabled();
+  await expect(page.locator('#review-process')).toHaveValue('Processo do rascunho local');
 });
 
 for (const width of [1360, 390]) {

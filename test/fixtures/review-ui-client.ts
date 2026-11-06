@@ -41,6 +41,7 @@ const initial = {
   },
   catalogueRevision: 1,
   initialConclusion: initialConclusion(support),
+  assignee: null,
   review: null,
   stale: false,
   status: 'enviado',
@@ -63,6 +64,14 @@ const calls = {
   lastSave: null as Parameters<typeof reviewOperations.save>[1] | null,
 };
 let finishPendingSave: (() => void) | undefined;
+function publish() {
+  listeners.forEach((listener) => listener.refresh());
+  listeners.forEach((listener) => listener.notify());
+}
+function setAssignee(id: Id<'users'>, name: string) {
+  snapshot.assignee = { id, name, at: '2026-10-23T15:00:00Z' };
+  publish();
+}
 const listeners = new Set<{ refresh: () => void; notify: () => void }>();
 const user: Bootstrap['user'] = {
   id: 'synthetic-reviewer' as Id<'users'>,
@@ -115,6 +124,7 @@ function query(reference: FunctionReference<'query'>, args: { status?: string } 
           .map((calendar) => ({
             ...calendar,
             status: snapshot.review ? ('em_revisao' as const) : ('enviado' as const),
+            assignee: snapshot.assignee,
             submission: {
               id: 'synthetic-submission' as Id<'calendarSubmissions'>,
               sequence: 1,
@@ -162,6 +172,15 @@ export const convex = {
     reference: FunctionReference<'mutation'>,
     args: { body: Parameters<typeof reviewOperations.save>[1] },
   ) => {
+    if (getFunctionName(reference) === 'reviews:assumeReview') {
+      setAssignee(user.id, user.name);
+      return null;
+    }
+    if (getFunctionName(reference) === 'reviews:releaseReview') {
+      snapshot.assignee = null;
+      publish();
+      return null;
+    }
     if (getFunctionName(reference) !== 'reviews:saveReview')
       return Promise.reject(new Error('Mutação sintética não implementada.'));
     calls.saves++;
@@ -183,6 +202,7 @@ export const convex = {
       throw new Error('O calendário ou a base mudou. Reabra a revisão.');
     if (body.revision !== (snapshot.review?.revision ?? 0))
       throw new Error('Outro revisor atualizou este parecer. Reabra antes de salvar.');
+    snapshot.assignee ??= { id: user.id, name: user.name, at: '2026-10-23T15:00:00Z' };
     snapshot.review = {
       calendarId: snapshot.calendar.id,
       calendarVersion: body.calendarVersion,
@@ -223,6 +243,7 @@ export const convex = {
 };
 window.reviewUiTest = {
   calls,
+  publishAssignee: (name: string) => setAssignee('synthetic-colleague' as Id<'users'>, name),
   publishReview(processNumber: string) {
     if (!snapshot.review) throw new Error('Salve uma revisão antes da atualização remota.');
     snapshot.review = {
@@ -291,6 +312,7 @@ declare global {
   interface Window {
     reviewUiTest: {
       calls: typeof calls;
+      publishAssignee: (name: string) => void;
       publishReview: (processNumber: string) => void;
       publishLegacy2027Review: () => void;
       publishInternalDates: () => void;

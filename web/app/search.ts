@@ -47,6 +47,9 @@ export function applicationSearch(input: Record<string, unknown>) {
       ? { ano: String(year) }
       : {}),
     ...(situation ? { situacao: situation } : {}),
+    ...(input.responsavel === 'meus' || input.responsavel === 'livres'
+      ? { responsavel: input.responsavel as 'meus' | 'livres' }
+      : {}),
     ...(text(input.busca) ? { busca: text(input.busca)?.slice(0, 200) } : {}),
     ...(text(input.retorno) ? { retorno: text(input.retorno) } : {}),
     ...(input.devtools === '1' ? { devtools: '1' } : {}),

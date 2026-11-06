@@ -146,6 +146,7 @@ function reviewQueueRows(status = 'enviado', campus?: string) {
     ...item,
     status: queueStatus,
     statusRevision: 1,
+    assignee: null,
     submission: null,
     review: null,
   }));

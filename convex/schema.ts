@@ -59,6 +59,8 @@ export default defineSchema({
     statusRevision: v.number(),
     label: v.optional(v.string()),
     currentSubmissionId: v.optional(v.id('calendarSubmissions')),
+    /** Who is responsible for the parecer now; `reviews.reviewer` records who saved each revision. */
+    assignee: v.optional(v.object({ id: v.id('users'), name: v.string(), at: v.number() })),
     publishedSubmissionId: v.optional(v.id('calendarSubmissions')),
     derivedFrom: v.optional(v.id('calendars')),
     seiProcess: v.optional(v.string()),
@@ -76,7 +78,14 @@ export default defineSchema({
   })
     .index('by_campusId_and_year_and_status', ['campusId', 'year', 'status'])
     .index('by_status_and_deletedAt', ['status', 'deletedAt'])
+    .index('by_status_and_deletedAt_and_assigneeId', ['status', 'deletedAt', 'assignee.id'])
     .index('by_campusId_and_status_and_deletedAt', ['campusId', 'status', 'deletedAt'])
+    .index('by_campusId_and_status_and_deletedAt_and_assigneeId', [
+      'campusId',
+      'status',
+      'deletedAt',
+      'assignee.id',
+    ])
     .index('by_campusId_and_deletedAt', ['campusId', 'deletedAt'])
     .index('by_year', ['year'])
     .index('by_deletedAt', ['deletedAt']),

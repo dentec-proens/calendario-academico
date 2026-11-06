@@ -21,6 +21,8 @@ const labels: Record<string, string> = {
   CREATE_CALENDAR: 'Calendário criado',
   MAKE_CALENDAR_DEFINITIVE: 'Calendário tornado definitivo',
   SAVE_HUMAN_REVIEW: 'Parecer salvo',
+  ASSUME_REVIEW: 'Parecer assumido',
+  RELEASE_REVIEW: 'Parecer liberado',
   SUBMIT_CALENDAR: 'Calendário enviado para análise',
   WITHDRAW_CALENDAR: 'Envio recolhido pelo campus',
   START_REVIEW: 'Revisão iniciada',
@@ -128,7 +130,9 @@ async function auditEntries(
       action:
         row.action === 'UPDATE_CATALOGUE' && row.details
           ? `${labels[row.action]}: ${row.details}`
-          : (labels[row.action] ?? 'Alteração administrativa registrada'),
+          : row.action === 'ASSUME_REVIEW' && row.details
+            ? `${labels[row.action]} de ${row.details}`
+            : (labels[row.action] ?? 'Alteração administrativa registrada'),
       actor: row.actorLabel ?? author?.name ?? 'Sistema',
       calendar: record && unit ? calendarName(record.year, unit.name, record.label) : null,
       version: row.version ?? null,

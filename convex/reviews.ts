@@ -8,22 +8,23 @@ import { initialConclusion } from '../src/domain/reviews/conclusion';
 import { updateConclusion } from '../src/domain/reviews/conclusion';
 import { reviewDocument } from '../src/printing/review-export';
 import { reviewNorm } from '../src/domain/reviews/citation';
-import { query, mutation } from './_generated/server';
+import { query, mutation, type MutationCtx, type QueryCtx } from './_generated/server';
+import type { Member } from './access/contracts';
 import { requireNativeUser } from './access/identity';
 import { calendarRow, summary } from './calendars/model';
 import { baseRecord, submissionSummary } from './calendars/record';
 import { applyTransition } from './calendars/transitions';
 import { lineage } from './calendars/lifecycle';
 import { calendarStatus } from './validators';
-import { officialApproval } from '../src/domain/calendar/lifecycle';
-import type { Doc } from './_generated/dataModel';
+import { officialApproval, reviewEditable } from '../src/domain/calendar/lifecycle';
+import type { Doc, Id } from './_generated/dataModel';
 import * as contracts from './contracts';
 import { documentDto } from './documents/model';
 import { appendAudit } from './lib/audit';
 import { assertCampus, reviewer } from './lib/authorization';
 import { pageBound } from './lib/pagination';
 import { fail, iso, clean } from './lib/shared';
-import { reviewRow, reviewDto, reviewProgress } from './reviews/model';
+import { reviewAssignee, reviewRow, reviewDto, reviewProgress } from './reviews/model';
 import { paginationOptsValidator, paginationResultValidator } from 'convex/server';
 import type { Infer } from 'convex/values';
 import { v } from 'convex/values';
@@ -41,28 +42,57 @@ function reviewForSubmission(
   return !!review && !!row.currentSubmissionId && review.submissionId === row.currentSubmissionId;
 }
 
+/**
+ * One situation of the queue, newest first. Only a holder filter reads the longer index, whose
+ * order would otherwise group the calendars by holder.
+ */
+function queueRows(
+  ctx: QueryCtx,
+  status: Infer<typeof queueStatus>,
+  campusId: Id<'campuses'> | undefined,
+  holder: { id: Id<'users'> | undefined } | undefined,
+) {
+  const calendars = ctx.db.query('calendars');
+  if (campusId && holder)
+    return calendars.withIndex('by_campusId_and_status_and_deletedAt_and_assigneeId', (q) =>
+      q
+        .eq('campusId', campusId)
+        .eq('status', status)
+        .eq('deletedAt', undefined)
+        .eq('assignee.id', holder.id),
+    );
+  if (campusId)
+    return calendars.withIndex('by_campusId_and_status_and_deletedAt', (q) =>
+      q.eq('campusId', campusId).eq('status', status).eq('deletedAt', undefined),
+    );
+  if (holder)
+    return calendars.withIndex('by_status_and_deletedAt_and_assigneeId', (q) =>
+      q.eq('status', status).eq('deletedAt', undefined).eq('assignee.id', holder.id),
+    );
+  return calendars.withIndex('by_status_and_deletedAt', (q) =>
+    q.eq('status', status).eq('deletedAt', undefined),
+  );
+}
+
 /** The reviewer works by status; drafts never reach the queue. */
 export const reviewQueue = query({
   args: {
     paginationOpts: paginationOptsValidator,
     status: v.optional(queueStatus),
     campusId: v.optional(v.id('campuses')),
+    holder: v.optional(v.union(v.literal('mine'), v.literal('none'))),
   },
   returns: paginationResultValidator(contracts.reviewQueueItem),
-  handler: async (ctx, { paginationOpts, status = 'enviado', campusId }) => {
+  handler: async (ctx, { paginationOpts, status = 'enviado', campusId, holder }) => {
     const { user } = await requireNativeUser(ctx);
     reviewer(user);
     pageBound(paginationOpts.numItems);
     if (campusId) assertCampus(user, campusId);
-    const calendars = ctx.db.query('calendars');
-    const result = await (
-      campusId
-        ? calendars.withIndex('by_campusId_and_status_and_deletedAt', (q) =>
-            q.eq('campusId', campusId).eq('status', status).eq('deletedAt', undefined),
-          )
-        : calendars.withIndex('by_status_and_deletedAt', (q) =>
-            q.eq('status', status).eq('deletedAt', undefined),
-          )
+    const result = await queueRows(
+      ctx,
+      status,
+      campusId,
+      holder && { id: holder === 'mine' ? user.id : undefined },
     )
       .order('desc')
       .paginate(paginationOpts);
@@ -76,6 +106,7 @@ export const reviewQueue = query({
         if (!campus) fail('Campus não encontrado.', 404);
         return {
           ...(await summary(ctx, row, campus)),
+          assignee: reviewAssignee(row),
           submission: submission
             ? {
                 id: submission._id,
@@ -137,6 +168,7 @@ export const review = query({
     );
     return clean({
       ...support,
+      assignee: reviewAssignee(row),
       officialApproval: officialApproval(status),
       status,
       statusRevision: row.statusRevision,
@@ -175,10 +207,12 @@ export const saveReview = mutation({
       compatibility,
       review: prior,
     } = await baseRecord(ctx, user, id);
-    if (status !== 'enviado' && status !== 'em_revisao')
+    if (!reviewEditable(status))
       fail('O parecer só pode ser alterado enquanto o calendário está enviado ou em revisão.', 409);
     if (!body.submissionId || body.submissionId !== row.currentSubmissionId)
       fail('O calendário foi reenviado ou recolhido. Reabra a revisão do envio atual.', 409);
+    if (row.assignee && row.assignee.id !== user.id)
+      fail(`${row.assignee.name} assumiu este parecer. Assuma-o para salvar.`, 409);
     const currentRules = rulesetVersion(record.state);
     const criteria = reviewCriteriaFor(record.state.year);
     if (!equivalentRulesets(body.rulesetVersion, currentRules))
@@ -268,6 +302,8 @@ export const saveReview = mutation({
       { type: 'calendar', id },
       { calendarId: id, campusId: record.campusId, version: record.version },
     );
+    // A parecer without a holder belongs to whoever saves it.
+    if (!row.assignee) await assign(ctx, user, row);
     // The first save of the current submission starts its review.
     if (status === 'enviado')
       await applyTransition(ctx, user, {
@@ -277,6 +313,75 @@ export const saveReview = mutation({
         action: 'startReview',
       });
     return { revision: next.revision };
+  },
+});
+
+async function assign(ctx: MutationCtx, user: Member, row: Doc<'calendars'>) {
+  await ctx.db.patch(row._id, { assignee: { id: user.id, name: user.name, at: Date.now() } });
+  await appendAudit(
+    ctx,
+    user,
+    'ASSUME_REVIEW',
+    { type: 'calendar', id: row._id },
+    {
+      calendarId: row._id,
+      campusId: row.campusId,
+      version: row.version,
+      ...(row.assignee ? { details: row.assignee.name } : {}),
+    },
+  );
+}
+
+/**
+ * `expectedAssigneeId` is the holder the person was seeing: two people assuming at once, or a
+ * confirmation answered after a change, never take the parecer from someone they did not see.
+ */
+export const assumeReview = mutation({
+  args: { ...idArgs, expectedAssigneeId: v.union(v.id('users'), v.null()) },
+  returns: v.null(),
+  handler: async (ctx, { id, expectedAssigneeId }) => {
+    await assertWritesOpen(ctx);
+    const { user } = await requireNativeUser(ctx);
+    reviewer(user);
+    const row = await calendarRow(ctx, user, id);
+    if (!reviewEditable(row.status))
+      fail('O parecer só pode ser assumido enquanto o calendário está enviado ou em revisão.', 409);
+    if ((row.assignee?.id ?? null) !== expectedAssigneeId)
+      fail(
+        row.assignee
+          ? `${row.assignee.name} assumiu este parecer. Confira antes de assumi-lo.`
+          : 'Este parecer foi liberado. Confira antes de assumi-lo.',
+        409,
+      );
+    if (row.assignee?.id !== user.id) await assign(ctx, user, row);
+    return null;
+  },
+});
+
+/** Only the holder releases; anyone else first assumes the parecer, which is recorded. */
+export const releaseReview = mutation({
+  args: idArgs,
+  returns: v.null(),
+  handler: async (ctx, { id }) => {
+    await assertWritesOpen(ctx);
+    const { user } = await requireNativeUser(ctx);
+    reviewer(user);
+    const row = await calendarRow(ctx, user, id);
+    // A request from a screen that is out of date never clears the holder a resubmission keeps.
+    if (!reviewEditable(row.status))
+      fail('O parecer só pode ser liberado enquanto o calendário está enviado ou em revisão.', 409);
+    if (!row.assignee) return null;
+    if (row.assignee.id !== user.id)
+      fail(`${row.assignee.name} assumiu este parecer. Só essa pessoa pode liberá-lo.`, 409);
+    await ctx.db.patch(id, { assignee: undefined });
+    await appendAudit(
+      ctx,
+      user,
+      'RELEASE_REVIEW',
+      { type: 'calendar', id },
+      { calendarId: id, campusId: row.campusId, version: row.version },
+    );
+    return null;
   },
 });
 

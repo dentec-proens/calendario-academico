@@ -38,6 +38,20 @@
 .review-queue-tools {
   margin-bottom: var(--ui-space-4);
 }
+.review-queue-assignee {
+  font-size: 0.8125rem;
+}
+.review-assignment {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-space-2) var(--ui-space-4);
+  margin-block: var(--ui-space-4);
+}
+.review-assignment p {
+  margin: 0;
+}
 
 .review-queue-submission {
   display: grid;
@@ -61,6 +75,14 @@
   display: grid;
   justify-items: start;
   gap: 4px;
+}
+/* The column fits one action per line, the opening link and the holder's next step alike. */
+#root .review-queue-actions .calendar-list-actions {
+  flex-direction: column;
+  align-items: stretch;
+}
+#root .review-queue-actions .ui-button {
+  white-space: nowrap;
 }
 #root .review-queue-calendar {
   display: inline-flex;

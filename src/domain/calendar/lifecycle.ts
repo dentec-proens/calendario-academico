@@ -117,6 +117,11 @@ export function transition(
 }
 
 /** Whether `role` may run `action` from `status`, for the interface to offer it. */
+/** The parecer is saved, and its holder changes, only while the calendar awaits a decision. */
+export function reviewEditable(status: CalendarStatus) {
+  return status === 'enviado' || status === 'em_revisao';
+}
+
 export function canTransition(
   status: CalendarStatus,
   action: LifecycleAction,

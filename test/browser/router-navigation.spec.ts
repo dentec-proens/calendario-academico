@@ -244,6 +244,23 @@ test('the review queue keeps its tab in the URL and falls back from a situation 
   await expect(page).toHaveURL(origin + '/revisoes');
 });
 
+test('the review queue keeps the holder filter in the URL for the tabs that have one', async ({
+  page,
+  fixtureServer,
+}) => {
+  const origin = new URL(await fixtureServer('portal')).origin;
+  await page.goto(origin + '/revisoes');
+  await page.locator('#review-holder-filter').selectOption('meus');
+  await expect(page).toHaveURL(origin + '/revisoes?responsavel=meus');
+  await page.getByRole('tab', { name: 'Em análise' }).click();
+  await expect(page).toHaveURL(origin + '/revisoes?situacao=em_revisao&responsavel=meus');
+  await expect(page.locator('#review-holder-filter')).toHaveValue('meus');
+  await page.getByRole('tab', { name: 'Vigentes' }).click();
+  await expect(page).toHaveURL(origin + '/revisoes?situacao=vigente');
+  await expect(page.getByRole('combobox', { name: 'Filtrar por campus' })).toBeVisible();
+  await expect(page.locator('#review-holder-filter')).toHaveCount(0);
+});
+
 test('the arrows move through the review tabs even when pressed quickly', async ({
   page,
   fixtureServer,

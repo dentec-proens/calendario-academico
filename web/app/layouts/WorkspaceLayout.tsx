@@ -97,7 +97,7 @@ export default function WorkspaceLayout() {
   else administrative.push(audit);
   const back = [...navigation, ...administrative].find(({ id }) => id === metadata?.back);
   // The trail returns to the list as it was left: only its filters, never a one-off notice.
-  const { campus, situacao } = useSearch({ strict: false });
+  const { campus, situacao, responsavel } = useSearch({ strict: false });
   useEffect(() => {
     document.title = `${title} · PROENS`;
     if (previous.current === activePath) return;
@@ -166,7 +166,7 @@ export default function WorkspaceLayout() {
       </aside>
       <div className="portal-content">
         {back ? (
-          <BackLink to={back.to} search={{ campus, situacao }}>
+          <BackLink to={back.to} search={{ campus, situacao, responsavel }}>
             {back.label}
           </BackLink>
         ) : null}

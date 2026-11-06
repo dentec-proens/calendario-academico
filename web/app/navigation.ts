@@ -18,6 +18,7 @@ export function useFeatureRoute() {
     campus: search.campus ?? '',
     ano: search.ano ?? '',
     situacao: search.situacao ?? '',
+    responsavel: search.responsavel,
     busca: search.busca ?? '',
   };
 }

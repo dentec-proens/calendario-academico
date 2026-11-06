@@ -15,6 +15,8 @@ interface Props {
   busy: boolean;
   /** The review is saved only while the calendar is submitted or under review. */
   readOnly: boolean;
+  /** Who holds the parecer, when it is someone else. */
+  heldBy?: string;
   pending: string;
   error: string;
   preview: ReviewDocument | null;
@@ -36,6 +38,7 @@ export default function ReviewFormView({
   draft,
   busy,
   readOnly,
+  heldBy,
   pending,
   error,
   preview,
@@ -87,13 +90,15 @@ export default function ReviewFormView({
         <ExternalLink size={16} aria-hidden="true" /> Abrir calendário em outra aba
       </a>
       <div className="review-save-status" role="status">
-        {readOnly
-          ? 'Parecer em consulta: só pode ser alterado com o calendário enviado ou em revisão.'
-          : dirty
-            ? 'Há alterações por salvar. Confirmar um critério não salva o parecer.'
-            : opened.review
-              ? 'Todas as alterações foram salvas.'
-              : 'O parecer ainda não foi salvo.'}
+        {heldBy
+          ? `Parecer com ${heldBy}: assuma-o para alterar.`
+          : readOnly
+            ? 'Parecer em consulta: só pode ser alterado com o calendário enviado ou em revisão.'
+            : dirty
+              ? 'Há alterações por salvar. Confirmar um critério não salva o parecer.'
+              : opened.review
+                ? 'Todas as alterações foram salvas.'
+                : 'O parecer ainda não foi salvo.'}
       </div>
       <div className="actions review-export-actions">
         <Button

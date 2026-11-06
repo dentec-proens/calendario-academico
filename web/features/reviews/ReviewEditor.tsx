@@ -1,4 +1,5 @@
 import { reviewIsCurrent } from '#src/domain/calendar/base.ts';
+import { reviewEditable } from '#src/domain/calendar/lifecycle.ts';
 import { calendarSchemaVersion } from '#src/domain/calendar/model.ts';
 import { useEffect, useRef, useState, type SetStateAction } from 'react';
 import { useFormDrafts } from '../../shared/forms/drafts.tsx';
@@ -21,10 +22,12 @@ import { Notice, type NoticeTone } from '../../components/ui/Notice.tsx';
 
 export default function ReviewEditor({
   opened,
+  userId,
   onMessage,
   onWorkChange,
 }: {
   opened: ReviewSupport;
+  userId: string;
   /** Reports unsaved or saving work, which the lifecycle actions must not skip over. */
   onWorkChange?: (pending: boolean) => void;
   /** Reports an outcome; confirmations are the default tone. */
@@ -72,7 +75,10 @@ export default function ReviewEditor({
   });
   const draft = values.draft;
   const dirty = draft.dirty;
-  const readOnly = opened.status !== 'enviado' && opened.status !== 'em_revisao';
+  // Someone else's parecer is read only; a draft in progress stays, for assuming it back.
+  const heldBy =
+    opened.assignee && opened.assignee.id !== userId ? opened.assignee.name : undefined;
+  const readOnly = !reviewEditable(opened.status) || !!heldBy;
   useEffect(() => {
     onWorkChange?.(dirty || pending);
   }, [dirty, pending, onWorkChange]);
@@ -221,6 +227,7 @@ export default function ReviewEditor({
         draft={draft}
         busy={busy}
         readOnly={readOnly}
+        heldBy={heldBy}
         pending={pending ? 'save' : exporting ? 'export' : ''}
         error={error}
         preview={preview}

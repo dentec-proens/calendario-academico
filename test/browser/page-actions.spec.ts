@@ -65,17 +65,25 @@ for (const width of [1440, 390, 320]) {
     const rows = page.locator('#review-calendars > li');
     await expect(rows).toHaveCount(2);
     await expect(page.locator('.page-action')).toHaveCount(0);
-    const first = rows.nth(0).getByRole('link', { name: 'Iniciar parecer' });
-    const second = rows.nth(1).getByRole('link', { name: 'Iniciar parecer' });
-    await expect(first).toHaveAttribute('href', '/revisoes/calendar-a');
-    await expect(second).toHaveAttribute('href', '/revisoes/calendar-b');
+    const first = rows.nth(0).getByRole('button', { name: 'Assumir parecer' });
+    const second = rows.nth(1).getByRole('button', { name: 'Assumir parecer' });
+    const firstOpen = rows.nth(0).getByRole('link', { name: 'Ver parecer' });
+    await expect(firstOpen).toHaveAttribute('href', '/revisoes/calendar-a');
+    await expect(rows.nth(1).getByRole('link', { name: 'Ver parecer' })).toHaveAttribute(
+      'href',
+      '/revisoes/calendar-b',
+    );
     await page.locator('#panel-title').focus();
     await page.keyboard.press('Tab');
     await expect(page.getByRole('tab', { name: 'Aguardando análise' })).toBeFocused();
     await page.keyboard.press('Tab');
     await expect(page.locator('#campus-filter')).toBeFocused();
     await page.keyboard.press('Tab');
+    await expect(page.locator('#review-holder-filter')).toBeFocused();
+    await page.keyboard.press('Tab');
     await expect(first).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(firstOpen).toBeFocused();
     await page.keyboard.press('Tab');
     await expect(rows.nth(0).getByRole('link', { name: 'Abrir calendário' })).toBeFocused();
     await page.keyboard.press('Tab');
@@ -92,6 +100,8 @@ for (const width of [1440, 390, 320]) {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
       true,
     );
+    await page.keyboard.press('Tab');
+    await expect(rows.nth(1).getByRole('link', { name: 'Ver parecer' })).toBeFocused();
     await page.keyboard.press('Enter');
     await expect(page).toHaveURL(origin + '/revisoes/calendar-b');
     await expect(page.locator('#review-content')).toContainText('Calendário calendar-b');

@@ -1,6 +1,11 @@
 import { useNavigate } from '@tanstack/react-router';
+import { useState } from 'react';
 import { usePaginatedQuery } from 'convex/react';
-import { statusLabels, type CalendarStatus } from '#src/domain/calendar/lifecycle.ts';
+import {
+  reviewEditable,
+  statusLabels,
+  type CalendarStatus,
+} from '#src/domain/calendar/lifecycle.ts';
 import { useFeatureRoute } from '../../app/navigation.ts';
 import { functions } from '../../shared/convex/client.ts';
 import Pagination from '../../shared/forms/Pagination.tsx';
@@ -28,19 +33,32 @@ export default function ReviewsPage() {
   const navigate = useNavigate();
   // A situation the queue does not list, such as a draft, falls back to the default tab.
   const status = tabs.find(([value]) => value === route.situacao)?.[0] ?? 'enviado';
+  // Only a parecer still open has a holder, so the other tabs have nothing to filter by.
+  const responsavel = reviewEditable(status) ? route.responsavel : undefined;
   const filters = {
     campus: campus?.id,
     situacao: status === 'enviado' ? undefined : status,
+    responsavel,
   };
+  const [error, setError] = useState('');
   const pagination = usePaginatedQuery(
     functions.reviews.reviewQueue,
-    { status, ...(campus ? { campusId: campus.id } : {}) },
+    {
+      status,
+      ...(campus ? { campusId: campus.id } : {}),
+      ...(responsavel ? { holder: responsavel === 'meus' ? 'mine' : 'none' } : {}),
+    } as const,
     { initialNumItems: 50 },
   );
   function select(next: (typeof tabs)[number][0]) {
+    setError('');
     void navigate({
       to: '/revisoes',
-      search: { ...filters, situacao: next === 'enviado' ? undefined : next },
+      search: {
+        ...filters,
+        situacao: next === 'enviado' ? undefined : next,
+        responsavel: reviewEditable(next) ? route.responsavel : undefined,
+      },
       replace: true,
     });
   }
@@ -95,18 +113,49 @@ export default function ReviewsPage() {
                 });
               }}
             />
+            {reviewEditable(status) ? (
+              <label>
+                Filtrar por responsável
+                <select
+                  id="review-holder-filter"
+                  value={responsavel ?? ''}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    void navigate({
+                      to: '/revisoes',
+                      search: {
+                        ...filters,
+                        responsavel: value === 'meus' || value === 'livres' ? value : undefined,
+                      },
+                      replace: true,
+                    });
+                  }}
+                >
+                  <option value="">Todos</option>
+                  <option value="meus">Meus pareceres</option>
+                  <option value="livres">Sem responsável</option>
+                </select>
+              </label>
+            ) : null}
           </div>
-          <ReviewQueue items={pagination.results} filters={filters} />
+          <ReviewQueue
+            items={pagination.results}
+            filters={filters}
+            userId={info.user.id}
+            onError={setError}
+          />
           <Pagination
             pagination={pagination}
             label="Carregar mais calendários"
             loadingLabel="Carregando calendários para revisão…"
           />
           <div id="review-message" role="status" aria-live="polite">
+            {error ? <Notice tone="danger">{error}</Notice> : null}
             {!pagination.results.length && pagination.status === 'Exhausted' ? (
               <Notice tone="info">
                 Nenhum calendário {statusLabels[status].toLowerCase()}
-                {campus ? ' neste campus' : ''} no momento.
+                {campus ? ' neste campus' : ''}
+                {responsavel ? ' com este responsável' : ''} no momento.
               </Notice>
             ) : null}
           </div>
