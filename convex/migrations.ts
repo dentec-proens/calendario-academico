@@ -2,8 +2,7 @@ import { Migrations } from '@convex-dev/migrations';
 import type { MigrationFunctionReference } from '@convex-dev/migrations';
 import { getFunctionName } from 'convex/server';
 import { v } from 'convex/values';
-import { isEditable } from '../src/domain/calendar/lifecycle.ts';
-import { components, internal } from './_generated/api';
+import { components } from './_generated/api';
 import { internalMutation, internalQuery } from './_generated/server';
 import schema from './schema';
 
@@ -12,30 +11,7 @@ export const migrations = new Migrations(components.migrations, { schema, intern
 /** CLI entry for one migration, including `dryRun` (docs/implantacao-convex-vercel.md, Comandos). */
 export const run = migrations.runner();
 
-const optionalVacationDates = ['secondStart', 'secondEnd', 'thirdStart', 'thirdEnd'] as const;
-
-/**
- * Level 1: the v4 editor stored a blank optional vacation period as `""`, which the domain already
- * reads as absent and the next save drops. No new version: nothing a person sees changes. Sending
- * copies the content as stored, so a blank left here would reach the submission and later read as a
- * false change between submissions. A content out of editing stays as it is: a submission fixed it
- * by hash, and a blank there is harmless. The stored `rulesetVersion` is not touched on purpose: it
- * is what tells the campus which rule changes it has not heard about (`announcedRuleChanges`).
- */
-export const dropBlankVacationDates = migrations.define({
-  table: 'calendarContents',
-  migrateOne: async (ctx, row) => {
-    const vacations = row.state.teacherVacations;
-    if (!vacations || !optionalVacationDates.some((field) => vacations[field] === '')) return;
-    const calendar = await ctx.db.get('calendars', row.calendarId);
-    if (!calendar || !isEditable(calendar.status)) return;
-    const kept = { ...vacations };
-    for (const field of optionalVacationDates) if (kept[field] === '') delete kept[field];
-    return { state: { ...row.state, teacherVacations: kept } };
-  },
-});
-
-const pending: MigrationFunctionReference[] = [internal.migrations.dropBlankVacationDates];
+const pending: MigrationFunctionReference[] = [];
 
 export const start = internalMutation({
   args: {},
