@@ -8,7 +8,7 @@ import type { catalogue } from '../catalogue/model';
 import { clean } from '../lib/shared';
 
 type Content = Pick<
-  Extract<Doc<'calendarContents'>, { state: { schemaVersion: 7 } }>,
+  Doc<'calendarContents'>,
   'catalogueRevision' | 'institutionalSnapshot' | 'documentSnapshot'
 >;
 type Status = Doc<'calendars'>['status'];

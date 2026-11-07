@@ -242,7 +242,7 @@ test('current contents and submission copies refuse retired manual fields', asyn
         .withIndex('by_calendarId', (q) => q.eq('calendarId', created.id))
         .unique())!;
       const invalid = { ...row.state, weekEvidence: secret };
-      await ctx.db.patch(row._id, { state: invalid as never });
+      await ctx.db.patch(row._id, { state: invalid });
     }),
   ).rejects.toThrow(/Unexpected field|Expected/);
   await expect(

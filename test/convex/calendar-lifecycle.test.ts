@@ -430,7 +430,7 @@ test('publication checks the SEI, the review and the content, and archives what 
       .withIndex('by_calendarId', (q) => q.eq('calendarId', next.id))
       .unique())!;
     await ctx.db.patch(content._id, {
-      state: { ...content.state, weekdays: [1, 2, 3, 4] } as never,
+      state: { ...content.state, weekdays: [1, 2, 3, 4] },
     });
   });
   await expect(act(f.admin, next.id, 'publish', { sei })).rejects.toThrow(/difere do envio/);
@@ -440,7 +440,7 @@ test('publication checks the SEI, the review and the content, and archives what 
       .withIndex('by_calendarId', (q) => q.eq('calendarId', next.id))
       .unique())!;
     await ctx.db.patch(content._id, {
-      state: { ...content.state, weekdays: [1, 2, 3, 4, 5] } as never,
+      state: { ...content.state, weekdays: [1, 2, 3, 4, 5] },
     });
   });
   await act(f.admin, next.id, 'publish', { sei: '23411.000002/2027-22' });
@@ -606,7 +606,7 @@ test('a submission above 900 KiB is refused with its own message and writes noth
       effect: 'note' as const,
       offers: ['integrado'],
     }));
-    await ctx.db.patch(content._id, { state: { ...content.state, events } as never });
+    await ctx.db.patch(content._id, { state: { ...content.state, events } });
   });
   await expect(act(f.campus, id, 'submit')).rejects.toThrow(/grande demais para ser enviado/);
   expect(await f.submissions(id)).toEqual([]);

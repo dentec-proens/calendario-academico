@@ -44,7 +44,7 @@ async function fixture(change: (state: CalendarContent) => CalendarContent = (st
         .withIndex('by_calendarId', (q) => q.eq('calendarId', id))
         .unique();
       await ctx.db.patch(content!._id, {
-        state: { ...content!.state, rulesetVersion: version } as never,
+        state: { ...content!.state, rulesetVersion: version },
       });
     });
   return { ...f, campus, admin, id, stampRules };

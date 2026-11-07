@@ -57,7 +57,7 @@ async function stampRules(
       .withIndex('by_calendarId', (q) => q.eq('calendarId', id))
       .unique();
     await ctx.db.patch(content!._id, {
-      state: { ...content!.state, rulesetVersion: version } as never,
+      state: { ...content!.state, rulesetVersion: version },
     });
   });
 }

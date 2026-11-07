@@ -21,3 +21,4 @@ Extensões combinadas e ainda não implementadas, à espera de um caso real. Cad
 - **Comprimento das listas sem filtro.** Busca e filtros não encurtam a primeira carga: `/calendarios` continua com 50 linhas e **Contas e acessos** com todas as contas, longas em 390 px. Avaliar páginas menores e o redesenho da linha de conta.
 - **Prontidão sem norma e férias docentes.** Em anos sem norma, `readiness.ts` não aplica `excludeFromSearch` e férias docentes satisfazem o critério III. Corrigir bloquearia publicações sem uma versão de regras, e isso não afeta 2027.
 - **Férias docentes entre calendários do campus.** Calendários vigentes de ofertas distintas podem coexistir (`replacedCalendars`), e nada confere se têm as mesmas férias docentes. Exige consulta entre calendários.
+- **Férias entre anos.** Cada calendário confere só os dias do seu ano, e nada compara o restante de um período que continua no calendário seguinte.
