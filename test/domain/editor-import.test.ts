@@ -4,7 +4,7 @@ import { normalizeOfferCalendar } from '../../src/domain/calendar/normalization/
 
 function draft() {
   return {
-    schemaVersion: 6 as const,
+    schemaVersion: 7 as const,
     campus: 'Campus de teste',
     year: 2027,
     weekdays: [1, 2, 3, 4, 5],
@@ -52,12 +52,6 @@ test('editor rejects legacy files and missing canonical fields without inventing
     delete incomplete[key];
     assert.throws(() => normalizeOfferCalendar(incomplete));
   }
-  assert.throws(() =>
-    normalizeOfferCalendar({
-      ...draft(),
-      teacherVacations: { julyStart: '2027-07-01', evidence: 'Ata' },
-    }),
-  );
 });
 
 test('editor rejects invalid JSON structures and dates before replacing the current draft', () => {

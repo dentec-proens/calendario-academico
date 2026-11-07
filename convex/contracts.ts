@@ -217,7 +217,7 @@ export const reviewInput = v.object({
    * client built for an earlier format could still save a review over a converted calendar; the literal
    * refuses it.
    */
-  schemaVersion: v.literal(6),
+  schemaVersion: v.literal(7),
   rulesetVersion: v.optional(v.string()),
   baseIdentity: v.optional(v.string()),
   revision: v.number(),

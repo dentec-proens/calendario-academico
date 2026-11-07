@@ -4,11 +4,7 @@ import { datesBetween, daysBefore } from '../../src/domain/calendar/counting/cor
 import { readActivityDates, readCalendarDates } from '../../src/domain/calendar/civil-dates.ts';
 import { normalizeOfferCalendar } from '../../src/domain/calendar/normalization/normalize.ts';
 import { calendarOffersFixture } from '../fixtures/calendar-offers.ts';
-import type {
-  CalendarEvent,
-  CalendarContent,
-  VacationPeriods,
-} from '../../src/domain/calendar/model.ts';
+import type { CalendarEvent, CalendarContent } from '../../src/domain/calendar/model.ts';
 import type { ObservanceRule, CalendarWindow } from '../../src/domain/policies/contract.ts';
 
 test('CivilDate is a validated primitive string, distinct from arbitrary input at compile time', () => {
@@ -19,7 +15,6 @@ test('CivilDate is a validated primitive string, distinct from arbitrary input a
   expectTypeOf<CalendarContent['observanceDates']>().toEqualTypeOf<
     Record<string, CivilDate> | undefined
   >();
-  expectTypeOf<VacationPeriods['firstStart']>().toEqualTypeOf<CivilDate>();
   expectTypeOf<CalendarWindow['latestStart']>().toEqualTypeOf<CivilDate>();
   const value = civilDate('2027-10-28');
   expect(typeof value).toBe('string');
@@ -73,7 +68,6 @@ test('reading persisted dates preserves historical choices, metadata and the exa
   const input = {
     ...calendarOffersFixture(),
     observanceDates: { 'retired-policy': '2027-11-01' },
-    teacherVacations: { firstStart: '2027-01-02', firstEnd: '2027-01-31' },
     events: [
       {
         id: 'historic',
@@ -106,11 +100,10 @@ test.each(['start', 'end', 'originalStart', 'originalEnd', 'assessmentAutoStart'
   },
 );
 
-test('JSON import validates auxiliary dates, observances and vacations as well as event intervals', () => {
+test('JSON import validates auxiliary dates and observances as well as event intervals', () => {
   const base = calendarOffersFixture();
   for (const invalid of [
     { ...base, observanceDates: { 'teacher-day': '2027-02-30' } },
-    { ...base, teacherVacations: { firstStart: '2027-02-30', firstEnd: '2027-03-01' } },
     { ...base, events: [{ ...base.events[0], assessmentAutoStart: '2027-02-30' }] },
     {
       ...base,
@@ -118,34 +111,4 @@ test('JSON import validates auxiliary dates, observances and vacations as well a
     },
   ])
     expect(() => normalizeOfferCalendar(invalid)).toThrow();
-});
-
-test('empty optional vacation fields from saved forms mean absence, including on JSON import', () => {
-  const input = {
-    ...calendarOffersFixture(),
-    teacherVacations: {
-      firstStart: '2027-01-02',
-      firstEnd: '2027-01-31',
-      secondStart: '',
-      secondEnd: '',
-      thirdStart: '',
-      thirdEnd: '',
-    },
-  };
-  for (const read of [readCalendarDates, normalizeOfferCalendar]) {
-    const decoded = read(input);
-    expect(decoded.teacherVacations).toEqual({ firstStart: '2027-01-02', firstEnd: '2027-01-31' });
-  }
-  expect(() =>
-    readCalendarDates({
-      ...input,
-      teacherVacations: { ...input.teacherVacations, firstStart: '' },
-    }),
-  ).toThrow();
-  expect(() =>
-    readCalendarDates({
-      ...input,
-      teacherVacations: { ...input.teacherVacations, thirdStart: '2027-02-30' },
-    }),
-  ).toThrow();
 });

@@ -164,13 +164,13 @@ export const parecerItems = frozenCriteria(
 );
 
 /** School holidays leave out teacher vacations, which have a criterion of their own. */
-export const isTeacherVacation = (event: { id: string; name: string }) =>
-  /docent|professor/.test(
-    event.name
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase(),
-  ) || event.id.startsWith('teacher-vacation');
+export function isTeacherVacation(event: { name: string }) {
+  const name = event.name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+  return /docent|professor/.test(name) && !name.includes('escolar');
+}
 const hoursNote = {
   text: 'A quantidade de dias/horas não está comprovada pela identificação do evento.',
 };

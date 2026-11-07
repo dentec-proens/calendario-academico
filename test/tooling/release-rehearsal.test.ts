@@ -79,12 +79,7 @@ test('the terminal tells the rules stamp from a stored difference, whose values 
         state: {
           ...readyContent(),
           rulesetVersion: 'consup-292-2027-v1',
-          teacherVacations: {
-            firstStart: '2027-01-04',
-            firstEnd: '2027-01-20',
-            thirdStart: '',
-            thirdEnd: '',
-          },
+          observanceDates: {},
         },
       }),
     ],
@@ -94,14 +89,70 @@ test('the terminal tells the rules stamp from a stored difference, whose values 
   const printed = log.mock.calls.flat().join('\n');
   expect(printed).toContain('rulesetVersion: atualizado em 1, esperado.');
   expect(printed).toContain('Conteúdo gravado difere');
-  expect(printed).toContain('teacherVacations.thirdStart: muda em 1.');
+  expect(printed).toContain('observanceDates: muda em 1.');
   expect(printed).not.toContain('consup-292-2027-v1');
   const saved = JSON.parse(readFileSync(join(directory, 'rehearsal.json'), 'utf8')) as {
     examples: Record<string, unknown>;
   };
-  expect(saved.examples['teacherVacations.thirdStart']).toEqual({
+  expect(saved.examples.observanceDates).toEqual({
     calendarId: 'c',
-    before: '""',
+    before: '{}',
     after: 'ausente',
   });
+});
+
+test('a backup in format 6 is rehearsed as the migration will convert it', () => {
+  const { schemaVersion: _version, events, ...ready } = readyContent();
+  const content = (state: object) =>
+    row({
+      calendarId: 'c',
+      catalogueRevision: 1,
+      institutionalSnapshot: [],
+      documentSnapshot: [],
+      state: {
+        ...ready,
+        schemaVersion: 6,
+        events: events.filter((event) => event.activity?.activityId !== 'teacher-vacation'),
+        ...state,
+      },
+    });
+  const tables = { calendars: [draft], campuses: [campus] };
+  const vacation = {
+    id: 'teacher-vacation-january',
+    name: 'Férias docentes — 15 dias',
+    start: '2027-01-04',
+    end: '2027-01-18',
+    effect: 'exclude',
+    category: 'ferias',
+    offers: ready.offers.map((offer) => offer.id),
+  };
+  const converted = report({
+    ...tables,
+    calendarContents: [
+      content({
+        teacherVacations: { firstStart: '2027-01-04', firstEnd: '2027-01-18' },
+        events: [...events.filter((event) => !event.activity), vacation],
+      }),
+    ],
+  });
+  expect(converted.failures).toEqual([]);
+  expect(converted.saved).toBe(1);
+  // The conversion refuses what diverges, and the release hears about it as any other refusal.
+  expect(
+    report({
+      ...tables,
+      calendarContents: [
+        content({
+          teacherVacations: { firstStart: '2027-01-05', firstEnd: '2027-01-18' },
+          events: [vacation],
+        }),
+      ],
+    }).failures,
+  ).toEqual([
+    {
+      calendarId: 'c',
+      error:
+        'Conversão ao formato 7: as datas de teacher-vacation-january divergem de teacherVacations',
+    },
+  ]);
 });

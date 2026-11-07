@@ -32,7 +32,7 @@ test('a current copy round-trips and earlier formats are refused with their own 
     offers: { id: string }[];
     events: Record<string, unknown>[];
   };
-  expect(exported.schemaVersion).toBe(6);
+  expect(exported.schemaVersion).toBe(7);
 
   // A date without category, as the stored v4 notes without category were.
   const copy = {
@@ -71,10 +71,15 @@ test('a current copy round-trips and earlier formats are refused with their own 
   await picker.setInputFiles(formatFive);
   await expect(page.locator('#message')).toContainText(earlierFormatCopyMessage(5));
 
-  const current = join(directory, 'formato-6.json');
+  const formatSix = join(directory, 'formato-6.json');
+  await writeFile(formatSix, JSON.stringify({ ...copy, schemaVersion: 6 }));
+  await picker.setInputFiles(formatSix);
+  await expect(page.locator('#message')).toContainText(earlierFormatCopyMessage(6));
+
+  const current = join(directory, 'formato-7.json');
   await writeFile(current, JSON.stringify(copy));
   await picker.setInputFiles(current);
-  await expect(page.locator('dialog[open]')).toContainText('Formato 6: 1 ofertas');
+  await expect(page.locator('dialog[open]')).toContainText('Formato 7: 1 ofertas');
   await page.locator('.confirmation-dialog__confirm').click();
   await expect(page.locator('#message')).toContainText('Cópia aplicada');
   await page.waitForFunction(() =>

@@ -79,5 +79,14 @@ export const rulesetChanges: readonly RulesetChange[] = [
     summary:
       'Critérios da revisão passam a trazer nome curto, exigência completa e fonte; o critério das atas deixa de usar busca por nome. Sem mudança de obrigações.',
   },
+  {
+    version: 'consup-292-2027-v10',
+    date: civilDate('2026-11-06'),
+    effect: 'tightens',
+    criteria: ['III', 'IV'],
+    source: 'Art. 11, III e IV, da Resolução 292 e decisão da gestão do sistema em 06/11/2026',
+    summary:
+      'Férias escolares e docentes passam a ser atividades exigidas, registradas no passo Férias. As docentes têm exatamente 45 dias no ano do calendário; as escolares pedem só a presença em cada oferta.',
+  },
 ];
 export const rulesetVersion = rulesetChanges.at(-1)!.version;

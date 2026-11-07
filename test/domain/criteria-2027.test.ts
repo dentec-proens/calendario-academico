@@ -12,7 +12,7 @@ test('every rule names a declared criterion of its policy', () => {
 
 test('only the documentary and counting criteria have no rule', () => {
   expect(ids.filter((id) => !linked.has(id)).sort()).toEqual(
-    ['minutes', 'II', 'III', 'IV', 'annual', 'semester', 'window'].sort(),
+    ['minutes', 'II', 'annual', 'semester', 'window'].sort(),
   );
 });
 

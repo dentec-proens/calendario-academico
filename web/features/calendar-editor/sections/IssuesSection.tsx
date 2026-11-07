@@ -188,7 +188,7 @@ export default function IssuesSection() {
       >
         <p>
           {issues.length
-            ? `${groups.map(({ group, items }) => `${items.length} em ${groupTitles[group].toLowerCase()}`).join(' · ')}. ${showOffer ? 'Cada atividade conta uma vez, mesmo que falte em várias ofertas; estrutura e dias letivos contam por item. ' : ''}Você pode enviar para análise mesmo com pendências: elas são listadas na confirmação do envio.`
+            ? `${groups.map(({ group, items }) => `${items.length} em ${groupTitles[group].toLowerCase()}`).join(' · ')}. ${showOffer ? 'Cada atividade conta uma vez, mesmo que falte em várias ofertas; estrutura e dias letivos contam por item. ' : ''}As férias exigidas precisam estar corretas antes do envio; as demais pendências são listadas na confirmação do envio.`
             : 'O calendário pode ser enviado para análise. A revisão da DENTEC/PROENS acontece depois do envio.'}
         </p>
       </Notice>

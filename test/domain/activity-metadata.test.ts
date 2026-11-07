@@ -37,7 +37,9 @@ const previous = {
 
 /** consup-292-2027-v6 declares the legend category of activities that used `prazo`. */
 const categoryOf = (year: number, id: string) =>
-  (year === 2027 && declaredCategory(id)) || previous.category(id);
+  id.endsWith('-vacation')
+    ? 'ferias'
+    : (year === 2027 && declaredCategory(id)) || previous.category(id);
 
 const settings: (AssessmentSettings & { year: number })[] = [2027, 2028].flatMap((year) =>
   (['anual', 'semestral', 'misto'] as const).flatMap((regime) =>
@@ -71,7 +73,7 @@ const settings: (AssessmentSettings & { year: number })[] = [2027, 2028].flatMap
 test('catalogue metadata reproduces the previous grouping, category and form rules', () => {
   const rows: ActivityPlanItem[] = settings.flatMap((state) => activityPlan(state));
   expect(new Set(rows.map((row) => row.variant))).toEqual(
-    new Set(['activity', 'hours', 'admission-notice', 'stage']),
+    new Set(['activity', 'hours', 'admission-notice', 'stage', 'vacation']),
   );
   for (const state of settings)
     for (const row of activityPlan(state))

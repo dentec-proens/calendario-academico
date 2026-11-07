@@ -2,7 +2,7 @@ import { test, expect } from './test.ts';
 import { mkdtemp, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { selectEditorSection } from './editor-navigation.ts';
+import { fillRequiredVacations, selectEditorSection } from './editor-navigation.ts';
 import type {} from '../fixtures/confirmation.ts';
 import type {} from '../fixtures/editor-client.ts';
 
@@ -225,9 +225,11 @@ test('TypeScript editor preserves cancelled imports and saves before submitting 
   await expect(page.locator('dialog[open]')).toHaveCount(0);
   await expect(page.locator('input#offer-integrado-period-0-start')).toHaveValue('2027-02-17');
 
+  await fillRequiredVacations(page);
   await page.locator('[data-view="issues"]').click();
   const submit = page.locator('[data-lifecycle-action="submit"]');
-  // Open content issues never block the submission; they are listed for an explicit decision.
+  // Besides vacations, open content issues never block the submission; they are listed for an
+  // explicit decision.
   await expect(submit).toBeEnabled();
   // The count sits under the review step of the menu, not beside the submit button.
   await expect(page.locator('[data-view="issues"] .editor-step-note')).toHaveText(

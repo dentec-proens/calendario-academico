@@ -14,7 +14,7 @@ import { evaluateCalendar } from '../../src/domain/calendar/counting/evaluation.
 
 function calendar(): ActivityState {
   return {
-    schemaVersion: 6 as const,
+    schemaVersion: 7 as const,
     year: 2027,
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,
@@ -168,7 +168,7 @@ test('mixed organizations count disjoint periods separately and keep simultaneou
   const state = calendar();
   const normalized = normalizeOfferCalendar({ ...state, ignoredHistory: [] }),
     count = evaluateCalendar(normalized, []);
-  expect(normalized.schemaVersion).toBe(6);
+  expect(normalized.schemaVersion).toBe(7);
   expect(count.byOffer.integrado.byPeriod).toHaveProperty('annual');
   expect(count.byOffer.integrado.byPeriod).not.toHaveProperty('semester-one');
   expect(count.byOffer.graduacao.byPeriod).not.toHaveProperty('annual');

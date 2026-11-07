@@ -387,7 +387,7 @@ test('focused assessment and vacation steps support direct URLs and reload', asy
   const origin = new URL(await fixtureServer('editor')).origin;
   for (const [segment, visible, absent] of [
     ['avaliacoes', '#assessment-area', '#saturday-form'],
-    ['ferias', '#vacation-form', '#saturday-form'],
+    ['ferias', '#vacation-add-teacher', '#saturday-form'],
   ]) {
     const url = origin + '/calendarios/synthetic-calendar/' + segment;
     await page.goto(url);

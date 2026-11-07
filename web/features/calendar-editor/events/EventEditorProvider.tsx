@@ -31,6 +31,7 @@ import {
   generatedActivity,
   linksToReview,
 } from '#src/domain/calendar/activities/links.ts';
+import { isVacationActivity } from '#src/domain/calendar/activities/vacations.ts';
 import {
   activityFromKey,
   activityKey,
@@ -345,7 +346,7 @@ function useController() {
       openOrganization(activityKey(generated.activity));
       return;
     }
-    if (id.startsWith('teacher-vacation-')) {
+    if (isVacationActivity(event.activity)) {
       void navigate({ to: '/calendarios/$calendarId/ferias', params: { calendarId: record.id } });
       return;
     }

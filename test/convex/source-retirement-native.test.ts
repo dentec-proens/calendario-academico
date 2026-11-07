@@ -19,7 +19,6 @@ const oldSave = makeFunctionReference<
 
 function assertSourceFree(state: Infer<typeof domainState>) {
   expect(state).not.toHaveProperty('weekEvidence');
-  expect(state.teacherVacations ?? {}).not.toHaveProperty('evidence');
   for (const offer of state.offers) expect(offer.scope ?? {}).not.toHaveProperty('source');
   for (const event of state.events) {
     expect(event).not.toHaveProperty('evidence');
@@ -78,7 +77,6 @@ test('canonical records and historical restoration have no manual or generated s
       scope: { status: 'covered' },
       intake: { annual: true },
     })),
-    teacherVacations: { firstStart: civilDate('2027-01-04'), firstEnd: civilDate('2027-01-15') },
     periods: [
       {
         id: 'annual',
@@ -102,6 +100,16 @@ test('canonical records and historical restoration have no manual or generated s
           admission: { type: 'regular', year: 2028, term: 'annual', destinations: [] },
         },
         deadlineAdjustment: { date: civilDate('2027-07-20') },
+      },
+      {
+        id: 'teachers',
+        name: 'Férias docentes — 12 dias',
+        start: civilDate('2027-01-04'),
+        end: civilDate('2027-01-15'),
+        effect: 'exclude',
+        category: 'ferias',
+        offers: ['integrado'],
+        activity: onceLink('teacher-vacation'),
       },
       {
         id: 'detached-stage',
@@ -141,7 +149,7 @@ test('canonical records and historical restoration have no manual or generated s
     .then(calendarSaveDates);
   expect(unchanged.unchanged).toBe(true);
   expect(unchanged.version).toBe(saved.version);
-  const initial = await submitted();
+  const initial = (await submitted()) as unknown as { state: DomainState };
   assertSourceFree(initial.state);
   await actor
     .mutation(api.calendars.saveCalendar, {
@@ -157,7 +165,8 @@ test('canonical records and historical restoration have no manual or generated s
     contents: await ctx.db.query('calendarContents').take(10),
     submissions: await ctx.db.query('calendarSubmissions').take(10),
   }));
-  for (const row of raw.submissions) assertSourceFree({ ...row.state, year: 2027, campus: 'A' });
+  for (const row of raw.submissions)
+    assertSourceFree({ ...row.state, year: 2027, campus: 'A' } as DomainState);
   expect(JSON.stringify(raw)).not.toContain('registro:');
   expect(raw.contents[0].institutionalSnapshot).toEqual(created.institutionalSnapshot);
 });
@@ -183,17 +192,6 @@ const legacyFields: Array<[string, (state: DomainState) => Record<string, unknow
           deadlineAdjustment: { date: civilDate('2027-03-02'), evidence: secret },
         },
       ],
-    }),
-  ],
-  [
-    'teacherVacations.evidence',
-    (state) => ({
-      ...state,
-      teacherVacations: {
-        firstStart: civilDate('2027-01-04'),
-        firstEnd: civilDate('2027-01-15'),
-        evidence: secret,
-      },
     }),
   ],
   [
@@ -244,7 +242,7 @@ test('current contents and submission copies refuse retired manual fields', asyn
         .withIndex('by_calendarId', (q) => q.eq('calendarId', created.id))
         .unique())!;
       const invalid = { ...row.state, weekEvidence: secret };
-      await ctx.db.patch(row._id, { state: invalid });
+      await ctx.db.patch(row._id, { state: invalid as never });
     }),
   ).rejects.toThrow(/Unexpected field|Expected/);
   await expect(

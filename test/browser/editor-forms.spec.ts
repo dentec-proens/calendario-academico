@@ -433,27 +433,26 @@ test('vacation form supports duration and manual end dates and rejects overlappi
 }) => {
   await openEditor(page, fixtureServer);
   await page.locator('[data-view="vacations"]').click();
-  await page.locator('#vacation-first-start').fill('2027-01-04');
-  await page.locator('#vacation-first-days').fill('10');
-  await expect(page.locator('#vacation-first-end')).toHaveValue('2027-01-13');
-  await page.locator('#vacation-first-end').fill('2027-01-20');
-  await expect(page.locator('#vacation-first-days')).toHaveValue('');
-  await expect(page.locator('#vacation-first-end')).toHaveValue('2027-01-20');
-  await page.locator('#vacation-second-start').fill('2027-07-01');
-  await page.locator('#vacation-second-days').fill('15');
-  await expect(page.locator('#vacation-second-end')).toHaveValue('2027-07-15');
-
-  await expect(page.locator('#vacation-preview')).toContainText('32 dias');
-  await page.locator('#vacation-form button[type="submit"]').click();
-  await expect
-    .poll(() => page.evaluate(() => window.editorTest.record.state.teacherVacations?.firstEnd))
-    .toBe('2027-01-20');
+  await page.locator('#vacation-add-teacher').click();
+  await page.locator('#vacation-start').fill('2027-01-04');
+  await page.locator('#vacation-days').fill('10');
+  await expect(page.locator('#vacation-end')).toHaveValue('2027-01-13');
+  await page.locator('#vacation-end').fill('2027-01-20');
+  await expect(page.locator('#vacation-days')).toHaveValue('17');
+  await page.locator('#vacation-apply').click();
+  await page.locator('#vacation-add-teacher').click();
+  await page.locator('#vacation-start').fill('2027-07-01');
+  await page.locator('#vacation-days').fill('15');
+  await expect(page.locator('#vacation-end')).toHaveValue('2027-07-15');
+  await page.locator('#vacation-apply').click();
+  await expect(page.locator('#vacation-teacher-summary')).toContainText('32 de 45 dias');
   const before = await savedState(page);
   expect(before.state.events.filter((event) => event.category === 'ferias')).toHaveLength(2);
   expect(before.state.events.some((event) => event.id === 'local-event')).toBe(true);
-  await page.locator('#vacation-third-start').fill('2027-07-10');
-  await page.locator('#vacation-third-end').fill('2027-07-20');
-  await page.locator('#vacation-form button[type="submit"]').click();
+  await page.locator('#vacation-add-teacher').click();
+  await page.locator('#vacation-start').fill('2027-07-10');
+  await page.locator('#vacation-end').fill('2027-07-20');
+  await page.locator('#vacation-apply').click();
   await expect(page.locator('#vacation-form [role="alert"]')).toContainText('sobrepor');
   expect(await savedState(page)).toEqual(before);
 });

@@ -1,4 +1,5 @@
 import { test, expect } from './test.ts';
+import { fillRequiredVacations, selectEditorSection } from './editor-navigation.ts';
 
 const events = '/calendarios/synthetic-calendar/atividades';
 
@@ -31,6 +32,8 @@ test('the review groups an activity of two offers in one row', async ({ page, fi
   await page.goto(`${origin}/calendarios/synthetic-calendar/pendencias`);
   await expect(page.locator('[data-issue="activity:pit:semester:first"]')).toBeVisible();
   await expect(page).toHaveScreenshot('review-two-offers.png', { fullPage: true });
+  await fillRequiredVacations(page);
+  await selectEditorSection(page, 'issues');
   await page.locator('[data-lifecycle-footer-action="submit"]').click();
   const dialog = page.locator('dialog.confirmation-dialog--warning[open]');
   await expect(dialog).toBeVisible();

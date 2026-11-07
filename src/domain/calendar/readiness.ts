@@ -16,6 +16,11 @@ import { assessmentCycleIssue } from './activities/assessment-intervals.ts';
 import { linkIssueActions, linkIssueLabels } from './activities/links.ts';
 import { noticeDestinationIssues } from './activities/validation.ts';
 import { schoolDayIssue } from './activities/school-day.ts';
+import {
+  isVacationActivity,
+  vacationDateIssue,
+  vacationOverlapIssue,
+} from './activities/vacations.ts';
 import { evaluateCalendar as calendarResult } from './counting/evaluation.ts';
 import { periodsForOffer } from './organization/periods.ts';
 import { policyFor } from '../policies/registry.ts';
@@ -126,7 +131,9 @@ export function contentAssessment(record: ContentRecord) {
     if (row.applicability === 'required' && row.coverage === 'pending')
       issue(
         `${code}:pending`,
-        `${prefix}: vincule um evento com datas no roteiro de atividades.`,
+        isVacationActivity(row.requirement.activity)
+          ? `${prefix}: registre os períodos no passo Férias.`
+          : `${prefix}: vincule um evento com datas no roteiro de atividades.`,
         activity('Sem datas registradas.'),
       );
     if (row.applicability === 'required' || row.events.length)
@@ -230,6 +237,21 @@ export function contentAssessment(record: ContentRecord) {
         target: { area: 'date', eventId: event.id, name: event.name },
       });
     }
+  }
+  // Vacations stay out of the count in every year; a saved date that breaks it, or a vacation left
+  // as a date of the campus, is kept as it was and blocks the conclusion until corrected.
+  for (const event of record.state.events) {
+    const message =
+      vacationDateIssue(record.state, event) ?? vacationOverlapIssue(record.state.events, event);
+    if (message)
+      issue(`vacation:${event.id}`, message, {
+        group: 'dates',
+        title: `Férias a corrigir — ${event.name} (${compactDate(event.start, record.state.year)})`,
+        detail: message,
+        target: event.activity
+          ? { area: 'activity', activity: event.activity }
+          : { area: 'date', eventId: event.id, name: event.name },
+      });
   }
   // A notice destination is diagnosed per offer and never corrected automatically.
   for (const event of record.state.events)
@@ -367,6 +389,21 @@ export function contentIssues(
   institutionalSnapshot: InstitutionalEventSnapshot[],
 ): ContentIssue[] {
   return contentAssessment({ state, institutionalSnapshot }).issues;
+}
+
+/**
+ * What stops a submission, unlike the other pendencies, which a person confirms and the review
+ * judges: vacations the norm requires, including the exact days of the teacher vacations.
+ */
+export function submitBlockers(
+  state: ActivityState,
+  institutionalSnapshot: InstitutionalEventSnapshot[],
+) {
+  return contentIssues(state, institutionalSnapshot).filter(
+    (issue) =>
+      issue.code.startsWith('vacation:') ||
+      (issue.target?.area === 'activity' && isVacationActivity(issue.target.activity)),
+  );
 }
 
 export const baseOutdatedIssue = 'Salve o calendário com a base institucional atualizada.';

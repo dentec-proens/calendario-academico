@@ -43,7 +43,7 @@ TanStack Intent carrega a orientação das versões instaladas. Consulte `AGENTS
 
 ## Dados e edição
 
-Novos conteúdos e cópias usam `schemaVersion: 6` (o efeito de cada data na contagem fica em `effect`), com IDs de ofertas independentes dos seus tipos e etapas configuradas por ciclo. Eventos e períodos se associam aos IDs; eventos institucionais continuam selecionados por tipo. O cliente só troca o formato 6 e não importa cópias de formatos anteriores; os dados gravados já foram migrados e o schema só aceita o formato 6. Datas acadêmicas são `YYYY-MM-DD`. Regras de domínio, transações e formulários possuem responsabilidades distintas. Consulte [Conteúdo do calendário e política de 2027](arquitetura-convex.md#conteúdo-do-calendário-e-política-de-2027).
+Novos conteúdos e cópias usam `schemaVersion: 7` (o efeito de cada data na contagem fica em `effect`), com IDs de ofertas independentes dos seus tipos e etapas configuradas por ciclo. Eventos e períodos se associam aos IDs; eventos institucionais continuam selecionados por tipo. O cliente só troca o formato 7 e não importa cópias de formatos anteriores; o schema aceita o formato 7 e, até a contração da migração para ele, o 6. Datas acadêmicas são `YYYY-MM-DD`. Regras de domínio, transações e formulários possuem responsabilidades distintas. Consulte [Conteúdo do calendário e política de 2027](arquitetura-convex.md#conteúdo-do-calendário-e-política-de-2027).
 
 O formulário conserva preenchimento ainda não aplicado; comandos atualizam o calendário da sessão; autosave confirma sua gravação no Convex. Rascunhos não sensíveis são isolados por usuário e entidade e limpos ao encerrar a sessão. Não há persistência durável offline.
 

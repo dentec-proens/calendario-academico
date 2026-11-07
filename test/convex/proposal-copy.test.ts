@@ -1,6 +1,7 @@
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { createNativeFixture } from '../helpers/native-database.ts';
+import { withRequiredVacations } from '../helpers/required-vacations.ts';
 import { proensLayout } from '../../src/printing/calendar-layout.ts';
 
 test('a submitted calendar prints as a copy for analysis without approving or changing it', async () => {
@@ -24,6 +25,6 @@ test('a submitted calendar prints as a copy for analysis without approving or ch
   assert.match(html, /Cópia para análise da PROENS/);
   assert.doesNotMatch(html, /Sem aprovação oficial/);
   assert.deepEqual(await inspect(), before, 'printing never writes');
-  assert.deepEqual(reopened.state, record.state);
+  assert.deepEqual(reopened.state, withRequiredVacations(record.state));
   assert.equal(reopened.version, record.version);
 });

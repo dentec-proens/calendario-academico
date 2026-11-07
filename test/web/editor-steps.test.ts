@@ -57,7 +57,7 @@ describe('calendar wizard metadata', () => {
       'Continuar para semana letiva',
       'Continuar para organização por oferta',
       'Continuar para sábados letivos',
-      'Continuar para férias docentes',
+      'Continuar para férias',
       'Continuar para atividades',
       'Continuar para conferir e enviar',
     ]);

@@ -34,21 +34,15 @@ test('consecutive days with the same reasons read as one run', () => {
   ]);
 });
 
-test('undoing a removal leaves the state as it was, including teacher vacations', () => {
-  const vacations = { first: { start: '2027-01-04', end: '2027-01-20' } };
+test('undoing a removal leaves the state as it was', () => {
   const before = {
     events: [
       { id: 'a', name: 'A' },
       { id: 'b', name: 'B' },
       { id: 'c', name: 'C' },
     ],
-    teacherVacations: vacations,
   } as unknown as Parameters<typeof removeEvent>[0];
   const removed = removeEvent(before, 'b');
   expect(removed.events.map((event) => event.id)).toEqual(['a', 'c']);
   expect(restoreEvents(removed, before)).toEqual(before);
-
-  const { teacherVacations: _kept, ...withoutVacations } = before;
-  const restored = restoreEvents({ ...removed }, withoutVacations);
-  expect('teacherVacations' in restored).toBe(false);
 });

@@ -23,24 +23,6 @@ test('a calendar under older rules saves, and only its stamp changes', () => {
   expect(result.changed.filter(({ path }) => /start|end/i.test(path))).toEqual([]);
 });
 
-test('a blank optional date is told apart from a date, as stored and as a save writes it', () => {
-  const blank = calendar('rascunho');
-  const vacations = {
-    firstStart: '2027-01-04',
-    firstEnd: '2027-01-20',
-    thirdStart: '',
-    thirdEnd: '',
-  };
-  blank.state = { ...blank.state, teacherVacations: vacations };
-  const result = rehearseCalendar(blank, base);
-  if (result.outcome !== 'saves') throw new Error(result.outcome);
-  expect(result.changed).toContainEqual({
-    path: 'teacherVacations.thirdStart',
-    before: '',
-    after: undefined,
-  });
-});
-
 test('a calendar that the checks of a save refuse is reported, not hidden', () => {
   const broken = calendar('rascunho');
   broken.state = { ...broken.state, periods: 'inválido' };

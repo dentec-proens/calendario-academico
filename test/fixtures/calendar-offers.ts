@@ -52,7 +52,7 @@ const stages = (
 /** Independent annual and semester undergraduate offers share one institutional calendar. */
 export function calendarOffersFixture(): CalendarOffersFixture {
   return {
-    schemaVersion: 6,
+    schemaVersion: 7,
     rulesetVersion: 'consup-292-2027-v7',
     year: 2027,
     campus: 'Campus de referência sintético',

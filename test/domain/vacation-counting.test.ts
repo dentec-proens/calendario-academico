@@ -3,13 +3,12 @@ import type { countCalendar } from '../../src/domain/calendar/counting/core.ts';
 import { test } from 'vitest';
 import { definedStage } from '../helpers/activity-links.ts';
 import assert from 'node:assert/strict';
-import { teacherVacations } from '../../src/domain/calendar/activities/teacher-vacations.ts';
 import { evaluateCalendar } from '../../src/domain/calendar/counting/evaluation.ts';
 import { proensLayout } from '../../src/printing/calendar-layout.ts';
 import { assessmentDayCounts } from '../../src/domain/calendar/counting/assessment-days.ts';
 
 const state = {
-  schemaVersion: 6 as const,
+  schemaVersion: 7 as const,
   year: 2027,
   campus: 'Fixture',
   weekdays: [1, 2, 3, 4, 5],
@@ -46,21 +45,20 @@ test('third vacation excludes only counted dates; PDF, stages and automatic dura
   const holidays = ['2027-10-11', '2027-10-12', '2027-10-15', '2027-10-28', '2027-10-29'].map(
     (date) => excluded(date),
   );
-  const vacation = teacherVacations(2027, {
-    firstStart: civilDate('2027-01-02'),
-    firstEnd: civilDate('2027-01-16'),
-    secondStart: civilDate('2027-07-01'),
-    secondEnd: civilDate('2027-07-15'),
-    thirdStart: civilDate('2027-10-06'),
-    thirdEnd: civilDate('2027-10-08'),
-  });
-  assert(vacation.events.every((e) => e.effect === 'exclude'));
+  const vacation = [
+    ['january', '2027-01-02', '2027-01-16'],
+    ['july', '2027-07-01', '2027-07-15'],
+    ['october', '2027-10-06', '2027-10-08'],
+  ].map(([id, start, end]) => ({
+    id: id!,
+    name: 'Férias docentes',
+    start: civilDate(start!),
+    end: civilDate(end!),
+    category: 'ferias',
+  }));
   assert.equal(evaluateCalendar(state, holidays).total, 16);
   for (const effect of ['exclude' as const]) {
-    const events = [
-      ...holidays,
-      ...vacation.events.map((e) => ({ ...e, effect, offers: ['integrado'] })),
-    ];
+    const events = [...holidays, ...vacation.map((e) => ({ ...e, effect, offers: ['integrado'] }))];
     const original = structuredClone(events);
     const result = evaluateCalendar(state, events);
     assert.equal(result.total, 13);
@@ -97,7 +95,7 @@ test('third vacation excludes only counted dates; PDF, stages and automatic dura
 
 test('vacation overlaps never double subtract holidays; Saturdays and offer scope remain respected', () => {
   const vacation = {
-    id: 'teacher-vacation-third',
+    id: 'vacation',
     start: civilDate('2027-10-11'),
     end: civilDate('2027-10-17'),
     effect: 'exclude' as const,

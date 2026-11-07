@@ -49,10 +49,10 @@ for (const width of [1440, 390]) {
     ]);
     expect(saved.state.events.every((event) => !Object.hasOwn(event, 'evidence'))).toBe(true);
     await selectEditorSection(page, 'vacations');
-    await page.locator('#vacation-first-start').fill('2027-01-04');
-    await page.locator('#vacation-first-end').fill('2027-01-29');
-    await page.locator('#vacation-form button[type="submit"]').click();
-    expect((await savedState(page)).state.teacherVacations).not.toHaveProperty('evidence');
+    await page.locator('#vacation-add-teacher').click();
+    await page.locator('#vacation-start').fill('2027-01-04');
+    await page.locator('#vacation-end').fill('2027-01-29');
+    await page.locator('#vacation-apply').click();
     await selectCampusEvents(page);
     await page.locator('#new-event').click();
     await page.locator('#event-name').fill('Feriado do campus');

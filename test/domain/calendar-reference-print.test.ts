@@ -90,7 +90,7 @@ test('an empty calendar has no fabricated historical section or execution certif
 test('print distributions use the semantic semester of each offer despite coincident annual periods', () => {
   const input = {
     ...state,
-    schemaVersion: 6 as const,
+    schemaVersion: 7 as const,
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,
     periods: [

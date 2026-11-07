@@ -1,36 +1,10 @@
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
-import { teacherVacations } from '../../src/domain/calendar/activities/teacher-vacations.ts';
 import { activityPlan } from '../../src/domain/calendar/activities/plan.ts';
 import { auditLog } from '../../src/app/audit-log.ts';
 import { evaluateCalendar } from '../../src/domain/calendar/counting/evaluation.ts';
 
-test('teacher vacations count explicit inclusive ranges without sources and reject wrong years or inverted intervals', () => {
-  for (const year of [2027, 2028]) {
-    const v = teacherVacations(year, {
-      firstStart: civilDate(`${year}-01-02`),
-      firstEnd: civilDate(`${year}-01-31`),
-      secondStart: civilDate(`${year}-07-17`),
-      secondEnd: civilDate(`${year}-07-31`),
-    });
-    assert.equal(v.total, 45);
-    assert(v.events.every((e) => e.effect === 'exclude'));
-    assert(v.events.every((e) => !Object.hasOwn(e, 'evidence')));
-  }
-  assert.throws(() =>
-    teacherVacations(2027, {
-      firstStart: civilDate('2026-07-01'),
-      firstEnd: civilDate('2026-07-15'),
-    }),
-  );
-  assert.throws(() =>
-    teacherVacations(2027, {
-      firstStart: civilDate('2027-07-15'),
-      firstEnd: civilDate('2027-07-01'),
-    }),
-  );
-});
 test('mixed calendar includes annual and semester obligations plus extraordinary council', () => {
   const rows = activityPlan({
     offers: [
@@ -57,7 +31,7 @@ test('mixed calendar includes annual and semester obligations plus extraordinary
     assert(rows.some((r) => r.id === id));
   assert(!rows.some((r) => r.id.startsWith('stage-start') || r.id.startsWith('stage-end')));
   const state = {
-    schemaVersion: 6 as const,
+    schemaVersion: 7 as const,
     year: 2027,
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,
@@ -96,7 +70,7 @@ test('mixed calendar includes annual and semester obligations plus extraordinary
   };
   const classified = {
     ...state,
-    schemaVersion: 6 as const,
+    schemaVersion: 7 as const,
     periods: state.periods.map((p, i) => ({
       ...p,
       association: {

@@ -8,7 +8,7 @@ import { assessmentDayCounts } from '../../src/domain/calendar/counting/assessme
 import type { ActivityState } from '../../src/domain/calendar/model.ts';
 
 const state: ActivityState = {
-  schemaVersion: 6 as const,
+  schemaVersion: 7 as const,
   year: 2027,
   weekdays: [1, 2, 3, 4, 5],
   weekConfirmed: true,

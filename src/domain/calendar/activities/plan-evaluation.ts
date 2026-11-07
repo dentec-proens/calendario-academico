@@ -12,6 +12,7 @@ import { policyFor } from '../../policies/registry.ts';
 import { admissionDestination, temporalPosition, validateActivityRecord } from './validation.ts';
 import { periodsForOffer } from '../organization/periods.ts';
 import { deadlineStanding, requirementDeadline } from './deadlines.ts';
+import { exactDaysIssue } from './vacations.ts';
 import type { ActivityRef } from './activity-ref.ts';
 import {
   coversDate,
@@ -240,6 +241,9 @@ export function evaluatePlan(
           if (hours < requirement.minHours)
             issues.push(`Registre pelo menos ${requirement.minHours} horas.`);
         }
+        // A row outside the norm's requirement stays a record: nothing to add up to.
+        const exactDays = applicability === 'required' && exactDaysIssue(requirement, valid);
+        if (exactDays) issues.push(exactDays);
         if (requirement.reviewInstruction && valid.length)
           reviewNotes.push(requirement.reviewInstruction);
         if (applicability === 'unconfigured')

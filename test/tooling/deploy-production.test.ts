@@ -27,7 +27,7 @@ const refusedBackup = backup({
       _id: 'k',
       _creationTime: 1,
       calendarId: 'c',
-      state: { schemaVersion: 6, periods: 'inválido' },
+      state: { schemaVersion: 7, periods: 'inválido' },
       catalogueRevision: 1,
       institutionalSnapshot: [],
       documentSnapshot: [],

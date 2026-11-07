@@ -160,23 +160,26 @@ export default function EventEditor() {
           label="Categoria na legenda PROENS"
           value={field.state.value || null}
           disabled={readOnly || editor.pending}
-          options={categories.map(([id, label, color]) => ({
-            value: id,
-            label: (
-              <span className="category-mark">
-                <span
-                  className={
-                    color
-                      ? 'category-mark__swatch'
-                      : 'category-mark__swatch category-mark__swatch--none'
-                  }
-                  style={color ? ({ '--category-color': color } as CSSProperties) : undefined}
-                  aria-hidden="true"
-                />
-                {label}
-              </span>
-            ),
-          }))}
+          // Vacations have a step of their own; a saved date keeps showing what it has.
+          options={categories
+            .filter(([id]) => id !== 'ferias' || field.state.value === 'ferias')
+            .map(([id, label, color]) => ({
+              value: id,
+              label: (
+                <span className="category-mark">
+                  <span
+                    className={
+                      color
+                        ? 'category-mark__swatch'
+                        : 'category-mark__swatch category-mark__swatch--none'
+                    }
+                    style={color ? ({ '--category-color': color } as CSSProperties) : undefined}
+                    aria-hidden="true"
+                  />
+                  {label}
+                </span>
+              ),
+            }))}
           onValueChange={field.handleChange}
         />
       )}

@@ -103,7 +103,7 @@ describe('PIT, RIT and teaching plan per reference semester (art. 11, XII)', () 
         })),
       );
       const state: ActivityState = {
-        schemaVersion: 6,
+        schemaVersion: 7,
         rulesetVersion: 'consup-292-2027-v3',
         year: 2027,
         weekdays: [1, 2, 3, 4, 5],

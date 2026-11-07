@@ -245,10 +245,11 @@ test('preexisting conflicts save; edits that create one are refused', async () =
   const vacations = await save(
     {
       ...saved.state,
-      teacherVacations: {
-        firstStart: civilDate('2027-01-05'),
-        firstEnd: civilDate('2027-01-30'),
-      },
+      events: saved.state.events.map((event) =>
+        event.id === 'teacher-vacation-january'
+          ? { ...event, start: civilDate('2027-01-05'), end: civilDate('2027-01-30') }
+          : event,
+      ),
     },
     saved.version,
   );

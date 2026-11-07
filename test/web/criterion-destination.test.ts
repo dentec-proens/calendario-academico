@@ -26,10 +26,11 @@ test('criteria outside the activities use the destinations of their issues', () 
     to: '/calendarios/$calendarId/atividades',
     search: { atividadeOrigem: 'base' },
   });
+  expect(path('III')).toBe('/calendarios/$calendarId/ferias');
   expect(path('IV')).toBe('/calendarios/$calendarId/ferias');
 });
 
 test('no link for what no step decides, or for an activity no longer in the calendar', () => {
-  for (const id of ['annual', 'semester', 'minutes', 'III', 'retired'])
+  for (const id of ['annual', 'semester', 'minutes', 'retired'])
     expect(criterionDestination(plan, id)).toBeUndefined();
 });

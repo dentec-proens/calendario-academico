@@ -8,6 +8,7 @@ import type { DomainState } from '../../convex/validators.ts';
 import type { CalendarContent, CalendarOffer } from '../../src/domain/calendar/model.ts';
 import { createNativeFixture } from '../helpers/native-database.ts';
 import { act, preserveSubmission, seedCourses } from '../helpers/lifecycle.ts';
+import { withRequiredVacations } from '../helpers/required-vacations.ts';
 import { calendarOffersFixture } from '../fixtures/calendar-offers.ts';
 import { reviewCriteria } from '../../src/domain/reviews/criteria.ts';
 import { activityPlan } from '../../src/domain/calendar/activities/plan.ts';
@@ -58,7 +59,7 @@ test.each(['anual', 'semestral'] as const)(
         (offer) => offer.delivery === 'presencial' && !offer.stages && !offer.scope,
       ),
     ).toBe(true);
-    expect(record.state.schemaVersion).toBe(6);
+    expect(record.state.schemaVersion).toBe(7);
     for (const field of ['offer', 'modalities', 'regime', 'organizationByModality', 'conversion'])
       expect(record.state).not.toHaveProperty(field);
     expect(
@@ -162,7 +163,7 @@ test('the round-trip preserves independent organization, intake, actual dates an
   });
   expect(loaded.state.offers).toEqual(state.offers);
   expect(loaded.state.periods).toEqual(state.periods);
-  expect((await submitted()).state).toEqual(record.state);
+  expect((await submitted()).state).toEqual(withRequiredVacations(record.state));
 });
 
 test('a save cannot silently adopt another ruleset or change history', async () => {
@@ -325,7 +326,7 @@ test('a legacy review without submission cannot certify current rules or export 
   ).rejects.toThrow('O parecer está desatualizado. Reabra, confira e salve antes de exportar.');
   expect(support.review).not.toHaveProperty('submissionId');
   const body = {
-    schemaVersion: 6 as const,
+    schemaVersion: 7 as const,
     revision: 1,
     calendarVersion: record.version,
     catalogueRevision: record.catalogueRevision,
@@ -449,7 +450,11 @@ test.each(['annual', 'semester', 'trimester', 'three'] as const)(
         },
       })
       .then(calendarRecordDates);
-    const state = { ...reference, campus: created.state.campus } as DomainState;
+    const state = {
+      ...reference,
+      campus: created.state.campus,
+      rulesetVersion: created.state.rulesetVersion,
+    } as DomainState;
     const saved = await actor
       .mutation(api.calendars.saveCalendar, {
         id: created.id,
@@ -494,7 +499,11 @@ test('backend rejects a newly moved stage in the wrong semester but preserves un
       body: {
         version: record.version,
         catalogueRevision: record.catalogueRevision,
-        state: { ...reference, campus: record.state.campus } as DomainState,
+        state: {
+          ...reference,
+          campus: record.state.campus,
+          rulesetVersion: record.state.rulesetVersion,
+        } as DomainState,
       },
     })
     .then(calendarSaveDates);
@@ -668,47 +677,70 @@ test('saving an impossible civil date returns the public validation error and le
   expect(unchanged.state).toEqual(record.state);
 });
 
-test('a calendar saved with empty optional vacation fields still opens, reviews and saves', async () => {
-  const { actor, record, client, asClient } = await setup();
-  const vacations = {
-    firstStart: '2027-01-02',
-    firstEnd: '2027-01-31',
-    secondStart: '',
-    secondEnd: '',
-    thirdStart: '',
-    thirdEnd: '',
-  };
-  await client.run(async (ctx) => {
-    const content = await ctx.db
-      .query('calendarContents')
-      .withIndex('by_calendarId', (q) => q.eq('calendarId', record.id))
-      .unique();
-    if (!content) throw new Error('Conteúdo esperado.');
-    const { state } = content;
-    await ctx.db.patch(content._id, { state: { ...state, teacherVacations: vacations } });
-  });
-  const loaded = await actor.query(api.calendars.calendar, { id: record.id });
-  expect(loaded.state.teacherVacations).toEqual({
-    firstStart: '2027-01-02',
-    firstEnd: '2027-01-31',
-  });
-  const reviewer = await asClient('admin').query(api.reviews.review, { id: record.id });
-  expect(reviewer.calendar.version).toBe(record.version);
+test('a teacher vacation saves as a linked date of the whole campus, with its generated name', async () => {
+  const { actor, record } = await setup();
   const saved = await actor.mutation(api.calendars.saveCalendar, {
     id: record.id,
     body: {
-      version: loaded.version,
-      catalogueRevision: loaded.catalogueRevision,
-      state: { ...loaded.state, teacherVacations: vacations },
+      version: record.version,
+      catalogueRevision: record.catalogueRevision,
+      state: {
+        ...record.state,
+        events: [
+          ...record.state.events,
+          {
+            id: 'teachers',
+            name: 'Qualquer nome',
+            start: '2027-01-02',
+            end: '2027-01-31',
+            effect: 'exclude',
+            category: 'ferias',
+            offers: [record.state.offers[0].id],
+            activity: { activityId: 'teacher-vacation' },
+          },
+        ],
+      },
     },
   });
-  const expected = { firstStart: '2027-01-02', firstEnd: '2027-01-31' };
-  expect(saved.state.teacherVacations).toEqual(expected);
-  const stored = await client.run((ctx) =>
-    ctx.db
-      .query('calendarContents')
-      .withIndex('by_calendarId', (q) => q.eq('calendarId', record.id))
-      .unique(),
+  expect(saved.state.events.find((event) => event.id === 'teachers')).toMatchObject({
+    name: 'Férias docentes — 30 dias',
+    offers: record.state.offers.map((offer) => offer.id),
+  });
+  expect(saved.state).not.toHaveProperty('teacherVacations');
+});
+
+test('the save refuses a vacation that would count, and a vacation as a date of the campus', async () => {
+  const { actor, record } = await setup();
+  const save = (event: Record<string, unknown>) =>
+    actor.mutation(api.calendars.saveCalendar, {
+      id: record.id,
+      body: {
+        version: record.version,
+        catalogueRevision: record.catalogueRevision,
+        state: {
+          ...record.state,
+          events: [
+            ...record.state.events,
+            {
+              id: 'vacation',
+              name: 'Férias escolares',
+              start: '2027-07-05',
+              end: '2027-07-20',
+              offers: [record.state.offers[0].id],
+              ...event,
+            } as never,
+          ],
+        },
+      },
+    });
+  await expect(
+    save({
+      effect: 'note',
+      category: 'ferias',
+      activity: { activityId: 'school-vacation' },
+    }),
+  ).rejects.toThrow('precisam sair da contagem');
+  await expect(save({ effect: 'exclude', category: 'ferias' })).rejects.toThrow(
+    'Férias são registradas no passo Férias',
   );
-  expect(stored?.state.teacherVacations).toEqual(expected);
 });

@@ -1,6 +1,7 @@
 import { test, expect } from './test.ts';
 import {
   addPeriod,
+  fillRequiredVacations,
   editCampusEvent,
   selectCampusEvents,
   selectEditorSection,
@@ -46,6 +47,7 @@ test('registered Saturday uses shared header and action hierarchy', async ({
   await page.goto(await fixtureServer('editor'));
   await expect(page.locator('#record-title')).toBeVisible();
   await addPeriod(page, '2027-03-01', '2027-04-30');
+  await fillRequiredVacations(page);
   await selectEditorSection(page, 'days');
   await page.locator('#saturday-dates input[value="2027-03-06"]').check();
   const open = page.locator('#saturday-open-panel');

@@ -30,8 +30,8 @@ export interface PeriodAssociation {
   term: AcademicTerm;
 }
 /** Stored format version of a calendar's content (`calendarContents.state`). */
-export const calendarSchemaVersion = 6;
-/** Version six persists offer configuration, never its derived summaries. */
+export const calendarSchemaVersion = 7;
+/** Version seven keeps vacations as linked dates only, with `events` as their one source. */
 export interface CalendarContent {
   schemaVersion: typeof calendarSchemaVersion;
   rulesetVersion?: string;
@@ -41,7 +41,6 @@ export interface CalendarContent {
   periods: CalendarPeriod[];
   events: CalendarEvent[];
   observanceDates?: Record<string, CivilDate>;
-  teacherVacations?: VacationPeriods;
 }
 /** Period where the students admitted by a notice start, for one offer of the date. */
 export interface AdmissionDestination {
@@ -120,6 +119,8 @@ export interface ActivityPlanItem {
   deadline?: CivilDate;
   deadlinePolicy?: 'reference' | 'fixed';
   minHours?: number;
+  /** Days the linked dates must add up to, exactly, within the calendar year. */
+  exactDays?: number;
   month?: number;
   offerId?: string;
   offerIds?: string[];
@@ -188,14 +189,6 @@ export interface CalendarReview {
   entries: ReviewEntry[];
 }
 export type DateRange = { start: CivilDate; end: CivilDate };
-export type VacationPeriods = {
-  firstStart: CivilDate;
-  firstEnd: CivilDate;
-  secondStart?: CivilDate;
-  secondEnd?: CivilDate;
-  thirdStart?: CivilDate;
-  thirdEnd?: CivilDate;
-};
 
 /** A local or institutional date as the day count reads it. */
 export type CountingEvent = Pick<

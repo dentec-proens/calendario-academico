@@ -63,7 +63,7 @@ test('a Saturday is available while any offer has a period on it and only no per
 
 test('month selection adds only chosen Saturdays, survives serialization, and respects conflicts', () => {
   const s = {
-    schemaVersion: 6 as const,
+    schemaVersion: 7 as const,
     year: 2027,
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,
@@ -123,7 +123,7 @@ test('month selection adds only chosen Saturdays, survives serialization, and re
 
 test('a confirmed annual selection includes Saturdays from different months in one atomic command', () => {
   const state: ActivityState = {
-    schemaVersion: 6 as const,
+    schemaVersion: 7 as const,
     year: 2027,
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,
@@ -178,7 +178,7 @@ test('a confirmed annual selection includes Saturdays from different months in o
 
 test('each Saturday keeps its activity and date without a source and a failed batch changes nothing', () => {
   const state: ActivityState = {
-    schemaVersion: 6 as const,
+    schemaVersion: 7 as const,
     year: 2027,
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,
@@ -233,7 +233,7 @@ test('each Saturday keeps its activity and date without a source and a failed ba
 });
 
 const yearState: ActivityState = {
-  schemaVersion: 6 as const,
+  schemaVersion: 7 as const,
   year: 2027,
   weekdays: [1, 2, 3, 4, 5],
   weekConfirmed: true,
@@ -346,7 +346,7 @@ test('a Saturday covered by a wider inclusion stays editable through its own rec
 
 /** The case of the UX review: integrated all year, undergraduate only within its semesters. */
 const mixedState: ActivityState = {
-  schemaVersion: 6 as const,
+  schemaVersion: 7 as const,
   year: 2027,
   weekdays: [1, 2, 3, 4, 5],
   weekConfirmed: true,

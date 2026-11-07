@@ -5,7 +5,6 @@
  */
 import { equalValues } from '../../shared/equal.ts';
 import { compactDate } from '../date-labels.ts';
-import type { CivilDate } from '../civil-date.ts';
 import type {
   ActivityState,
   CalendarEvent,
@@ -23,11 +22,16 @@ import { termLabels, type AcademicTerm } from './config.ts';
 import { activityKey, type ActivityRef } from './activities/activity-ref.ts';
 import { generatedActivities, generatedActivity } from './activities/links.ts';
 import { executionLabels } from './activities/plan-evaluation.ts';
+import {
+  isVacationActivity,
+  vacationDates,
+  vacationDays,
+  type VacationKind,
+} from './activities/vacations.ts';
 
 export interface DiffSide {
   state: ActivityState & {
     rulesetVersion?: string;
-    teacherVacations?: Partial<Record<VacationField, CivilDate>>;
   };
   institutionalSnapshot: (InstitutionalEventSnapshot & Record<string, unknown>)[];
   catalogueRevision: number;
@@ -48,9 +52,6 @@ export interface ItemChange {
   name: string;
   fields: FieldChange[];
 }
-
-type VacationField =
-  'firstStart' | 'firstEnd' | 'secondStart' | 'secondEnd' | 'thirdStart' | 'thirdEnd';
 
 /**
  * Every field of the stored validators has a label here or is listed as ignored. A dotted key
@@ -90,14 +91,6 @@ export const fieldLabels = {
     deadlineExtensionCause: 'Causa da prorrogação',
   },
   week: { weekdays: 'Dias da semana letiva', weekConfirmed: 'Semana letiva confirmada' },
-  vacations: {
-    firstStart: 'Início das primeiras férias',
-    firstEnd: 'Término das primeiras férias',
-    secondStart: 'Início das segundas férias',
-    secondEnd: 'Término das segundas férias',
-    thirdStart: 'Início das terceiras férias',
-    thirdEnd: 'Término das terceiras férias',
-  } satisfies Record<VacationField, string>,
   base: { rulesetVersion: 'Conjunto de regras', catalogueRevision: 'Revisão da base' },
   institutionalEvent: {
     name: 'Nome',
@@ -132,7 +125,6 @@ export const ignoredFields = {
     'periods',
     'events',
     'observanceDates',
-    'teacherVacations',
     'rulesetVersion',
     'weekdays',
     'weekConfirmed',
@@ -140,7 +132,6 @@ export const ignoredFields = {
   institutionalEvent: ['id', 'institutional'],
 } as const;
 
-const derivedVacation = (event: { id: string }) => event.id.startsWith('teacher-vacation-');
 const sortedIds = (ids: readonly string[]) => [...ids].sort();
 
 /**
@@ -348,7 +339,7 @@ export function compareContents(before: DiffSide, after: DiffSide) {
   );
 
   const eventSide = (side: DiffSide) =>
-    side.state.events.filter((event) => !derivedVacation(event)).map(comparable);
+    side.state.events.filter((event) => !isVacationActivity(event.activity)).map(comparable);
   const eventKey = (event: CalendarEvent) =>
     event.activity ? `${activityKey(event.activity)}|${event.offers.join(',')}` : undefined;
   // A different link is shown by the names of the rows each side generates, never by its key.
@@ -386,11 +377,26 @@ export function compareContents(before: DiffSide, after: DiffSide) {
       after: afterDates[key],
     }));
 
-  const vacations = fieldChanges(
-    before.state.teacherVacations ?? {},
-    after.state.teacherVacations ?? {},
-    fieldLabels.vacations,
-  );
+  // By period, not by position. Teacher vacations reach every offer by rule, so an added offer is
+  // no change of theirs; the total is what the norm asks for.
+  const vacationSide = (side: DiffSide, kind: VacationKind) =>
+    vacationDates(side.state.events, kind).map((event) => {
+      const row = comparable(event);
+      if (kind === 'school') return row;
+      const { offers: _offers, ...rest } = row;
+      return rest as CalendarEvent;
+    });
+  const vacationChanges = (kind: VacationKind) =>
+    compareItems(vacationSide(before, kind), vacationSide(after, kind), fieldLabels.event);
+  const vacations = {
+    school: vacationChanges('school'),
+    teacher: vacationChanges('teacher'),
+    total: fieldChanges(
+      { days: vacationDays(vacationDates(before.state.events, 'teacher')) },
+      { days: vacationDays(vacationDates(after.state.events, 'teacher')) },
+      { days: 'Total das férias docentes no ano' },
+    ),
+  };
 
   // Institutional events belong to the campus when an observance or an offer inclusion explains
   // them, and to the base otherwise.
@@ -436,7 +442,8 @@ export function compareContents(before: DiffSide, after: DiffSide) {
     periods.length +
     events.length +
     observances.length +
-    vacations.length;
+    vacations.school.length +
+    vacations.teacher.length;
   const baseChanges = base.events.length + base.fields.length;
   return {
     offers,

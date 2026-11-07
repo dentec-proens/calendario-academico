@@ -1,4 +1,5 @@
 import {
+  isLocalDate,
   type DateFields,
   type InstitutionalEventSnapshot,
   type ProjectedDate,
@@ -89,6 +90,7 @@ export function reviewSupport<
   );
   const context: EvidenceContext = {
     state: record.state,
+    localEvents: projected.filter(isLocalDate),
     policy,
     result,
     provisional,

@@ -18,7 +18,7 @@ test('definitive release requires every reviewed criterion, current versions and
     catalogueRevision: 1,
     institutionalSnapshot: [],
     state: {
-      schemaVersion: 6 as const,
+      schemaVersion: 7 as const,
       year: 2027,
       weekdays: [1, 2, 3, 4, 5],
       weekConfirmed: true,
@@ -101,6 +101,21 @@ test('definitive release requires every reviewed criterion, current versions and
   for (const r of activityPlan(record.state)) {
     const event = record.state.events.find((e) => e.id === r.id)!;
     if (r.minHours) event!.hours = r.minHours;
+    if (r.variant === 'vacation') {
+      event.effect = 'exclude';
+      event.category = 'ferias';
+      event.start = civilDate('2027-01-01');
+      event.end = civilDate('2027-01-01');
+      if (r.exactDays) {
+        event.end = civilDate('2027-01-31');
+        record.state.events.push({
+          ...event,
+          id: 'december',
+          start: civilDate('2027-12-18'),
+          end: civilDate('2027-12-31'),
+        });
+      }
+    }
     if (r.month)
       event!.start = event!.end = civilDate(`2027-${String(r.month).padStart(2, '0')}-10`);
     if (r.admissionType) {
@@ -209,7 +224,7 @@ test('explicit technical modality inherits scoped events and the PDF mark depend
 
 test('combined calendars scope exclusions by modality and do not presume a postgraduate minimum', () => {
   const state = {
-    schemaVersion: 6 as const,
+    schemaVersion: 7 as const,
     year: 2027,
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,

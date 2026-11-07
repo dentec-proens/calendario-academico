@@ -24,6 +24,7 @@ export function abbreviationIn(name: string) {
 
 /**
  * Which form a requirement needs. Number of hours and stage order stay in their own fields
- * (`minHours`, the stage identifier); the variant only selects the form blocks.
+ * (`minHours`, the stage identifier); the variant only selects the form blocks. `stage` and
+ * `vacation` are filled in steps of their own and stay out of the list of activities.
  */
-export type ActivityVariant = 'activity' | 'hours' | 'admission-notice' | 'stage';
+export type ActivityVariant = 'activity' | 'hours' | 'admission-notice' | 'stage' | 'vacation';

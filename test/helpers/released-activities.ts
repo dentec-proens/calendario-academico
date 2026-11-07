@@ -14,6 +14,8 @@ export type ReleasedActivities = Record<ActivityBase, readonly string[]>;
 /** Declarations of the consup-292-2027 policy. */
 export const released2027: ReleasedActivities = {
   once: [
+    'school-vacation',
+    'teacher-vacation',
     'extraordinary-council',
     'family-meeting',
     'campus-events',
@@ -47,6 +49,8 @@ export const released2027: ReleasedActivities = {
 /** Declarations of the operational catalogue, used by the years without a norm. */
 export const releasedOperational: ReleasedActivities = {
   once: [
+    'school-vacation',
+    'teacher-vacation',
     'extraordinary-council',
     'family-meeting',
     'campus-events',
@@ -79,6 +83,8 @@ export const releasedOperational: ReleasedActivities = {
  */
 export const releasedGlobal: ReleasedActivities = {
   once: [
+    'school-vacation',
+    'teacher-vacation',
     'extraordinary-council',
     'family-meeting',
     'campus-events',

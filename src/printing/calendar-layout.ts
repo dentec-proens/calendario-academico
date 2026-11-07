@@ -6,6 +6,12 @@ import type { CalendarPeriod } from '../domain/calendar/model.ts';
 import { termLabels } from '../domain/calendar/config.ts';
 import { teachingDayBreakdown } from './teaching-day-breakdown.ts';
 import { categories, eventCategory } from '../domain/calendar/activities/categories.ts';
+import {
+  defaultSchoolVacationName,
+  isVacationActivity,
+  startsDecemberVacation,
+  vacationKind,
+} from '../domain/calendar/activities/vacations.ts';
 import { periodsForOffer } from '../domain/calendar/organization/periods.ts';
 import { associationOffers, labelFor, offerIds } from '../domain/calendar/offers.ts';
 import { executionLabels } from '../domain/calendar/activities/plan-evaluation.ts';
@@ -87,7 +93,47 @@ function mergedEntries(state: PrintState, events: PrintEvent[]): PrintEvent[] {
         : event,
     );
   }
-  return [...merged.values()];
+  return mergedVacations(state, [...merged.values()]);
+}
+
+/**
+ * School and teacher vacations with the same dates print as one line when it says no more than the
+ * data: the default name and every offer of the calendar. The two records stay.
+ */
+function mergedVacations(state: PrintState, events: PrintEvent[]) {
+  const all = state.offers ? offerIds(state) : [];
+  const fits = (event: PrintEvent) =>
+    vacationKind(event.activity) === 'school' &&
+    event.name === defaultSchoolVacationName &&
+    all.every((id) => event.offers.includes(id));
+  return events.flatMap((event) => {
+    if (
+      vacationKind(event.activity) === 'teacher' &&
+      events.some((other) => sameRange(other, event) && fits(other))
+    )
+      return [];
+    const teacher = fits(event)
+      ? events.find(
+          (other) => vacationKind(other.activity) === 'teacher' && sameRange(other, event),
+        )
+      : undefined;
+    return [
+      teacher
+        ? { ...event, name: teacher.name?.replace('docentes', 'escolares e docentes') }
+        : event,
+    ];
+  });
+}
+
+const sameRange = (a: PrintEvent, b: PrintEvent) => a.start === b.start && a.end === b.end;
+
+/** The line of a period that runs to the end of the year says where it starts (`startsDecemberVacation`). */
+function printedVacationName(event: PrintEvent, year: number) {
+  if (!isVacationActivity(event.activity) || !startsDecemberVacation(event, year))
+    return event.name;
+  return event.name?.startsWith('Férias ')
+    ? `Início das f${event.name.slice(1)}`
+    : `Início: ${event.name}`;
 }
 
 function publicationDetails(event: PrintEvent, year: number, includeSource = true) {
@@ -259,11 +305,13 @@ export function proensLayout(
     const entries = mergedEntries(state, monthEvents)
       .sort((a, b) => a.start.localeCompare(b.start))
       .map((e) => {
+        const untilYearEnd =
+          isVacationActivity(e.activity) && startsDecemberVacation(e, state.year);
         const a = e.start.startsWith(prefix) ? Number(e.start.slice(8)) : 1,
-          b = e.end.startsWith(prefix) ? Number(e.end.slice(8)) : length;
+          b = untilYearEnd ? a : e.end.startsWith(prefix) ? Number(e.end.slice(8)) : length;
         const crossesYear = e.start < `${state.year}-01-01`;
         const scope = eventOffers(state, e);
-        return `<tr${printsAsInternal(e) ? ' class="internal-date"' : ''}><td class="cat-${eventCategory(e)}">${a === b ? a : a + ' a ' + b}</td><td>${esc(e.name)}${internalLabel(e)}${crossesYear ? `<small>Intervalo integral: ${esc(fullInterval(e))}</small>` : ''}${publicationDetails(e, state.year)}${(state.offers || !e.institutional) && scope ? ' [' + esc(scope) + ']' : ''}</td></tr>`;
+        return `<tr${printsAsInternal(e) ? ' class="internal-date"' : ''}><td class="cat-${eventCategory(e)}">${a === b ? a : a + ' a ' + b}</td><td>${esc(printedVacationName(e, state.year))}${internalLabel(e)}${crossesYear ? `<small>Intervalo integral: ${esc(fullInterval(e))}</small>` : ''}${publicationDetails(e, state.year)}${(state.offers || !e.institutional) && scope ? ' [' + esc(scope) + ']' : ''}</td></tr>`;
       });
     const middle = Math.max(6, Math.ceil(entries.length / 2)),
       columns = [entries.slice(0, middle), entries.slice(middle)];

@@ -13,6 +13,7 @@ import {
   institutionalEvent,
   auditTarget,
 } from './validators';
+import { format6ContentState } from './format6Validators';
 
 export default defineSchema({
   ...authTables,
@@ -90,11 +91,16 @@ export default defineSchema({
     .index('by_campusId_and_deletedAt_and_updatedAt', ['campusId', 'deletedAt', 'updatedAt'])
     .index('by_year', ['year'])
     .index('by_deletedAt_and_updatedAt', ['deletedAt', 'updatedAt']),
-  calendarContents: defineTable(contentFields).index('by_calendarId', ['calendarId']),
-  calendarSubmissions: defineTable(submissionFields).index('by_calendarId_and_sequence', [
-    'calendarId',
-    'sequence',
-  ]),
+  // Both formats only until the contraction of the format 7 migration.
+  calendarContents: defineTable(
+    v.union(v.object(contentFields), v.object({ ...contentFields, state: format6ContentState })),
+  ).index('by_calendarId', ['calendarId']),
+  calendarSubmissions: defineTable(
+    v.union(
+      v.object(submissionFields),
+      v.object({ ...submissionFields, state: format6ContentState }),
+    ),
+  ).index('by_calendarId_and_sequence', ['calendarId', 'sequence']),
   documents: defineTable({
     year: v.number(),
     type: documentType,

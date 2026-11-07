@@ -5,12 +5,12 @@
   "cases": [
     {
       "name": "Rascunho Ivaiporã (seção 11)",
-      "contentHash": "ed300aacfc881ab3a398a974b8e5a51b0ccfd4c0fbf2d735e05b19f36e736b06",
+      "contentHash": "8c27ba2ba85d6bf786036a7450ed069bd78fb77ac78afd454872a17e4a8e2789",
       "submissions": [
         {
           "sequence": 1,
-          "contentHash": "ed300aacfc881ab3a398a974b8e5a51b0ccfd4c0fbf2d735e05b19f36e736b06",
-          "storedContentHash": "ed300aacfc881ab3a398a974b8e5a51b0ccfd4c0fbf2d735e05b19f36e736b06",
+          "contentHash": "8c27ba2ba85d6bf786036a7450ed069bd78fb77ac78afd454872a17e4a8e2789",
+          "storedContentHash": "8c27ba2ba85d6bf786036a7450ed069bd78fb77ac78afd454872a17e4a8e2789",
           "equalToContent": true
         }
       ],
@@ -491,6 +491,18 @@
           "diverges": false,
           "problems": false
         },
+        "school-vacation": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": false
+        },
+        "teacher-vacation": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": false
+        },
         "regular-admission-notice": {
           "status": "pending",
           "toConfirm": 0,
@@ -897,7 +909,7 @@
     },
     {
       "name": "Rascunho Cascavel (seção 11)",
-      "contentHash": "6d6b1d8a0963194c9d49a3cca3990546bc2b81a6e80726db85f82829ecad4572",
+      "contentHash": "5863dac6727ea39e28c0eac727ef2fb5e308e3dd8a2ccaa8ccf07b57b0505bc7",
       "submissions": [],
       "baseIdentity": "base-v2:consup-292-2027-v1:ebfdefd7da9a8cfc4a04608ecb764073efc6c63687f1d0abd6bcb36b9b0ded94",
       "linksToReview": {},
@@ -1332,6 +1344,18 @@
           "diverges": false,
           "problems": false
         },
+        "school-vacation": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": false
+        },
+        "teacher-vacation": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": false
+        },
         "regular-admission-notice": {
           "status": "pending",
           "toConfirm": 0,
@@ -1738,7 +1762,7 @@
     },
     {
       "name": "Vínculos em conflito (fase 1)",
-      "contentHash": "c5f73efc083501f30f77058acf3aa6126f6215badb96a9a4bc04af29847fdbab",
+      "contentHash": "a3f2c5c7d35ad3a47bbfd60c2fc8dea8702f27cde0f14dd0948dac9e69690622",
       "submissions": [],
       "baseIdentity": "base-v2:consup-292-2027-v1:4d8df7f3d46d8d66c801bdd37673811d9d20963803f04eea3e948db7d9aff59a",
       "linksToReview": {
@@ -2112,6 +2136,18 @@
           "problems": false
         },
         "internship-event": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": false
+        },
+        "school-vacation": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": false
+        },
+        "teacher-vacation": {
           "status": "pending",
           "toConfirm": 0,
           "diverges": false,
@@ -2597,7 +2633,7 @@
     },
     {
       "name": "Ofertas independentes com base institucional",
-      "contentHash": "f5d07f60957c6e44121d49e8e5927f94e5db100a5b67354c7895774fe18d6a9a",
+      "contentHash": "e580c7e538ac219b9afddc2ab45f223d515130cedf95aecdb66ca7e4cfc50b0d",
       "submissions": [],
       "baseIdentity": "base-v2:consup-292-2027-v1:cdfeb9f4315f1082c06f479b00e684e48aa62f9890614e5fe51d49f83e2f1f4b",
       "linksToReview": {},
@@ -3388,6 +3424,18 @@
           "problems": false
         },
         "internship-event": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": false
+        },
+        "school-vacation": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": false
+        },
+        "teacher-vacation": {
           "status": "pending",
           "toConfirm": 0,
           "diverges": false,
@@ -4375,7 +4423,7 @@
     },
     {
       "name": "v3 anual integrado, quatro etapas",
-      "contentHash": "bcc7d7a69260ab5ab9c4f6996d4b4c4a3ed3664d142bcba5a7f607b3a15745c2",
+      "contentHash": "f7fc0ab7a11c2257037fa7a9714db1b9edcb8768b0c65b2e68a31c2e4156801e",
       "submissions": [],
       "baseIdentity": "base-v2:consup-292-2027-v1:871674fecc0ec857c1340436224f1fa9679ebb175233accbcad4c1326d30131e",
       "linksToReview": {},
@@ -4676,6 +4724,18 @@
           "problems": false
         },
         "internship-event": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": false
+        },
+        "school-vacation": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": false
+        },
+        "teacher-vacation": {
           "status": "pending",
           "toConfirm": 0,
           "diverges": false,
@@ -4982,7 +5042,7 @@
     },
     {
       "name": "v3 graduação anual, 2 etapas",
-      "contentHash": "0544afae42e30bd3f3f173decb299e05df091f0568327987534f5d692644619c",
+      "contentHash": "9444c157294dcf7aa7a71e52fe02c7771acf9259340076990b69a3f95912951e",
       "submissions": [],
       "baseIdentity": "base-v2:consup-292-2027-v1:e7e5bdac1c12c75df1e0ae1875ba9195febb5ab3602653fe53e098492e3ea2ec",
       "linksToReview": {},
@@ -5213,6 +5273,18 @@
           "problems": false
         },
         "internship-event": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": false
+        },
+        "school-vacation": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": false
+        },
+        "teacher-vacation": {
           "status": "pending",
           "toConfirm": 0,
           "diverges": false,
@@ -5487,7 +5559,7 @@
     },
     {
       "name": "v3 graduação anual, 3 etapas",
-      "contentHash": "778c1ecf2df78282867f9ea5b28c67e440aab1e28602ed52c688769627953888",
+      "contentHash": "604b207c1dcd30616f772ec2faef19a7ee6915d8bccc8b8b265d6a1098dcb44a",
       "submissions": [],
       "baseIdentity": "base-v2:consup-292-2027-v1:e7e5bdac1c12c75df1e0ae1875ba9195febb5ab3602653fe53e098492e3ea2ec",
       "linksToReview": {},
@@ -5753,6 +5825,18 @@
           "problems": false
         },
         "internship-event": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": false
+        },
+        "school-vacation": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": false
+        },
+        "teacher-vacation": {
           "status": "pending",
           "toConfirm": 0,
           "diverges": false,
@@ -6043,7 +6127,7 @@
     },
     {
       "name": "v3 graduação anual, 4 etapas",
-      "contentHash": "21469a94abe371a8cfca1e20ad4a17388b6fb992505bc52532c91d5c3100fc0f",
+      "contentHash": "5db2b2d398be76ff2877d207dd8f1194c8fdeaaa69d16f46ce79d53475bde10e",
       "submissions": [],
       "baseIdentity": "base-v2:consup-292-2027-v1:e7e5bdac1c12c75df1e0ae1875ba9195febb5ab3602653fe53e098492e3ea2ec",
       "linksToReview": {},
@@ -6344,6 +6428,18 @@
           "problems": false
         },
         "internship-event": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": false
+        },
+        "school-vacation": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": false
+        },
+        "teacher-vacation": {
           "status": "pending",
           "toConfirm": 0,
           "diverges": false,
@@ -6650,7 +6746,7 @@
     },
     {
       "name": "v3 graduação semestral, 2 etapas anuais",
-      "contentHash": "1448e984caf697951da05c3ded561c0666862f86dbdeabbbe960309dd0fcb4e7",
+      "contentHash": "ee738d1862b4c0c6e81582be6430b4a32cd5d8b78c5166eb71ce6ebae62475ce",
       "submissions": [],
       "baseIdentity": "base-v2:consup-292-2027-v1:e7e5bdac1c12c75df1e0ae1875ba9195febb5ab3602653fe53e098492e3ea2ec",
       "linksToReview": {},
@@ -6946,6 +7042,18 @@
           "diverges": false,
           "problems": false
         },
+        "school-vacation": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": false
+        },
+        "teacher-vacation": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": false
+        },
         "regular-admission-notice": {
           "status": "pending",
           "toConfirm": 0,
@@ -7232,7 +7340,7 @@
     },
     {
       "name": "v3 graduação semestral, 4 etapas anuais",
-      "contentHash": "061c1a12af00c921dafaf347050fb92403b8ee66218ac9ea816828b84bb75b7e",
+      "contentHash": "b6df41a757c24f0970067cba473949e6cec727f3aa965dd5a8b79ec348034310",
       "submissions": [],
       "baseIdentity": "base-v2:consup-292-2027-v1:e7e5bdac1c12c75df1e0ae1875ba9195febb5ab3602653fe53e098492e3ea2ec",
       "linksToReview": {},
@@ -7593,6 +7701,18 @@
           "problems": false
         },
         "internship-event": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": false
+        },
+        "school-vacation": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": false
+        },
+        "teacher-vacation": {
           "status": "pending",
           "toConfirm": 0,
           "diverges": false,
@@ -7916,7 +8036,7 @@
     },
     {
       "name": "v3 misto com técnico, graduação e pós-graduação",
-      "contentHash": "98b5a760b4d850de8920bd5ed695919190f129daa53867e9cf5ab10d6d743ec1",
+      "contentHash": "9e9642e76b37e1b4d0683d67fff6d3ec615c574914717718b78b19e6642a4fe0",
       "submissions": [],
       "baseIdentity": "base-v2:consup-292-2027-v1:a78130eeef95b3fe074d955ebda99b12d6a486f9f1182677edc6967b1133e169",
       "linksToReview": {},
@@ -8572,6 +8692,28 @@
         },
         {
           "activity": "internship-event",
+          "offerId": "posgraduacao",
+          "applicability": "unconfigured",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": ["Escopo depende de norma própria ou classificação."]
+        },
+        {
+          "activity": "school-vacation",
+          "offerId": "posgraduacao",
+          "applicability": "unconfigured",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": ["Escopo depende de norma própria ou classificação."]
+        },
+        {
+          "activity": "teacher-vacation",
           "offerId": "posgraduacao",
           "applicability": "unconfigured",
           "coverage": "pending",
@@ -9266,6 +9408,18 @@
           "problems": true
         },
         "internship-event": {
+          "status": "pending",
+          "toConfirm": 1,
+          "diverges": true,
+          "problems": true
+        },
+        "school-vacation": {
+          "status": "pending",
+          "toConfirm": 1,
+          "diverges": true,
+          "problems": true
+        },
+        "teacher-vacation": {
           "status": "pending",
           "toConfirm": 1,
           "diverges": true,
@@ -10244,7 +10398,7 @@
     },
     {
       "name": "v3 pós-graduação excluída da norma",
-      "contentHash": "bf6ca716cc08f3e55a3deffb26843a00c35d156c8a5fadbf3af551d6e834a306",
+      "contentHash": "1c91e03803718fefe35424ab9ee281b778f01447a30e012c86dba1c9fcea6311",
       "submissions": [],
       "baseIdentity": "base-v2:consup-292-2027-v1:cd7aeb638d9b144872c5d4a403e7fcfca9824e102065f346bf1fb91df99bfb8e",
       "linksToReview": {},
@@ -10459,6 +10613,28 @@
           "warnings": ["Escopo depende de norma própria ou classificação."]
         },
         {
+          "activity": "school-vacation",
+          "offerId": "posgraduacao",
+          "applicability": "unconfigured",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": ["Escopo depende de norma própria ou classificação."]
+        },
+        {
+          "activity": "teacher-vacation",
+          "offerId": "posgraduacao",
+          "applicability": "unconfigured",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": ["Escopo depende de norma própria ou classificação."]
+        },
+        {
           "activity": "regular-admission-notice",
           "offerId": "posgraduacao",
           "applicability": "unconfigured",
@@ -10657,6 +10833,18 @@
           "problems": true
         },
         "internship-event": {
+          "status": "unconfigured",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": true
+        },
+        "school-vacation": {
+          "status": "unconfigured",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": true
+        },
+        "teacher-vacation": {
           "status": "unconfigured",
           "toConfirm": 0,
           "diverges": false,
@@ -10931,7 +11119,7 @@
     },
     {
       "name": "v3 norma própria uniforme",
-      "contentHash": "b4817736706c89ef61ed3e2bed31f809d7541f45f0efe98213096054ac4e119a",
+      "contentHash": "87d460930a0fab712f6177a8159aac7700bb30898887f3333ff99736971acb90",
       "submissions": [],
       "baseIdentity": "base-v2:consup-292-2027-v1:ebfdefd7da9a8cfc4a04608ecb764073efc6c63687f1d0abd6bcb36b9b0ded94",
       "linksToReview": {},
@@ -12103,6 +12291,50 @@
           "warnings": ["Escopo depende de norma própria ou classificação."]
         },
         {
+          "activity": "school-vacation",
+          "offerId": "integrado",
+          "applicability": "unconfigured",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": ["Escopo depende de norma própria ou classificação."]
+        },
+        {
+          "activity": "school-vacation",
+          "offerId": "graduacao",
+          "applicability": "unconfigured",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": ["Escopo depende de norma própria ou classificação."]
+        },
+        {
+          "activity": "teacher-vacation",
+          "offerId": "integrado",
+          "applicability": "unconfigured",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": ["Escopo depende de norma própria ou classificação."]
+        },
+        {
+          "activity": "teacher-vacation",
+          "offerId": "graduacao",
+          "applicability": "unconfigured",
+          "coverage": "pending",
+          "humanReview": "pending",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": ["Escopo depende de norma própria ou classificação."]
+        },
+        {
           "activity": "regular-admission-notice",
           "offerId": "integrado",
           "applicability": "unconfigured",
@@ -12665,6 +12897,18 @@
           "problems": true
         },
         "internship-event": {
+          "status": "unconfigured",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": true
+        },
+        "school-vacation": {
+          "status": "unconfigured",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": true
+        },
+        "teacher-vacation": {
           "status": "unconfigured",
           "toConfirm": 0,
           "diverges": false,
@@ -13190,7 +13434,7 @@
     },
     {
       "name": "v3 escopo sem confirmação",
-      "contentHash": "c42ccdd8e4616a50d75905a359c3ae492b5f1f7ea696600f0e2d3fc36bb0da12",
+      "contentHash": "2900159d653e896fdb32cf671d016d09dd183b35aa2fcf597d1817ff9ed8248b",
       "submissions": [],
       "baseIdentity": "base-v2:consup-292-2027-v1:e7e5bdac1c12c75df1e0ae1875ba9195febb5ab3602653fe53e098492e3ea2ec",
       "linksToReview": {},
@@ -13421,6 +13665,18 @@
           "problems": false
         },
         "internship-event": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": false
+        },
+        "school-vacation": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": false
+        },
+        "teacher-vacation": {
           "status": "pending",
           "toConfirm": 0,
           "diverges": false,
@@ -13695,7 +13951,7 @@
     },
     {
       "name": "v3 sem etapas definidas",
-      "contentHash": "d1b468ce80b87b4e4d54330efc763a0c0aa426955502943501a9dffddb532250",
+      "contentHash": "b9427a1faef8107fb6f0cb8dae28baba7eb62c8902857a54e9adb2aa0ead3165",
       "submissions": [],
       "baseIdentity": "base-v2:consup-292-2027-v1:ebfdefd7da9a8cfc4a04608ecb764073efc6c63687f1d0abd6bcb36b9b0ded94",
       "linksToReview": {},
@@ -13998,6 +14254,18 @@
           "problems": false
         },
         "internship-event": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": false
+        },
+        "school-vacation": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": false
+        },
+        "teacher-vacation": {
           "status": "pending",
           "toConfirm": 0,
           "diverges": false,
@@ -14405,7 +14673,7 @@
     },
     {
       "name": "v3 organização a classificar",
-      "contentHash": "886661f8c60c825f16ffbad48b912887d48744d5d533ce3f1e2e38748175ec85",
+      "contentHash": "048ff57c985f8a80fba9b671fb857fdb5d45b5031644584969e0571ceba884ed",
       "submissions": [],
       "baseIdentity": "base-v2:consup-292-2027-v1:871674fecc0ec857c1340436224f1fa9679ebb175233accbcad4c1326d30131e",
       "linksToReview": {},
@@ -14566,6 +14834,18 @@
           "problems": false
         },
         "internship-event": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": false
+        },
+        "school-vacation": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": false
+        },
+        "teacher-vacation": {
           "status": "pending",
           "toConfirm": 0,
           "diverges": false,
@@ -14800,7 +15080,7 @@
     },
     {
       "name": "v3 mapa de organização ausente não herda regime",
-      "contentHash": "4cf3b332083ffe72967f3feb0754c6c17d138d6dd72abea59a3b4429437b512f",
+      "contentHash": "627d0f59313de2fcee966d980d3f3fed2863c41e0d02097d4d22578dace6b923",
       "submissions": [],
       "baseIdentity": "base-v2:consup-292-2027-v1:871674fecc0ec857c1340436224f1fa9679ebb175233accbcad4c1326d30131e",
       "linksToReview": {},
@@ -14955,6 +15235,18 @@
           "diverges": false,
           "problems": false
         },
+        "school-vacation": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": false
+        },
+        "teacher-vacation": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": false
+        },
         "regular-admission-notice": {
           "status": "pending",
           "toConfirm": 0,
@@ -15015,7 +15307,7 @@
     },
     {
       "name": "v2 organização ambígua pendente",
-      "contentHash": "0e58d98ae20b5e68e07a8fd68f2b11599310a3107af7193ae482f7420d50206d",
+      "contentHash": "5e2c64904bac748d93f0b8f7e42f61413edd69bf17cdbc77d8cd96d81853b8c6",
       "submissions": [],
       "baseIdentity": "base-v2:consup-292-2027-v1:ebfdefd7da9a8cfc4a04608ecb764073efc6c63687f1d0abd6bcb36b9b0ded94",
       "linksToReview": {},
@@ -15192,6 +15484,18 @@
           "diverges": false,
           "problems": false
         },
+        "school-vacation": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": false
+        },
+        "teacher-vacation": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": false
+        },
         "regular-admission-notice": {
           "status": "pending",
           "toConfirm": 0,
@@ -15252,7 +15556,7 @@
     },
     {
       "name": "v2 combinado, ingresso legado do segundo semestre",
-      "contentHash": "971ef12beb43139006f06b393c6848533df2df1511ad68c385d838d3647b4cc8",
+      "contentHash": "1b1fd145a8949aea665188eae55a16c56227e83bd5ca3bb007477a997a7c18ed",
       "submissions": [],
       "baseIdentity": "base-v2:consup-292-2027-v1:ebfdefd7da9a8cfc4a04608ecb764073efc6c63687f1d0abd6bcb36b9b0ded94",
       "linksToReview": {},
@@ -15645,6 +15949,18 @@
           "problems": false
         },
         "internship-event": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": false
+        },
+        "school-vacation": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": false
+        },
+        "teacher-vacation": {
           "status": "pending",
           "toConfirm": 0,
           "diverges": false,
@@ -16153,7 +16469,7 @@
     },
     {
       "name": "v3 política de 2026, organização anual",
-      "contentHash": "7c57f41e35b84f2b0a716f2e27243483e7211964c9e0b488e9ecb514c4a54a50",
+      "contentHash": "78f71d117a4b30a7bd8878852cca9206624c148daa40fc8ec408ab19cbf3a6d1",
       "submissions": [],
       "baseIdentity": "base-v1:fbd202aa5a8a7099ddc7331a0e2a2a5e7c8a8d80c8b1d3f085e3c9d9df460b73",
       "linksToReview": {},
@@ -16841,6 +17157,50 @@
           "warnings": ["Escopo depende de norma própria ou classificação."]
         },
         {
+          "activity": "school-vacation",
+          "offerId": "integrado",
+          "applicability": "unconfigured",
+          "coverage": "pending",
+          "humanReview": "unmapped",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": ["Escopo depende de norma própria ou classificação."]
+        },
+        {
+          "activity": "school-vacation",
+          "offerId": "graduacao",
+          "applicability": "unconfigured",
+          "coverage": "pending",
+          "humanReview": "unmapped",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": ["Escopo depende de norma própria ou classificação."]
+        },
+        {
+          "activity": "teacher-vacation",
+          "offerId": "integrado",
+          "applicability": "unconfigured",
+          "coverage": "pending",
+          "humanReview": "unmapped",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": ["Escopo depende de norma própria ou classificação."]
+        },
+        {
+          "activity": "teacher-vacation",
+          "offerId": "graduacao",
+          "applicability": "unconfigured",
+          "coverage": "pending",
+          "humanReview": "unmapped",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": ["Escopo depende de norma própria ou classificação."]
+        },
+        {
           "activity": "extraordinary-council",
           "offerId": "integrado",
           "applicability": "unconfigured",
@@ -17349,6 +17709,18 @@
           "problems": true
         },
         "component-cancellation-2": {
+          "status": "unconfigured",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": true
+        },
+        "school-vacation": {
+          "status": "unconfigured",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": true
+        },
+        "teacher-vacation": {
           "status": "unconfigured",
           "toConfirm": 0,
           "diverges": false,
@@ -17891,7 +18263,7 @@
     },
     {
       "name": "v3 política de 2026, organização semestral sem segundo ingresso",
-      "contentHash": "9d478b5c29f2c1ebfa075e7191039ed4408a0f299cda900d2781952c3f51e422",
+      "contentHash": "71293607ed6cc49ab1b0f72de67609c5d7c7dc4505be1d0fcc8a8073d23571d8",
       "submissions": [],
       "baseIdentity": "base-v1:c5329abfabc9be76d98020eee591fa36029452ce97da1a0ac1dd0c537d994e7f",
       "linksToReview": {},
@@ -18249,6 +18621,28 @@
           "warnings": ["Escopo depende de norma própria ou classificação."]
         },
         {
+          "activity": "school-vacation",
+          "offerId": "subsequente",
+          "applicability": "unconfigured",
+          "coverage": "pending",
+          "humanReview": "unmapped",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": ["Escopo depende de norma própria ou classificação."]
+        },
+        {
+          "activity": "teacher-vacation",
+          "offerId": "subsequente",
+          "applicability": "unconfigured",
+          "coverage": "pending",
+          "humanReview": "unmapped",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": ["Escopo depende de norma própria ou classificação."]
+        },
+        {
           "activity": "extraordinary-council",
           "offerId": "subsequente",
           "applicability": "unconfigured",
@@ -18563,6 +18957,18 @@
           "diverges": false,
           "problems": true
         },
+        "school-vacation": {
+          "status": "unconfigured",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": true
+        },
+        "teacher-vacation": {
+          "status": "unconfigured",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": true
+        },
         "extraordinary-council": {
           "status": "unconfigured",
           "toConfirm": 0,
@@ -18867,7 +19273,7 @@
     },
     {
       "name": "v3 ano sem política configurada",
-      "contentHash": "246148af6e7414301f805d568a553674a62f1a589665ddbd35b94add037215ac",
+      "contentHash": "9e945d76fbbe8a8704f88704e4beda9b86059e80a3b0dd8abb0ec256513881fa",
       "submissions": [],
       "baseIdentity": "base-v1:7525cad528ca995a7b6a74b2393fead2da69961d67bc4090cb539b8828cfefb6",
       "linksToReview": {},
@@ -19313,6 +19719,28 @@
           "warnings": ["Escopo depende de norma própria ou classificação."]
         },
         {
+          "activity": "school-vacation",
+          "offerId": "graduacao",
+          "applicability": "unconfigured",
+          "coverage": "pending",
+          "humanReview": "unmapped",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": ["Escopo depende de norma própria ou classificação."]
+        },
+        {
+          "activity": "teacher-vacation",
+          "offerId": "graduacao",
+          "applicability": "unconfigured",
+          "coverage": "pending",
+          "humanReview": "unmapped",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": ["Escopo depende de norma própria ou classificação."]
+        },
+        {
           "activity": "extraordinary-council",
           "offerId": "graduacao",
           "applicability": "unconfigured",
@@ -19675,6 +20103,18 @@
           "diverges": false,
           "problems": true
         },
+        "school-vacation": {
+          "status": "unconfigured",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": true
+        },
+        "teacher-vacation": {
+          "status": "unconfigured",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": true
+        },
         "extraordinary-council": {
           "status": "unconfigured",
           "toConfirm": 0,
@@ -20011,7 +20451,7 @@
     },
     {
       "name": "Quantidade anterior de 2 etapas",
-      "contentHash": "4c4ee95003472ffac99e0c1ae95780fdb8133c113c4ef8a7b23b34c99a6d59bf",
+      "contentHash": "9dc8b5051922d691e0734314cb0b23b52b425f83db38d6b473d4fa0d254f9a1b",
       "submissions": [],
       "baseIdentity": "base-v2:consup-292-2027-v1:871674fecc0ec857c1340436224f1fa9679ebb175233accbcad4c1326d30131e",
       "linksToReview": {},
@@ -20214,6 +20654,18 @@
           "diverges": false,
           "problems": false
         },
+        "school-vacation": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": false
+        },
+        "teacher-vacation": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": false
+        },
         "regular-admission-notice": {
           "status": "pending",
           "toConfirm": 0,
@@ -20274,7 +20726,7 @@
     },
     {
       "name": "Quantidade anterior de 3 etapas",
-      "contentHash": "7b251b30ca3adbc3a0da894268ac0a334e7a039f776a7dd96d9c6e579b2ca6f7",
+      "contentHash": "aedc8caf118ffdeb8ecc867766f2db77caeda16422a95ee235062cc6bad069cb",
       "submissions": [],
       "baseIdentity": "base-v2:consup-292-2027-v1:871674fecc0ec857c1340436224f1fa9679ebb175233accbcad4c1326d30131e",
       "linksToReview": {},
@@ -20501,6 +20953,18 @@
           "diverges": false,
           "problems": false
         },
+        "school-vacation": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": false
+        },
+        "teacher-vacation": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": false
+        },
         "regular-admission-notice": {
           "status": "pending",
           "toConfirm": 0,
@@ -20561,7 +21025,7 @@
     },
     {
       "name": "Quantidade anterior de 4 etapas",
-      "contentHash": "edb838aee97a7365bfc90ea345aab512fcfa94bb2d566f07b938d2323bea291b",
+      "contentHash": "f43f11b9a2ee1b8042daff7bfe0ec9aa9ef5b5239150b00c808f71e821939462",
       "submissions": [],
       "baseIdentity": "base-v2:consup-292-2027-v1:871674fecc0ec857c1340436224f1fa9679ebb175233accbcad4c1326d30131e",
       "linksToReview": {},
@@ -20812,6 +21276,18 @@
           "diverges": false,
           "problems": false
         },
+        "school-vacation": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": false
+        },
+        "teacher-vacation": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": false
+        },
         "regular-admission-notice": {
           "status": "pending",
           "toConfirm": 0,
@@ -20872,12 +21348,12 @@
     },
     {
       "name": "Acréscimo de oferta materializa a abrangência",
-      "contentHash": "ecd956d1523d841c625ecbd300c2d12a1c3018e232e44c7b67218752fbbbca08",
+      "contentHash": "41d40e93114ce41994478eb1d444235c4f090b9138b14dfc06766b9646b9df26",
       "submissions": [
         {
           "sequence": 1,
-          "contentHash": "c2f4feaa2e00fa7e3c5aa5ec81af9dac796abb752681932f210872809fef0505",
-          "storedContentHash": "c2f4feaa2e00fa7e3c5aa5ec81af9dac796abb752681932f210872809fef0505",
+          "contentHash": "49eccd0ba4365a5af512323c60f9edca6a70a26f7ced6a1570f92cfb1d0c62dd",
+          "storedContentHash": "49eccd0ba4365a5af512323c60f9edca6a70a26f7ced6a1570f92cfb1d0c62dd",
           "equalToContent": false
         }
       ],
@@ -21670,6 +22146,18 @@
           "problems": false
         },
         "internship-event": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": false
+        },
+        "school-vacation": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": false
+        },
+        "teacher-vacation": {
           "status": "pending",
           "toConfirm": 0,
           "diverges": false,
@@ -22657,7 +23145,7 @@
     },
     {
       "name": "Formas adicionais do inventário",
-      "contentHash": "0baeabad732b0bcd23e480e10bf779ada524a17cd12fcc8233a3fd61b30cbaa0",
+      "contentHash": "8f7bd892ca6bb180561b864ced49f5a7e629c7af8d66bb1cfa4a371e4b668f55",
       "submissions": [],
       "baseIdentity": "base-v2:consup-292-2027-v1:ebfdefd7da9a8cfc4a04608ecb764073efc6c63687f1d0abd6bcb36b9b0ded94",
       "linksToReview": {
@@ -22994,6 +23482,18 @@
           "problems": false
         },
         "internship-event": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": false
+        },
+        "school-vacation": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": false
+        },
+        "teacher-vacation": {
           "status": "pending",
           "toConfirm": 0,
           "diverges": false,
@@ -23405,7 +23905,7 @@
     },
     {
       "name": "Formas adicionais sem política configurada",
-      "contentHash": "3ae742e47a2c0806378bb881eba7e64fa6bc75ed9a645c38d4e296f4c3723bb4",
+      "contentHash": "41ac94d476e590cb3f9c514ea0077b8660103263cb7fb82479617a4a4340b014",
       "submissions": [],
       "baseIdentity": "base-v1:7edbf254758e3e62cbf6a4d02e608ea868c07e6cee25f614ab8b9e3f33f7cfde",
       "linksToReview": {
@@ -24276,6 +24776,50 @@
           "warnings": ["Escopo depende de norma própria ou classificação."]
         },
         {
+          "activity": "school-vacation",
+          "offerId": "graduacao",
+          "applicability": "unconfigured",
+          "coverage": "pending",
+          "humanReview": "unmapped",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": ["Escopo depende de norma própria ou classificação."]
+        },
+        {
+          "activity": "school-vacation",
+          "offerId": "integrado",
+          "applicability": "unconfigured",
+          "coverage": "pending",
+          "humanReview": "unmapped",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": ["Escopo depende de norma própria ou classificação."]
+        },
+        {
+          "activity": "teacher-vacation",
+          "offerId": "graduacao",
+          "applicability": "unconfigured",
+          "coverage": "pending",
+          "humanReview": "unmapped",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": ["Escopo depende de norma própria ou classificação."]
+        },
+        {
+          "activity": "teacher-vacation",
+          "offerId": "integrado",
+          "applicability": "unconfigured",
+          "coverage": "pending",
+          "humanReview": "unmapped",
+          "execution": "unclassified",
+          "events": [],
+          "issues": [],
+          "warnings": ["Escopo depende de norma própria ou classificação."]
+        },
+        {
           "activity": "extraordinary-council",
           "offerId": "graduacao",
           "applicability": "unconfigured",
@@ -24801,6 +25345,18 @@
           "diverges": false,
           "problems": true
         },
+        "school-vacation": {
+          "status": "unconfigured",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": true
+        },
+        "teacher-vacation": {
+          "status": "unconfigured",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": true
+        },
         "extraordinary-council": {
           "status": "unconfigured",
           "toConfirm": 0,
@@ -25301,12 +25857,12 @@
     },
     {
       "name": "Vínculo semestral legado em 2027 só anual, com documentos",
-      "contentHash": "478997780f85c086a8a4742bf3334d69873c72a7a5a2b740a59126aa7dd88a37",
+      "contentHash": "232c9c084c94b146a74d83463bcfd94ffc617404a54c3cd997746704b9d913dd",
       "submissions": [
         {
           "sequence": 1,
-          "contentHash": "478997780f85c086a8a4742bf3334d69873c72a7a5a2b740a59126aa7dd88a37",
-          "storedContentHash": "478997780f85c086a8a4742bf3334d69873c72a7a5a2b740a59126aa7dd88a37",
+          "contentHash": "232c9c084c94b146a74d83463bcfd94ffc617404a54c3cd997746704b9d913dd",
+          "storedContentHash": "232c9c084c94b146a74d83463bcfd94ffc617404a54c3cd997746704b9d913dd",
           "equalToContent": true
         }
       ],
@@ -25611,6 +26167,18 @@
           "problems": false
         },
         "internship-event": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": false
+        },
+        "school-vacation": {
+          "status": "pending",
+          "toConfirm": 0,
+          "diverges": false,
+          "problems": false
+        },
+        "teacher-vacation": {
           "status": "pending",
           "toConfirm": 0,
           "diverges": false,

@@ -239,38 +239,26 @@ test('event removal clears its open draft and grouped teacher vacations', async 
   await expect(page.locator('#unapplied-status')).toBeHidden();
   await expect(page.locator('#event-form')).toBeHidden();
   await page.locator('[data-view="vacations"]').click();
-  await page.locator('#vacation-first-start').fill('2027-01-04');
-  await page.locator('#vacation-first-end').fill('2027-01-20');
-  await page.locator('#vacation-second-start').fill('2027-07-01');
-  await page.locator('#vacation-second-end').fill('2027-07-15');
-
-  await page.locator('#vacation-form button[type="submit"]').click();
-  await expect
-    .poll(() =>
-      page.evaluate(
-        () =>
-          window.editorTest.record.state.events.filter((event) => event.category === 'ferias')
-            .length,
-      ),
-    )
-    .toBe(2);
-  await page.locator('[data-view="events"]').click();
-  await openCampusEvent(page, 'teacher-vacation-january');
-  await page.locator('[data-remove-event="teacher-vacation-january"]').click();
-  await expect
-    .poll(() =>
-      page.evaluate(
-        () =>
-          window.editorTest.record.state.events.filter((event) => event.category === 'ferias')
-            .length,
-      ),
-    )
-    .toBe(0);
-  expect(
-    await page.evaluate(() => window.editorTest.record.state.teacherVacations),
-  ).toBeUndefined();
-  await page.locator('[data-view="vacations"]').click();
-  await expect(page.locator('#vacation-first-start')).toHaveValue('');
+  for (const [start, end] of [
+    ['2027-01-04', '2027-01-20'],
+    ['2027-07-01', '2027-07-15'],
+  ]) {
+    await page.locator('#vacation-add-teacher').click();
+    await page.locator('#vacation-start').fill(start!);
+    await page.locator('#vacation-end').fill(end!);
+    await page.locator('#vacation-apply').click();
+  }
+  const vacationCount = () =>
+    page.evaluate(
+      () =>
+        window.editorTest.record.state.events.filter((event) => event.category === 'ferias').length,
+    );
+  await expect.poll(vacationCount).toBe(2);
+  // Each period is removed on its own, and Activities leads back to this step.
+  await page.locator('[data-remove-vacation]').first().click();
+  await expect.poll(vacationCount).toBe(1);
+  await page.getByRole('button', { name: 'Desfazer' }).click();
+  await expect.poll(vacationCount).toBe(2);
 });
 
 test('stage editing and activity changes always reveal the same draft in its destination', async ({

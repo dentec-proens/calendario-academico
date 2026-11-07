@@ -146,6 +146,7 @@ export function rulesView(year: number) {
             decision: sample.decision,
             byOffer,
             details: [
+              sample.exactDays && `Exatamente ${sample.exactDays} dias no ano do calendário.`,
               sample.deadline &&
                 !sample.name.includes(dateInRuleName(sample.deadline)) &&
                 `Prazo${sample.deadlinePolicy === 'reference' ? ' de referência' : ''}: ${longDate(sample.deadline)}.`,

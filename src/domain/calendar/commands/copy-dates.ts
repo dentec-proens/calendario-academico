@@ -1,16 +1,17 @@
 import { equalValues } from '../../../shared/equal.ts';
 import { DomainError } from '../../errors.ts';
 import { policyFor } from '../../policies/registry.ts';
-import { isStageActivity } from '../activities/activity-ref.ts';
+import { isStageActivity, sameActivity } from '../activities/activity-ref.ts';
 import { isSaturdayRecord } from '../activities/saturdays.ts';
 import { coversAllOffers, generatedActivities, generatedActivity } from '../activities/links.ts';
 import { calendarLimits } from '../config.ts';
 import { datesBetween } from '../counting/core.ts';
-import type { ActivityState, CalendarEvent, EventEffect, VacationPeriods } from '../model.ts';
+import { vacationDates, vacationKind } from '../activities/vacations.ts';
+import type { ActivityState, CalendarEvent, EventEffect } from '../model.ts';
 import { labelFor, offerFor, offerNames } from '../offers.ts';
 import { hasPeriodOn, periodsForOffer } from '../organization/periods.ts';
 import { createCampusDate, planActivityDate, type DateInput } from './events.ts';
-import { applyVacations, vacationIds } from './vacations.ts';
+import { replaceTeacherVacations } from './vacations.ts';
 
 /** How a date of another calendar reaches this one: the person decides, the group only suggests. */
 export type CopyGroup = 'shared' | 'partial' | 'activity' | 'blocked';
@@ -44,9 +45,9 @@ export interface CopyList {
   omitted: number;
 }
 
-type CopyState = ActivityState & { teacherVacations?: VacationPeriods };
+type CopyState = ActivityState;
 
-/** Teacher vacations are one choice, as in `applyVacations`, whatever the number of periods. */
+/** Teacher vacations are one choice, as in `replaceTeacherVacations`, whatever the number of periods. */
 export const copiedVacationsId = 'teacher-vacations';
 
 /** The offers and admission destinations of the other calendar mean nothing here. */
@@ -89,27 +90,23 @@ function refusal(command: () => unknown) {
   }
 }
 
-function vacationsCandidate(target: CopyState, values: VacationPeriods): CopyCandidate {
-  const periods = (
-    [
-      [values.firstStart, values.firstEnd],
-      [values.secondStart, values.secondEnd],
-      [values.thirdStart, values.thirdEnd],
-    ] as const
-  ).flatMap(([start, end]) => (start && end ? [{ start, end }] : []));
-  const blockedBy = refusal(() => applyVacations(target, values));
+const periodOf = ({ start, end }: Pick<CalendarEvent, 'start' | 'end'>) => ({ start, end });
+const teacherPeriods = (state: CopyState) => vacationDates(state.events, 'teacher').map(periodOf);
+
+function vacationsCandidate(target: CopyState, source: CopyState): CopyCandidate {
+  const periods = teacherPeriods(source);
+  const blockedBy = refusal(() => replaceTeacherVacations(target, periods, probeIds()));
+  const replaces = teacherPeriods(target).length > 0;
   return {
     id: copiedVacationsId,
     group: blockedBy ? 'blocked' : 'shared',
     // Marked only when nothing is lost: copying replaces the vacations of this calendar.
-    suggested: !blockedBy && !target.teacherVacations,
+    suggested: !blockedBy && !replaces,
     name: 'Férias docentes',
     periods,
     effect: 'exclude',
     category: 'ferias',
-    ...(target.teacherVacations
-      ? { warning: 'Substitui as férias já cadastradas neste calendário.' }
-      : {}),
+    ...(replaces ? { warning: 'Substitui as férias já cadastradas neste calendário.' } : {}),
     ...(blockedBy ? { blockedBy } : {}),
   };
 }
@@ -144,6 +141,10 @@ function dateWarning(event: CalendarEvent) {
 
 /** Never an ID of this calendar: a new version keeps the IDs of the calendar it came from. */
 const probeId = 'copy-probe';
+function probeIds() {
+  let index = 0;
+  return () => `${probeId}-${index++}`;
+}
 
 function dateCandidate(
   target: CopyState,
@@ -156,12 +157,23 @@ function dateCandidate(
   const reached = reachedOffers(target, event, offers);
   const leftOut = offers.filter((offer) => !reached.includes(offer));
   const needsPeriods = !reached.length || outsidePeriods(target, event, reached);
+  // Same occurrence for the commands, whatever the link: the person decides which one stays.
+  const otherLink = target.events.some(
+    (other) =>
+      other.name.trim().toLocaleLowerCase() === event.name.trim().toLocaleLowerCase() &&
+      other.start === event.start &&
+      other.end === event.end &&
+      other.offers.some((offer) => reached.includes(offer)) &&
+      !sameActivity(other.activity, event.activity),
+  );
   const blockedBy =
     event.activity && !row
       ? 'Esta atividade não existe na organização atual deste calendário.'
-      : needsPeriods
-        ? `Fora dos períodos letivos deste calendário${leftOut.length ? ` (${offerNames(target, leftOut)})` : ''}.`
-        : refusal(() => place(target, event, reached, probeId));
+      : otherLink
+        ? 'Este calendário já tem esta data com outro vínculo. Remova-a para copiar esta.'
+        : needsPeriods
+          ? `Fora dos períodos letivos deste calendário${leftOut.length ? ` (${offerNames(target, leftOut)})` : ''}.`
+          : refusal(() => place(target, event, reached, probeId));
   const warning =
     dateWarning(event) ??
     (leftOut.length && reached.length
@@ -217,7 +229,10 @@ function missingOffers(target: CopyState, event: CalendarEvent, offers: readonly
         other.name.trim().toLocaleLowerCase() === name &&
         other.start === event.start &&
         other.end === event.end &&
-        other.effect === event.effect,
+        other.effect === event.effect &&
+        // A date of the campus with the same name does not fulfil the activity of a linked date;
+        // a linked date already holds what a date of the campus would add.
+        (!event.activity || sameActivity(other.activity, event.activity)),
     )
     .flatMap((other) => other.offers);
   return offers.filter((offer) => !reached.includes(offer));
@@ -236,6 +251,8 @@ function distinctDates(events: readonly CalendarEvent[]) {
       event.start,
       event.end,
       admission && [admission.type, admission.year, admission.term],
+      // A linked date and a date of the campus are not one choice: the link would be lost.
+      event.activity ?? null,
     ]);
     const known = dates.get(key);
     dates.set(
@@ -262,12 +279,12 @@ export function copyList(
   const candidates: CopyCandidate[] = [];
   let alreadyPresent = 0;
   let omitted = 0;
-  if (source.teacherVacations) {
-    if (equalValues(source.teacherVacations, target.teacherVacations)) alreadyPresent++;
-    else candidates.push(vacationsCandidate(target, source.teacherVacations));
+  if (teacherPeriods(source).length) {
+    if (equalValues(teacherPeriods(source), teacherPeriods(target))) alreadyPresent++;
+    else candidates.push(vacationsCandidate(target, source));
   }
   for (const event of distinctDates(source.events)) {
-    if (vacationIds.has(event.id)) continue;
+    if (vacationKind(event.activity) === 'teacher') continue;
     if (isStageActivity(event.activity)) omitted++;
     else {
       const missing = missingOffers(target, event, offers);
@@ -296,10 +313,22 @@ export function applyCopiedDates<S extends CopyState>(
   if (source.year !== target.year)
     throw new DomainError('Só é possível copiar datas de um calendário do mesmo ano.');
   let next = target;
-  if (chosen.includes(copiedVacationsId) && source.teacherVacations)
-    next = applyVacations(next, source.teacherVacations);
+  if (chosen.includes(copiedVacationsId))
+    next = replaceTeacherVacations(next, teacherPeriods(source), id);
+  // Both versions marked: the linked one stays, since it holds what the other would add.
+  const linkedTwin = (event: CalendarEvent) =>
+    !event.activity &&
+    source.events.some(
+      (other) =>
+        other.activity &&
+        chosen.includes(other.id) &&
+        other.name.trim().toLocaleLowerCase() === event.name.trim().toLocaleLowerCase() &&
+        other.start === event.start &&
+        other.end === event.end,
+    );
   for (const event of source.events) {
-    if (!chosen.includes(event.id) || vacationIds.has(event.id)) continue;
+    if (!chosen.includes(event.id) || vacationKind(event.activity) === 'teacher') continue;
+    if (linkedTwin(event)) continue;
     if (isStageActivity(event.activity)) continue;
     try {
       const missing = missingOffers(next, event, offers);

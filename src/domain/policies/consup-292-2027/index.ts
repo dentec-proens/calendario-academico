@@ -95,7 +95,6 @@ export const consup2922027Policy: CalendarPolicy = {
           text: 'Atas no processo SEI. Os 60 dias de antecedência do Art. 15 não são avaliados.',
         },
       ],
-      IV: [{ text: 'Os 45 dias: a identificação do evento não comprova a quantidade.' }],
       XXVI: [{ text: 'Se o evento é aberto à comunidade.' }],
       'admission-regular': [{ text: 'Se o prazo foi ajustado, o registro do ajuste da Proens.' }],
     },

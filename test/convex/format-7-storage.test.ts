@@ -188,7 +188,7 @@ test('a client built for an earlier format is refused by saveCalendar and saveRe
   await act(campus, record.id, 'submit');
   const support = await reviewer.query(api.reviews.review, { id: record.id });
   const { schemaVersion: _marker, ...oldBody } = {
-    schemaVersion: 6 as const,
+    schemaVersion: 7 as const,
     rulesetVersion: support.rulesetVersion,
     baseIdentity: support.baseIdentity,
     revision: support.review?.revision ?? 0,

@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest';
 import { groupPendencies, pendingActivityCount } from '../../src/domain/calendar/pendencies.ts';
 import { contentAssessment, contentIssues } from '../../src/domain/calendar/readiness.ts';
 import { isAssessmentStage } from '../../src/domain/calendar/activities/activity-ref.ts';
+import { isVacationActivity } from '../../src/domain/calendar/activities/vacations.ts';
 import { onceLink } from '../helpers/activity-links.ts';
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { calendarOffersFixture } from '../fixtures/calendar-offers.ts';
@@ -33,7 +34,7 @@ const offer = (
 /** A new calendar, with nothing filled, for the offers given. */
 const blank = (offers: CalendarOffer[]) =>
   ({
-    schemaVersion: 6,
+    schemaVersion: 7,
     campus: 'Campus de teste',
     year: 2027,
     weekdays: [1, 2, 3, 4, 5],
@@ -129,8 +130,13 @@ describe('one unit for the pendencies of the calendar', () => {
     );
     expect(stages.length).toBeGreaterThan(0);
     expect(new Set(stages.map((item) => item.group))).toEqual(new Set(['structure']));
-    // Only activities and dates remain for the Activities step, as its filter counts them.
-    expect(items.filter((item) => item.group === 'activities').length).toBe(
+    // Only activities and dates remain for the Activities step, as its filter counts them;
+    // vacations have a step of their own.
+    const vacations = items.filter(
+      (item) => item.target?.area === 'activity' && isVacationActivity(item.target.activity),
+    );
+    expect(vacations.length).toBe(stepIssueCounts(items).vacations);
+    expect(items.filter((item) => item.group === 'activities').length - vacations.length).toBe(
       stepIssueCounts(items).events,
     );
   });

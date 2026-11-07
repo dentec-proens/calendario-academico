@@ -1,5 +1,6 @@
 import { editorSections, type EditorSection } from '#src/app/routes.ts';
 import { activityKey, isAssessmentStage } from '#src/domain/calendar/activities/activity-ref.ts';
+import { isVacationActivity } from '#src/domain/calendar/activities/vacations.ts';
 import type { ActivityPlanItem } from '#src/domain/calendar/model.ts';
 import type { ContentIssue } from '#src/domain/calendar/readiness.ts';
 
@@ -29,7 +30,7 @@ export const editorPages = {
     title: 'Sábados letivos',
   }),
   vacations: defineEditorPage('vacations', {
-    title: 'Férias docentes',
+    title: 'Férias',
   }),
   events: defineEditorPage('events', {
     title: 'Atividades',
@@ -97,6 +98,7 @@ export function issueSection({ target }: Pick<ContentIssue, 'target'>): EditorSe
     case 'organization':
       return 'periods';
     case 'activity':
+      if (isVacationActivity(target.activity)) return 'vacations';
       return isAssessmentStage(target.activity) ? 'periods' : 'events';
     case 'date':
     case 'observance':
@@ -117,6 +119,8 @@ export function issueDestination({
     case 'scope':
       return { to: editorPages.issues.path, search: {} };
     case 'activity':
+      if (isVacationActivity(target.activity))
+        return { to: editorPages.vacations.path, search: {} };
       // A link to an activity opens the by-activity view, whatever the URL had.
       return {
         to: (isAssessmentStage(target.activity) ? editorPages.periods : editorPages.events).path,
@@ -149,9 +153,10 @@ export function criterionDestination(
   plan: readonly Pick<ActivityPlanItem, 'activity' | 'reviewCriterionId'>[],
   criterionId: string,
 ): ReturnType<typeof issueDestination> {
-  if (criterionId === 'IV') return { to: editorPages.vacations.path, search: {} };
   const covering = plan.filter((item) => item.reviewCriterionId === criterionId);
   if (!covering.length) return issueDestination({ target: criterionTargets[criterionId] });
+  if (covering.every((item) => isVacationActivity(item.activity)))
+    return { to: editorPages.vacations.path, search: {} };
   if (covering.every((item) => isAssessmentStage(item.activity)))
     return { to: editorPages.periods.path, search: {} };
   return covering.length === 1

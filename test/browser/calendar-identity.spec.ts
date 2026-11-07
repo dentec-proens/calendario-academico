@@ -1,5 +1,5 @@
 import { test, expect } from './test.ts';
-import { selectEditorSection } from './editor-navigation.ts';
+import { fillRequiredVacations, selectEditorSection } from './editor-navigation.ts';
 import type {} from '../fixtures/editor-client.ts';
 
 for (const width of [1440, 390]) {
@@ -64,6 +64,7 @@ test('missing courses block the submission and are filled from the review issues
     window.editorTest.record.courses = '';
     return window.publishReviewerCalendar();
   });
+  await fillRequiredVacations(page);
   await expect(page.locator('#calendar-identity')).toContainText('Cursos não informados');
   const submit = page.locator('[data-lifecycle-action="submit"]');
   await expect(submit).toBeDisabled();
@@ -156,7 +157,7 @@ test('reopening the calendar after a remote change discards the unsaved identity
   await page.getByRole('button', { name: 'Reabrir calendário atualizado' }).click();
   await page.getByRole('alertdialog').getByRole('button', { name: 'Reabrir calendário' }).click();
   await expect(page.locator('#unapplied-status')).toBeHidden();
-  await expect(page.locator('[data-lifecycle-action="submit"]')).toBeEnabled();
+  await expect(page.locator('#lifecycle-submit-unavailable')).not.toContainText('outra sessão');
   await edit.click();
   await expect(panel.getByLabel('Turmas (opcional)')).toHaveValue('');
 });

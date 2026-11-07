@@ -6,6 +6,7 @@ import { inspectCalendar } from '../../src/domain/calendar/base.ts';
 import { reviewCriteriaFor } from '../../src/domain/reviews/criteria.ts';
 import { createNativeFixture } from '../helpers/native-database.ts';
 import { act, seedCourses } from '../helpers/lifecycle.ts';
+import { withRequiredVacations } from '../helpers/required-vacations.ts';
 import type { Id } from '../../convex/_generated/dataModel';
 
 async function opened() {
@@ -48,7 +49,7 @@ test('an equivalent base writes nothing and keeps the review evidence', async ()
   await account.mutation(api.reviews.saveReview, {
     id: record.id,
     body: {
-      schemaVersion: 6 as const,
+      schemaVersion: 7 as const,
       submissionId: review.submission!.id,
       revision: 0,
       calendarVersion: record.version,
@@ -89,7 +90,7 @@ test('an equivalent base writes nothing and keeps the review evidence', async ()
     version: 1,
     updatedAt: record.updatedAt,
     catalogueRevision: 1,
-    state: record.state,
+    state: withRequiredVacations(record.state),
     institutionalSnapshot: record.institutionalSnapshot,
   });
 });
@@ -180,7 +181,7 @@ test('a change in the documents table leaves a calendar under review and its par
   await account.mutation(api.reviews.saveReview, {
     id: record.id,
     body: {
-      schemaVersion: 6 as const,
+      schemaVersion: 7 as const,
       submissionId: support.submission!.id,
       revision: 0,
       calendarVersion: 1,

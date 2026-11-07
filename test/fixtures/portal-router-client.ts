@@ -29,7 +29,7 @@ export function portalReview(id: string): Awaited<ReturnType<typeof reviews.get>
       state: {
         year: 2027,
         campus: 'Campus de teste',
-        schemaVersion: 6,
+        schemaVersion: 7,
         offers: [
           { id: 'integrado', kind: 'integrado', delivery: 'a-conferir', organization: 'anual' },
         ],
@@ -145,7 +145,7 @@ export const convex = {
           campusId: body.campusId,
           year: body.year,
           state: {
-            schemaVersion: 6,
+            schemaVersion: 7,
             year: body.year,
             campus: 'Campus de teste',
             offers: [],

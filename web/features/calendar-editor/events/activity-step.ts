@@ -124,7 +124,10 @@ export function activityStep(input: {
   // never hold internal dates, so “Oficiais” keeps all of them and “Internas” hides all of them.
   const visibility = search.atividadeVisibilidade;
   const review = evaluation.links.issues;
-  const checklist = activityPlan(state).filter((item) => item.variant !== 'stage');
+  // Stages and vacations are filled in steps of their own.
+  const checklist = activityPlan(state).filter(
+    (item) => item.variant !== 'stage' && item.variant !== 'vacation',
+  );
   const generated = generatedActivities(state);
   // Coverage rows by the key of their activity; only the offers being consulted decide its status.
   const rowsByKey = new Map<string, PlanEvaluation['rows']>();

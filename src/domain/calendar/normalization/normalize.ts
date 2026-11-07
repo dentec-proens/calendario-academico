@@ -24,7 +24,12 @@ import {
 import { validCategory, eventCategory } from '../activities/categories.ts';
 import { validateInternalDate } from '../internal-dates.ts';
 import { normalizeObservanceDates } from '../observances.ts';
-import { regeneratedVacations, teacherVacations } from '../activities/teacher-vacations.ts';
+import {
+  vacationEditIssue,
+  vacationKind,
+  vacationOverlapIssue,
+  withTeacherVacationFields,
+} from '../activities/vacations.ts';
 import { rulesetVersion } from '../../policies/registry.ts';
 import { associationOffers, offerFor } from '../offers.ts';
 import { isAssessmentStage } from '../activities/activity-ref.ts';
@@ -102,25 +107,16 @@ export function normalizeOfferCalendar(
   )
     fail('Estrutura do calendário inválida.');
   if (s.weekConfirmed && !s.weekdays.length) fail('Semana letiva vazia.');
-  if (s.teacherVacations) {
-    const vacation = teacherVacations(s.year, s.teacherVacations);
-    // The proposed date of the same ID wins over the previous one, as for any other field.
-    const recorded = [...(previous?.events ?? []), ...s.events];
-    s.events = s.events
-      .filter(
-        (e) =>
-          !['teacher-vacation-january', 'teacher-vacation-july', 'teacher-vacation-third'].includes(
-            e.id,
-          ),
-      )
-      .concat(
-        regeneratedVacations(
-          vacation.events,
+  // Teacher vacations belong to the whole campus: the documented exception to “adding an offer
+  // never extends a date”.
+  s.events = s.events.map((event) =>
+    vacationKind(event.activity) === 'teacher'
+      ? withTeacherVacationFields(
+          event,
           s.offers.map((offer) => offer.id),
-          recorded,
-        ),
-      );
-  }
+        )
+      : event,
+  );
   const ids = new Set<string>();
   const listedOffers = (values: string[]) => {
     if (
@@ -175,7 +171,11 @@ export function normalizeOfferCalendar(
     // Art. 5º and the municipal cause bind a new or edited date; an unchanged one stays a
     // readiness issue, so it never blocks saving other changes.
     if (schoolDayEdited(old, event)) {
-      const issue = schoolDayIssue(s, event) ?? activityExtensionIssue(event);
+      const issue =
+        vacationEditIssue(s, old, event) ??
+        vacationOverlapIssue(s.events, event) ??
+        schoolDayIssue(s, event) ??
+        activityExtensionIssue(event);
       if (issue) fail(issue);
     }
     if (
@@ -224,7 +224,6 @@ export function offerCalendarContent(state: CalendarContent): CalendarContent {
     periods,
     events,
     observanceDates,
-    teacherVacations,
   } = state;
   return JSON.parse(
     JSON.stringify({
@@ -236,7 +235,6 @@ export function offerCalendarContent(state: CalendarContent): CalendarContent {
       periods,
       events,
       observanceDates,
-      teacherVacations,
     }),
   ) as CalendarContent;
 }

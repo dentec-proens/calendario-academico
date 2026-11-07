@@ -18,7 +18,7 @@ const record = {
   version: 27,
   courses: 'Curso de teste',
   state: {
-    schemaVersion: 6 as const,
+    schemaVersion: 7 as const,
     year: 2027,
     campus: 'Pinhais',
     weekdays: [],

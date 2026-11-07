@@ -94,3 +94,17 @@ export async function openBaseDates(page: Page) {
   if ((await toggle.getAttribute('aria-expanded')) === 'false') await toggle.click();
   await expect(toggle).toHaveAttribute('aria-expanded', 'true');
 }
+
+/** Fills the vacations the norm requires for a submission, through the step that registers them. */
+export async function fillRequiredVacations(page: Page) {
+  await selectEditorSection(page, 'vacations');
+  await page.locator('#vacation-add-school').click();
+  await page.locator('#vacation-start').fill('2027-01-01');
+  await page.locator('#vacation-end').fill('2027-01-31');
+  await page.locator('#vacation-apply').click();
+  await page.locator('#vacation-add-teacher').click();
+  await page.locator('#vacation-start').fill('2027-01-01');
+  await page.locator('#vacation-days').fill('45');
+  await page.locator('#vacation-apply').click();
+  await expect(page.locator('#vacation-teacher-summary')).toContainText('45 de 45 dias.');
+}

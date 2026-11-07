@@ -10,6 +10,7 @@ import {
 import { contentIssues } from '../../src/domain/calendar/readiness.ts';
 import * as validators from '../../convex/validators.ts';
 import { calendarOffersFixture } from '../fixtures/calendar-offers.ts';
+import { onceLink } from '../helpers/activity-links.ts';
 import { retiredOfferFields } from '../helpers/retired-fields.ts';
 
 const allOffers = ['integrado', 'graduacao', 'graduacao-2', 'graduacao-3'];
@@ -99,24 +100,38 @@ test('items are added, removed and changed by id in offers, periods and events',
   ]);
 });
 
-test('observances by key, week and vacations field by field, derived vacation events ignored', () => {
-  const vacations = (value: DiffSide, end: string) => {
-    value.state.teacherVacations = {
-      firstStart: civilDate('2027-01-04'),
-      firstEnd: civilDate(end),
-    };
-    value.state.events.push({
-      id: 'teacher-vacation-january',
-      name: 'Férias',
-      start: civilDate('2027-01-04'),
-      end: civilDate(end),
-      effect: 'exclude' as const,
-      offers: value.state.offers.map((offer) => offer.id),
-    });
-  };
-  const before = side((value) => vacations(value, '2027-01-29'));
+test('observances by key, week field by field and vacations by period, apart from the other dates', () => {
+  const vacation = (
+    id: string,
+    activityId: string,
+    start: string,
+    end: string,
+    offers: string[],
+  ) => ({
+    id,
+    name: id,
+    activity: onceLink(activityId),
+    start: civilDate(start),
+    end: civilDate(end),
+    effect: 'exclude' as const,
+    category: 'ferias',
+    offers,
+  });
+  const before = side((value) => {
+    const offers = value.state.offers.map((offer) => offer.id);
+    value.state.events.push(
+      vacation('teacher', 'teacher-vacation', '2027-01-04', '2027-01-29', offers),
+      vacation('school', 'school-vacation', '2027-07-05', '2027-07-20', offers),
+    );
+  });
   const after = side((value) => {
-    vacations(value, '2027-01-30');
+    const offers = value.state.offers.map((offer) => offer.id);
+    value.state.events.push(
+      // An offer listed by the rule is no change of a teacher vacation.
+      vacation('teacher', 'teacher-vacation', '2027-01-04', '2027-01-30', offers.slice(0, 1)),
+      vacation('school', 'school-vacation', '2027-07-05', '2027-07-20', offers.slice(0, 1)),
+      vacation('new', 'school-vacation', '2027-12-20', '2027-12-31', offers),
+    );
     value.state.weekdays = [1, 2, 3, 4, 5, 6];
     value.state.observanceDates = { 'teacher-day': civilDate('2027-10-11') };
     value.institutionalSnapshot[0] = {
@@ -127,8 +142,19 @@ test('observances by key, week and vacations field by field, derived vacation ev
   });
   const diff = compareContents(before, after);
   expect(diff.events).toEqual([]);
-  expect(diff.vacations).toEqual([
-    expect.objectContaining({ field: 'firstEnd', after: '2027-01-30' }),
+  expect(diff.vacations.teacher).toEqual([
+    expect.objectContaining({
+      kind: 'changed',
+      id: 'teacher',
+      fields: [expect.objectContaining({ field: 'end', after: '2027-01-30' })],
+    }),
+  ]);
+  expect(diff.vacations.school.map((change) => [change.kind, change.id])).toEqual([
+    ['changed', 'school'],
+    ['added', 'new'],
+  ]);
+  expect(diff.vacations.total).toEqual([
+    expect.objectContaining({ field: 'days', before: 26, after: 27 }),
   ]);
   expect(diff.week).toEqual([expect.objectContaining({ field: 'weekdays' })]);
   expect(diff.observances).toEqual([
@@ -283,7 +309,6 @@ test('every field of the stored validators is labeled or explicitly ignored', ()
   );
   expect(covered(validators.period.fields, fieldLabels.period, ignoredFields.period)).toEqual([]);
   expect(covered(validators.event.fields, fieldLabels.event, ignoredFields.event)).toEqual([]);
-  expect(covered(validators.vacations.fields, fieldLabels.vacations, [])).toEqual([]);
   expect(covered(validators.contentState.fields, fieldLabels.week, ignoredFields.state)).toEqual(
     [],
   );

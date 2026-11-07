@@ -17,6 +17,7 @@ import type { Member } from '../access/contracts';
 import { appendAudit } from '../lib/audit';
 import { clean, domainRule, fail } from '../lib/shared';
 import { campusName } from './model';
+import { submitBlockers } from '../../src/domain/calendar/readiness';
 import { baseRecord } from './record';
 import {
   appendDecision,
@@ -131,6 +132,8 @@ export async function applyTransition(ctx: MutationCtx, user: Member, request: T
       if (request.version !== undefined && request.version !== row.version)
         fail('Há versão mais recente. Reabra o calendário antes de enviar.', 409);
       if (!row.courses.trim()) fail(missingCoursesIssue, 409);
+      const [blocker] = submitBlockers(record.state, record.institutionalSnapshot);
+      if (blocker) fail(blocker.message, 409);
       if (request.baseIdentity === undefined)
         fail('Atualize a aplicação recarregando a página antes de enviar.', 409);
       // Nobody submits dates they did not see. Nothing is written, and the editor already shows it.

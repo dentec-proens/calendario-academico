@@ -17,7 +17,7 @@ test('school vacation suggestions exclude teacher vacations and leave notes blan
     name: 'Teste',
     version: 1,
     state: {
-      schemaVersion: 6 as const,
+      schemaVersion: 7 as const,
       year: 2027,
       campus: 'Foz',
       weekdays: [],
@@ -36,9 +36,9 @@ test('school vacation suggestions exclude teacher vacations and leave notes blan
   };
   const events = [
     { id: 'school', name: 'Férias dos estudantes', category: 'ferias' },
+    { id: 'both', name: 'Férias escolares e docentes', category: 'ferias' },
     { id: 'teachers', name: 'Férias docentes', category: 'ferias' },
     { id: 'professors', name: 'Férias dos professores', category: 'ferias' },
-    { id: 'teacher-vacation-january', name: 'Férias', category: 'ferias' },
   ].map((e) => ({
     ...e,
     start: civilDate('2027-01-02'),
@@ -49,7 +49,7 @@ test('school vacation suggestions exclude teacher vacations and leave notes blan
   const support = reviewSupport(record, events);
   assert.deepEqual(
     support.criteria.find((c) => c.id === 'III')!.candidates.map((e) => e.id),
-    ['school'],
+    ['school', 'both'],
   );
   assert(support.criteria.find((c) => c.id === 'IV')!.candidates.some((e) => e.id === 'teachers'));
   assert(support.criteria.every((c) => c.initial.notes === ''));
@@ -60,7 +60,7 @@ test('review extracts 29 active criteria, flags other years and treats name matc
     name: 'Teste',
     version: 1,
     state: {
-      schemaVersion: 6 as const,
+      schemaVersion: 7 as const,
       year: 2028,
       campus: 'Foz',
       weekdays: [],
@@ -108,7 +108,7 @@ test('initial analysis identifies a measurable deficit without assuming document
     version: 1,
     courses: 'Curso',
     state: {
-      schemaVersion: 6 as const,
+      schemaVersion: 7 as const,
       year: 2027,
       campus: 'Foz',
       weekdays: [1, 2, 3, 4, 5],
@@ -176,7 +176,7 @@ test('review displays separate registered totals and provisional counts without 
     name: 'Teste',
     version: 1,
     state: {
-      schemaVersion: 6 as const,
+      schemaVersion: 7 as const,
       year: 2026,
       campus: 'Foz',
       weekdays: [1, 2, 3, 4, 5],
@@ -267,7 +267,7 @@ test('review coverage follows the criterion identity when its citation text chan
         name: 'Calendário sintético',
         version: 1,
         state: {
-          schemaVersion: 6 as const,
+          schemaVersion: 7 as const,
           year: 2027,
           weekdays: [],
           weekConfirmed: false,

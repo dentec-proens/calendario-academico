@@ -60,11 +60,7 @@ export function validateActivityRecord(
       throw new DomainError(
         'Referências e ocorrências fora do ano são informativas, sem efeito letivo.',
       );
-    if (
-      event.hours !== undefined ||
-      event.assessmentAutoStart ||
-      /^teacher-vacation|^saturday/.test(event.id)
-    )
+    if (event.hours !== undefined || event.assessmentAutoStart || /^saturday/.test(event.id))
       throw new DomainError(
         'Referência anterior não comprova horas, férias, sábados ou etapas atuais.',
       );

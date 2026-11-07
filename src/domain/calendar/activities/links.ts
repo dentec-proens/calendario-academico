@@ -20,6 +20,7 @@ import {
   type StageActivityRef,
 } from './activity-ref.ts';
 import { periodsForOffer } from '../organization/periods.ts';
+import { isVacationActivity } from './vacations.ts';
 
 type LinkState = Pick<ActivityState, 'year' | 'offers' | 'periods' | 'events'> &
   Partial<Pick<ActivityState, 'schemaVersion' | 'rulesetVersion'>>;
@@ -186,6 +187,8 @@ export function linkCorrected(
     sameActivity(previous.activity, next.activity)
   )
     return false;
+  // Vacations change the count and the offers: they are registered in their own step.
+  if (isVacationActivity(next.activity)) return false;
   const activity = generatedActivity(generated, next.activity);
   return !!activity && coversAllOffers(state, activity, next);
 }

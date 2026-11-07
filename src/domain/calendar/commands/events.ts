@@ -1,4 +1,4 @@
-import type { ActivityPlanItem, ActivityState, CalendarEvent, VacationPeriods } from '../model.ts';
+import type { ActivityPlanItem, ActivityState, CalendarEvent } from '../model.ts';
 import { equalValues } from '../../../shared/equal.ts';
 import { datesBetween } from '../counting/core.ts';
 import { periodsForOffer } from '../organization/periods.ts';
@@ -17,6 +17,11 @@ import {
 } from '../activities/activity-ref.ts';
 import { assessmentCycleIssue } from '../activities/assessment-intervals.ts';
 import {
+  isVacationActivity,
+  vacationEditIssue,
+  vacationOverlapIssue,
+} from '../activities/vacations.ts';
+import {
   coversAllOffers,
   coversDate,
   dateEdited,
@@ -27,38 +32,21 @@ import {
   type LinkIssue,
 } from '../activities/links.ts';
 import { offerIds } from '../offers.ts';
-import { vacationIds } from './vacations.ts';
 import { DomainError } from '../../errors.ts';
 import { validateInternalDate } from '../internal-dates.ts';
 
-export function removeEvent<S extends ActivityState & { teacherVacations?: VacationPeriods }>(
-  state: S,
-  id: string,
-): S {
+export function removeEvent<S extends ActivityState>(state: S, id: string): S {
   if (!state.events.some((event) => event.id === id))
     throw new DomainError('O evento não existe mais.');
-  const next = {
-    ...state,
-    events: state.events.filter((event) =>
-      vacationIds.has(id) ? !vacationIds.has(event.id) : event.id !== id,
-    ),
-  };
-  if (vacationIds.has(id)) delete next.teacherVacations;
-  return next;
+  return { ...state, events: state.events.filter((event) => event.id !== id) };
 }
 
 /**
  * Reverses a change to the dates from the state before it. The caller guarantees that nothing was
  * edited since, so the previous dates come back in their place and the change leaves no difference.
  */
-export function restoreEvents<S extends ActivityState & { teacherVacations?: VacationPeriods }>(
-  state: S,
-  before: S,
-): S {
-  const next = { ...state, events: before.events };
-  if (before.teacherVacations) next.teacherVacations = before.teacherVacations;
-  else delete next.teacherVacations;
-  return next;
+export function restoreEvents<S extends ActivityState>(state: S, before: S): S {
+  return { ...state, events: before.events };
 }
 
 /** Occurrence identity is independent of source documents and descriptive metadata. */
@@ -158,6 +146,9 @@ function correctedDate<S extends ActivityState>(
     );
   const row = generatedActivity(context.generated, activity);
   if (!row) throw new DomainError('Atividade inválida para este calendário.');
+  // They change the count and the offers, which a correction of the link never does.
+  if (isVacationActivity(activity))
+    throw new DomainError('Férias são registradas no passo Férias.');
   if (!coversAllOffers(state, row, saved))
     throw new DomainError(
       'A atividade escolhida não abrange todas as ofertas da data. Ajuste as ofertas da data antes de corrigir o vínculo.',
@@ -280,7 +271,11 @@ function applyDate<S extends ActivityState>(
   const kept = linkKept(previous, event);
   // Art. 5º first: a meeting that adds days is refused for that reason, not for its periods.
   if (schoolDayEdited(previous, event)) {
-    const issue = schoolDayIssue(state, event) ?? activityExtensionIssue(event);
+    const issue =
+      vacationEditIssue(state, previous, event) ??
+      vacationOverlapIssue(state.events, event) ??
+      schoolDayIssue(state, event) ??
+      activityExtensionIssue(event);
     if (issue) throw new DomainError(issue);
   }
   validateActivityRecord(state, event, {

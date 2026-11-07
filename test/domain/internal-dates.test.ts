@@ -104,7 +104,7 @@ describe('date commands', () => {
     expect(() => createCampusDate(state, internal({ effect: 'exclude' }))).toThrow(
       /sem efeito na contagem/,
     );
-    for (const category of ['feriado', 'recesso', 'ferias', 'limite', 'formacao', 'conselho'])
+    for (const category of ['feriado', 'recesso', 'limite', 'formacao', 'conselho'])
       expect(() => createCampusDate(state, internal({ category })), category).toThrow(
         /Só datas comemorativas, eventos/,
       );
@@ -237,7 +237,7 @@ describe('review evidence', () => {
     name: 'Teste',
     version: 1,
     state: {
-      schemaVersion: 6 as const,
+      schemaVersion: 7 as const,
       year,
       campus: 'Campus',
       weekdays: [],

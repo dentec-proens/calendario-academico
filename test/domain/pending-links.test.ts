@@ -4,7 +4,6 @@ import { describe, expect, test } from 'vitest';
 import { linksToReview } from '../../src/domain/calendar/activities/links.ts';
 import { evaluatePlan } from '../../src/domain/calendar/activities/plan-evaluation.ts';
 import { applyDate } from '../helpers/date-commands.ts';
-import { applyVacations } from '../../src/domain/calendar/commands/vacations.ts';
 import { assessmentDayCounts } from '../../src/domain/calendar/counting/assessment-days.ts';
 import { evaluateCalendar } from '../../src/domain/calendar/counting/evaluation.ts';
 import {
@@ -222,29 +221,6 @@ test('reducing stages of an unchanged calendar is saved; positions without a sta
     'stage-twice-a': 'not-generated',
     'stage-early': 'not-generated',
   });
-});
-
-test('regenerated teacher vacations keep the link recorded for the same date ID', () => {
-  const state = conflictingLinks();
-  const changed = applyVacations(state, {
-    firstStart: civilDate('2027-01-05'),
-    firstEnd: civilDate('2027-01-30'),
-  });
-  expect(changed.events.find((event) => event.id === 'teacher-vacation-january')).toMatchObject({
-    activity: cycleLink('diary', 'first'),
-    start: '2027-01-05',
-  });
-  const stripped = {
-    ...state,
-    events: state.events.map(({ activity, ...event }) =>
-      event.id === 'teacher-vacation-january' ? event : { ...event, activity },
-    ),
-  };
-  expect(
-    normalizeOfferCalendar(stripped, state).events.find(
-      (event) => event.id === 'teacher-vacation-january',
-    )?.activity,
-  ).toEqual(cycleLink('diary', 'first'));
 });
 
 test('a preexisting duplicated stage saves, is reviewed and never counts as fulfilment', () => {

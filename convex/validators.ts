@@ -118,14 +118,6 @@ export const institutionalEventSnapshot = v.object({
   originalStart: v.optional(v.string()),
   originalEnd: v.optional(v.string()),
 });
-export const vacations = v.object({
-  firstStart: v.string(),
-  firstEnd: v.string(),
-  secondStart: v.optional(v.string()),
-  secondEnd: v.optional(v.string()),
-  thirdStart: v.optional(v.string()),
-  thirdEnd: v.optional(v.string()),
-});
 export const organization = v.union(v.literal('anual'), v.literal('semestral'));
 export const calendarOffer = v.object({
   id: v.string(),
@@ -147,7 +139,7 @@ export const calendarOffer = v.object({
   intake: v.optional(v.record(v.string(), v.literal(true))),
 });
 export const contentState = v.object({
-  schemaVersion: v.literal(6),
+  schemaVersion: v.literal(7),
   rulesetVersion: v.optional(v.string()),
   offers: v.array(calendarOffer),
   weekdays: v.array(v.number()),
@@ -155,7 +147,6 @@ export const contentState = v.object({
   periods: v.array(period),
   events: v.array(event),
   observanceDates: v.optional(v.record(v.string(), v.string())),
-  teacherVacations: v.optional(vacations),
 });
 export const domainState = v.object({
   ...contentState.fields,

@@ -9,16 +9,17 @@ import { api } from '../../convex/_generated/api.js';
 import { calendarRecordDates } from '../../web/shared/convex/calendar-dates.ts';
 import { inspectCalendar } from '../../src/domain/calendar/base.ts';
 import type { createNativeFixture } from './native-database.ts';
+import { seedRequiredVacations } from './required-vacations.ts';
 
 type Client = Pick<
   ReturnType<Awaited<ReturnType<typeof createNativeFixture>>['asClient']>,
-  'query' | 'mutation'
+  'query' | 'mutation' | 'run'
 >;
 
 /** Content that passes every machine check for 2027, as in the release test. */
 export function readyContent(): CalendarContent {
   const state = {
-    schemaVersion: 6 as const,
+    schemaVersion: 7 as const,
     year: 2027,
     weekdays: [1, 2, 3, 4, 5],
     weekConfirmed: true,
@@ -62,6 +63,14 @@ export function readyContent(): CalendarContent {
       end: civilDate('2027-02-01'),
       effect: 'note',
     };
+    // From the start of the year: 45 days for teachers, as the norm asks; they reach February.
+    if (requirement.variant === 'vacation') {
+      event.effect = 'exclude';
+      event.category = 'ferias';
+      event.start = civilDate('2027-01-01');
+      if (requirement.exactDays) event.end = civilDate('2027-02-14');
+      else event.end = civilDate('2027-01-31');
+    }
     if (requirement.minHours) event.hours = requirement.minHours;
     if (requirement.month)
       event.start = event.end = civilDate(`2027-${String(requirement.month).padStart(2, '0')}-10`);
@@ -95,7 +104,15 @@ export async function calendarStatus(client: Client, id: Id<'calendars'>) {
   return { status: record.status as CalendarStatus, statusRevision: record.statusRevision, record };
 }
 
-export async function act(
+/** Submitting needs the vacations of the norm: `act` fills what is missing; see `actAsIs`. */
+export async function act(...args: Parameters<typeof actAsIs>) {
+  const [client, id, action] = args;
+  if (action === 'submit') await client.run((ctx) => seedRequiredVacations(ctx, id));
+  return actAsIs(...args);
+}
+
+/** The transition over the calendar as it is, for what the vacations themselves decide. */
+export async function actAsIs(
   client: Client,
   id: Id<'calendars'>,
   action: LifecycleAction,
@@ -143,7 +160,7 @@ export async function saveReview(
   return reviewer.mutation(api.reviews.saveReview, {
     id,
     body: {
-      schemaVersion: 6 as const,
+      schemaVersion: 7 as const,
       rulesetVersion: support.rulesetVersion,
       baseIdentity: support.baseIdentity,
       revision: support.review?.revision ?? 0,

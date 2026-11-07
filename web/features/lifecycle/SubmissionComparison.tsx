@@ -459,7 +459,9 @@ export function DiffView({ diff }: { diff: CalendarDiff }) {
       <Items title={sectionTitles.periods} items={diff.periods} />
       <Items title={sectionTitles.events} items={diff.events} />
       <FieldSection title="Observâncias" fields={diff.observances} />
-      <FieldSection title="Férias docentes" fields={diff.vacations} />
+      <Items title="Férias escolares" items={diff.vacations.school} />
+      <Items title="Férias docentes" items={diff.vacations.teacher} />
+      <FieldSection title="Férias docentes" fields={diff.vacations.total} />
       {diff.baseChanges ? (
         <section>
           <h4>Base institucional</h4>

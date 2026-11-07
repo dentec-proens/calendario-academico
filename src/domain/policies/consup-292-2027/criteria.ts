@@ -62,8 +62,9 @@ export const criteria = frozenCriteria([
   {
     id: 'III',
     title: 'Férias escolares',
-    requirement: 'Registrar os períodos de férias escolares.',
-    source: 'Art. 11, III',
+    requirement:
+      'Registrar as férias escolares de cada oferta, sem número fixo de períodos. O recesso escolar de julho atende a este item.',
+    source: 'Art. 11, III; decisão de 06/11/2026',
     item: 'Art. 11, III',
     pattern: 'ferias',
   },
@@ -71,8 +72,8 @@ export const criteria = frozenCriteria([
     id: 'IV',
     title: 'Férias docentes',
     requirement:
-      'Registrar as férias docentes, garantindo 45 dias, de preferência coincidentes com as férias escolares.',
-    source: 'Art. 11, IV',
+      'Registrar as férias docentes, únicas para todo o campus, com exatamente 45 dias no ano do calendário. A coincidência com as férias escolares é orientação, e a parcial é válida.',
+    source: 'Art. 11, IV; decisão de 06/11/2026',
     item: 'Art. 11, IV',
     pattern: 'ferias.*docent|docent.*ferias',
   },

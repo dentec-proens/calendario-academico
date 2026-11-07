@@ -5,7 +5,6 @@ import type {
   CalendarOffer,
   OfferKind,
 } from '../../src/domain/calendar/model.ts';
-import { teacherVacations } from '../../src/domain/calendar/activities/teacher-vacations.ts';
 import type { ActivityRef } from '../../src/domain/calendar/activities/activity-ref.ts';
 import {
   applyOfferOrganization,
@@ -51,7 +50,7 @@ function draft(
   extra: (event: CalendarEvent) => CalendarEvent = (event) => event,
 ): PendingLinksFixture {
   return {
-    schemaVersion: 6,
+    schemaVersion: 7,
     rulesetVersion: 'consup-292-2027-v5',
     year: 2027,
     campus,
@@ -173,8 +172,6 @@ export function cascavelDraft(): PendingLinksFixture {
   return state;
 }
 
-const vacations = { firstStart: day('04/01'), firstEnd: day('31/01') };
-
 /**
  * Classified annual calendar with links that conflict or lost their activity: a duplicated
  * stage, two stages in inverted order, teacher vacations with a link and a notice with an
@@ -191,9 +188,16 @@ export function conflictingLinks(): PendingLinksFixture {
     category: 'limite',
     offers: ['integrado'],
   });
-  const vacation = teacherVacations(2027, vacations).events[0];
+  const vacation = {
+    id: 'teacher-vacation-january',
+    name: 'Férias docentes — 28 dias',
+    start: day('04/01'),
+    end: day('31/01'),
+    effect: 'exclude' as const,
+    category: 'ferias',
+  };
   return {
-    schemaVersion: 6,
+    schemaVersion: 7,
     rulesetVersion: 'consup-292-2027-v5',
     year: 2027,
     campus: 'Campus sintético de conflitos',
@@ -212,7 +216,6 @@ export function conflictingLinks(): PendingLinksFixture {
         association: { status: 'defined', offers: ['integrado', 'subsequente'], term: 'annual' },
       },
     ],
-    teacherVacations: vacations,
     events: [
       stage('stage-first', 1, '01/02', '31/03'),
       stage('stage-twice-a', 2, '01/04', '31/05'),
@@ -267,7 +270,7 @@ export function stageLinksToReview(): PendingLinksFixture {
     offers: [offerId],
   });
   return {
-    schemaVersion: 6,
+    schemaVersion: 7,
     rulesetVersion: 'consup-292-2027-v5',
     year: 2027,
     campus: 'Campus sintético de etapas',
@@ -315,7 +318,7 @@ export function legacyOperationalLinks(): PendingLinksFixture {
     offers: ['integrado'],
   });
   return {
-    schemaVersion: 6,
+    schemaVersion: 7,
     rulesetVersion: 'consup-292-2027-v5',
     year: 2027,
     campus: 'Campus sintético de vínculos legados',
@@ -364,7 +367,7 @@ export function stagePositionsToConfirm(): PendingLinksFixture {
     offers: [offerId],
   });
   return {
-    schemaVersion: 6,
+    schemaVersion: 7,
     rulesetVersion: 'consup-292-2027-v5',
     year: 2027,
     campus: 'Campus sintético de posições de etapa',

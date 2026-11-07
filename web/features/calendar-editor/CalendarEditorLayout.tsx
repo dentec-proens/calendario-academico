@@ -37,7 +37,7 @@ import {
 } from './editor-steps.ts';
 import { offerIds, labelFor } from '#src/domain/calendar/offers.ts';
 import { groupPendencies } from '#src/domain/calendar/pendencies.ts';
-import { contentIssues } from '#src/domain/calendar/readiness.ts';
+import { contentIssues, submitBlockers } from '#src/domain/calendar/readiness.ts';
 import EditorSteps from './EditorSteps.tsx';
 import TeachingDaySummary from './TeachingDaySummary.tsx';
 import BaseChangesNotice from './BaseChangesNotice.tsx';
@@ -209,7 +209,7 @@ function EditorFrame() {
         ? 'Resolva o salvamento das alterações antes de enviar.'
         : !record.courses
           ? missingCoursesIssue
-          : undefined;
+          : submitBlockers(state, baseEvents)[0]?.message;
   // Shared by the header and by the review step's footer, which repeats only the submission.
   const lifecycle = {
     calendar: record,
@@ -517,7 +517,10 @@ function EditorFrame() {
                 {saveLabel}
               </span>
             </div>
-            {currentSection === 'vacations' && unappliedForms.includes('vacations') && next ? (
+            {currentSection === 'vacations' &&
+            !readOnly &&
+            unappliedForms.includes('vacations') &&
+            next ? (
               // Moving on must not leave typed vacations behind: they are applied first.
               <button id="editor-continue" type="submit" form="vacation-form">
                 {continueLabel(next)} <ArrowRight aria-hidden="true" />

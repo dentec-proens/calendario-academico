@@ -457,6 +457,43 @@
   flex: 0 0 7rem;
   width: 7rem;
 }
+.vacation-kind + .vacation-kind {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+}
+.vacation-kind h3 {
+  margin: 0;
+}
+.vacation-periods {
+  display: grid;
+  gap: 12px;
+  margin: 12px 0;
+  padding: 0;
+  list-style: none;
+}
+.vacation-period {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.vacation-period p {
+  margin: 2px 0 0;
+}
+.vacation-period-actions,
+.vacation-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.vacation-summary {
+  margin: 12px 0 0;
+}
 .editor-field-description {
   max-width: 720px;
   margin: -6px 0 20px;

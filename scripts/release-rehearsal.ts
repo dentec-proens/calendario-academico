@@ -6,6 +6,8 @@ import {
   type RehearsalCalendar,
 } from '../src/domain/calendar/rehearsal.ts';
 import type { CatalogueEvent } from '../src/domain/institution/catalogue.ts';
+import { schoolVacationConversions } from '../convex/format7Conversions.ts';
+import { convertToFormat7 } from '../src/domain/calendar/normalization/convert-format-7.ts';
 import { readSnapshot, type SnapshotRow } from './administration/snapshot.ts';
 
 export interface RehearsalReport {
@@ -78,8 +80,22 @@ export function rehearseBackup(zip: string): RehearsalReport {
       report.failures.push({ calendarId: row._id, error: broken });
       continue;
     }
+    // Until the contraction of format 7, the backup holds what the migration will convert.
+    let stored = content!;
+    try {
+      if ((content!.state as { schemaVersion?: number }).schemaVersion === 6)
+        stored = convertToFormat7(content as never, schoolVacationConversions[row._id] ?? [])
+          .document as never;
+    } catch (cause) {
+      report.editable++;
+      report.failures.push({
+        calendarId: row._id,
+        error: `Conversão ao formato 7: ${cause instanceof Error ? cause.message : String(cause)}`,
+      });
+      continue;
+    }
     const result = rehearseCalendar(
-      { ...content!, status: row.status, year: row.year, campus: campus! },
+      { ...stored, status: row.status, year: row.year, campus: campus! },
       {
         revision: revisions.get(row.year) ?? 1,
         events: events

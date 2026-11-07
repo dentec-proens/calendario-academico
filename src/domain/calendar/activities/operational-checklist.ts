@@ -137,6 +137,22 @@ export function operationalRules(): ActivityRule[] {
         group: 'admission',
       },
     ]),
+    ...declareRules({ repeat: 'once', each: { required: false } }, [
+      {
+        id: 'school-vacation',
+        name: 'Férias escolares',
+        group: 'other',
+        category: 'ferias',
+        variant: 'vacation',
+      },
+      {
+        id: 'teacher-vacation',
+        name: 'Férias docentes',
+        group: 'other',
+        category: 'ferias',
+        variant: 'vacation',
+      },
+    ]),
     ...declareRules({ repeat: 'once' }, [
       {
         id: 'extraordinary-council',

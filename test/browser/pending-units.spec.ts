@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test';
 import { test, expect } from './test.ts';
-import { configureOffer, selectEditorSection } from './editor-navigation.ts';
+import { configureOffer, fillRequiredVacations, selectEditorSection } from './editor-navigation.ts';
 import { calendarOffersFixture } from '../fixtures/calendar-offers.ts';
 import { normalizeOfferCalendar } from '../../src/domain/calendar/normalization/normalize.ts';
 import type { CalendarState } from '../../web/features/calendar-editor/types.ts';
@@ -60,7 +60,10 @@ for (const width of [1440, 390]) {
       await expect(row.locator('[data-offer-badge]')).toHaveCount(2);
       // What Activities counts is what the review lists under activities and dates.
       const inGroup = (group: string) => page.locator(`#review-group-${group} .issue-item`).count();
-      expect((await inGroup('activities')) + (await inGroup('dates'))).toBe(toFill);
+      // Vacations have a step of their own, which counts them.
+      const vacations = await page.locator('[data-issue*="-vacation"]').count();
+      expect(vacations).toBeGreaterThan(0);
+      expect((await inGroup('activities')) + (await inGroup('dates')) - vacations).toBe(toFill);
       await expect(page.locator('[data-view="issues"] .editor-step-note')).toHaveText(
         `${total} pendências no total`,
       );
@@ -69,9 +72,11 @@ for (const width of [1440, 390]) {
       );
 
       // The submission counts the same items and each row leads to the same correction.
+      await fillRequiredVacations(page);
+      await selectEditorSection(page, 'issues');
       await page.locator('[data-lifecycle-footer-action="submit"]').click();
       const dialog = page.locator('dialog.confirmation-dialog--warning[open]');
-      await expect(dialog.locator('h2')).toHaveText(`Enviar com ${total} pendências?`);
+      await expect(dialog.locator('h2')).toHaveText(`Enviar com ${total - vacations} pendências?`);
       await expect(dialog.locator('.confirmation-dialog__items')).toContainText(
         /E mais \d+ pendências/,
       );
@@ -100,6 +105,7 @@ for (const width of [1440, 390]) {
         record.version++;
         await window.publishReviewerCalendar();
       }, state);
+      await fillRequiredVacations(page);
       await selectEditorSection(page, 'issues');
       await page.locator('[data-lifecycle-footer-action="submit"]').click();
       const dialog = page.locator('dialog.confirmation-dialog--warning[open]');

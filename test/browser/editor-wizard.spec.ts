@@ -1,5 +1,5 @@
 import { test, expect } from './test.ts';
-import { configureOffer, selectEditorSection } from './editor-navigation.ts';
+import { configureOffer, fillRequiredVacations, selectEditorSection } from './editor-navigation.ts';
 import type {} from '../fixtures/editor-client.ts';
 
 for (const width of [1440, 390]) {
@@ -63,14 +63,14 @@ for (const width of [1440, 390]) {
       'Passo 3 de 6: Sábados letivos',
     );
     await expect(page.getByRole('heading', { name: /Sábados letivos/ })).toHaveCount(1);
-    await expect(page.locator('#editor-continue')).toHaveText('Continuar para férias docentes');
-    await expect(page.locator('#vacation-form')).toHaveCount(0);
+    await expect(page.locator('#editor-continue')).toHaveText('Continuar para férias');
+    await expect(page.locator('#vacation-add-teacher')).toHaveCount(0);
     await page.locator('#editor-continue').click();
     await expect(page).toHaveURL(/\/ferias$/);
     await expect(page.locator('#editor-section-title')).toHaveAccessibleName(
-      'Passo 4 de 6: Férias docentes',
+      'Passo 4 de 6: Férias',
     );
-    await expect(page.getByRole('heading', { name: /férias docentes/i })).toHaveCount(1);
+    await expect(page.getByRole('heading', { name: 'Férias docentes' })).toHaveCount(1);
     await expect(page.locator('#editor-continue')).toHaveText('Continuar para atividades');
     await expect(page.locator('#saturday-form')).toHaveCount(0);
     await page.locator('#editor-continue').click();
@@ -80,6 +80,7 @@ for (const width of [1440, 390]) {
     );
     await expect(page.locator('#new-event')).toHaveText('Adicionar data do campus');
     await expect(page.locator('#editor-continue')).toHaveText('Continuar para conferir e enviar');
+    await fillRequiredVacations(page);
     await selectEditorSection(page, 'issues');
     await expect(page.locator('#review-progress')).toBeVisible();
     await expect(

@@ -1,5 +1,6 @@
 import { activityKey, isAssessmentStage, type ActivityRef } from './activities/activity-ref.ts';
 import { generatedActivities, generatedActivity, linksToReview } from './activities/links.ts';
+import { isVacationActivity } from './activities/vacations.ts';
 import type { ActivityState, InstitutionalEventSnapshot } from './model.ts';
 import {
   contentIssues,
@@ -115,6 +116,9 @@ export function pendingActivityCount(
   institutionalSnapshot: InstitutionalEventSnapshot[],
 ) {
   return groupPendencies(contentIssues(state, institutionalSnapshot), state).filter(
-    (item) => item.target?.area === 'activity' && !isAssessmentStage(item.target.activity),
+    (item) =>
+      item.target?.area === 'activity' &&
+      !isAssessmentStage(item.target.activity) &&
+      !isVacationActivity(item.target.activity),
   ).length;
 }

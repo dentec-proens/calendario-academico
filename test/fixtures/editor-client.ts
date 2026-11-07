@@ -18,7 +18,7 @@ export const record: WireCalendarRecord = {
   year: 2027,
   offerKinds: ['integrado'],
   state: {
-    schemaVersion: 6,
+    schemaVersion: 7,
     offers: [{ id: 'integrado', kind: 'integrado', delivery: 'a-conferir', organization: 'anual' }],
     campus: 'Campus de teste',
     year: 2027,

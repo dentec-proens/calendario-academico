@@ -26,7 +26,7 @@ const offer = (kind: OfferKind, organization: 'anual' | 'semestral' = 'anual'): 
 });
 
 const calendar = (offers: CalendarOffer[], changes: Partial<State> = {}): State => ({
-  schemaVersion: 6,
+  schemaVersion: 7,
   year: 2027,
   campus: 'Exemplo',
   offers,
@@ -46,6 +46,22 @@ const date = (id: string, changes: Partial<CalendarEvent> = {}): CalendarEvent =
   category: 'feriado',
   offers: ['integrado', 'subsequente'],
   ...changes,
+});
+
+const teacherDate = (
+  id: string,
+  start: string,
+  end: string,
+  offers = ['integrado', 'subsequente'],
+): CalendarEvent => ({
+  ...date(id, { start: civilDate(start), end: civilDate(end), category: 'ferias', offers }),
+  name: 'Férias docentes',
+  activity: onceLink('teacher-vacation'),
+});
+const schoolDate = (id: string, start: string, end: string): CalendarEvent => ({
+  ...date(id, { start: civilDate(start), end: civilDate(end), category: 'ferias' }),
+  name: 'Férias escolares',
+  activity: onceLink('school-vacation'),
 });
 
 const secondary = () => [offer('integrado'), offer('subsequente')];
@@ -185,16 +201,11 @@ describe('copyList', () => {
   });
 
   test('offers teacher vacations as one choice and warns before replacing others', () => {
-    const vacations = {
-      firstStart: civilDate('2027-01-03'),
-      firstEnd: civilDate('2027-02-01'),
-      secondStart: civilDate('2027-07-12'),
-      secondEnd: civilDate('2027-07-26'),
-    };
-    const source = calendar(secondary(), {
-      teacherVacations: vacations,
-      events: [date('teacher-vacation-january'), date('teacher-vacation-july')],
-    });
+    const periods = [
+      teacherDate('january', '2027-01-03', '2027-02-01'),
+      teacherDate('july', '2027-07-12', '2027-07-26'),
+    ];
+    const source = calendar(secondary(), { events: periods });
     const { candidates } = list(source);
     expect(candidates).toHaveLength(1);
     expect(candidate(candidates, copiedVacationsId)).toMatchObject({
@@ -205,20 +216,56 @@ describe('copyList', () => {
         { start: '2027-07-12', end: '2027-07-26' },
       ],
     });
-    const other = {
-      firstStart: civilDate('2027-01-04'),
-      firstEnd: civilDate('2027-02-02'),
-    };
-    const replacing = list(source, graduation({ teacherVacations: other })).candidates[0];
+    const replacing = list(
+      source,
+      graduation({ events: [teacherDate('other', '2027-01-04', '2027-02-02', ['graduacao'])] }),
+    ).candidates[0];
     expect(replacing).toMatchObject({
       suggested: false,
       warning: expect.stringContaining('Substitui'),
     });
-    expect(list(source, graduation({ teacherVacations: vacations }))).toEqual({
-      candidates: [],
-      alreadyPresent: 1,
-      omitted: 0,
+    expect(
+      list(
+        source,
+        graduation({
+          events: periods.map((period) => ({ ...period, offers: ['graduacao'] })),
+        }),
+      ),
+    ).toEqual({ candidates: [], alreadyPresent: 1, omitted: 0 });
+  });
+
+  test('a date of the campus with the name of a linked date does not count as having it', () => {
+    const linked = schoolDate('school', '2027-07-05', '2027-07-20');
+    const campus = date('Férias escolares', {
+      start: linked.start,
+      end: linked.end,
+      category: 'recesso',
     });
+    // In the target: the activity is still missing.
+    const onTarget = list(
+      calendar(secondary(), { events: [linked] }),
+      graduation({ events: [{ ...campus, offers: ['graduacao'] }] }),
+    );
+    expect(onTarget.alreadyPresent).toBe(0);
+    expect(onTarget.candidates.map((item) => item.id)).toEqual(['school']);
+    // In the source, in either order: two choices, and the link stays with its own.
+    for (const events of [
+      [campus, linked],
+      [linked, campus],
+    ]) {
+      const { candidates } = list(calendar(secondary(), { events }));
+      expect(candidates.map((item) => item.id).sort()).toEqual(['Férias escolares', 'school']);
+      const next = applyCopiedDates(
+        graduation(),
+        calendar(secondary(), { events }),
+        ['school'],
+        ['graduacao'],
+        ids,
+      );
+      expect(next.events).toEqual([
+        expect.objectContaining({ activity: onceLink('school-vacation'), offers: ['graduacao'] }),
+      ]);
+    }
   });
 
   test('treats records for different offers that become the same date as one choice', () => {
@@ -282,6 +329,44 @@ describe('copyList', () => {
   });
 });
 
+describe('dates with the same name and different links', () => {
+  const linked = schoolDate('school', '2027-07-05', '2027-07-25');
+  const campus = date('Férias escolares', {
+    id: 'campus',
+    start: linked.start,
+    end: linked.end,
+    effect: 'exclude',
+    category: 'recesso',
+    offers: ['integrado', 'subsequente'],
+  });
+  const inGraduation = { ...linked, offers: ['graduacao'] };
+
+  test('a linked date already holds what a date of the campus would add', () => {
+    const { candidates, alreadyPresent } = list(
+      calendar(secondary(), { events: [campus] }),
+      graduation({ events: [inGraduation] }),
+    );
+    expect(candidates).toEqual([]);
+    expect(alreadyPresent).toBe(1);
+  });
+
+  test('a date of the campus blocks a linked date, saying how to copy it', () => {
+    const { candidates } = list(
+      calendar(secondary(), { events: [linked] }),
+      graduation({ events: [{ ...campus, offers: ['graduacao'] }] }),
+    );
+    expect(candidates[0]?.blockedBy).toMatch(/outro vínculo/);
+  });
+
+  test('marking both versions keeps the linked one', () => {
+    const source = calendar(secondary(), { events: [campus, linked] });
+    const next = applyCopiedDates(graduation(), source, ['campus', 'school'], ['graduacao'], ids);
+    expect(next.events).toEqual([
+      expect.objectContaining({ activity: onceLink('school-vacation'), offers: ['graduacao'] }),
+    ]);
+  });
+});
+
 describe('applyCopiedDates', () => {
   const source = calendar(secondary(), {
     events: [
@@ -332,20 +417,20 @@ describe('applyCopiedDates', () => {
   });
 
   test('copies teacher vacations through their command, reaching every offer', () => {
-    const vacations = {
-      firstStart: civilDate('2027-01-03'),
-      firstEnd: civilDate('2027-02-01'),
-    };
     const next = applyCopiedDates(
       graduation(),
-      calendar(secondary(), { teacherVacations: vacations }),
+      calendar(secondary(), { events: [teacherDate('january', '2027-01-03', '2027-02-01')] }),
       [copiedVacationsId],
       ['graduacao'],
-      ids,
+      () => 'copied',
     );
-    expect(next.teacherVacations).toEqual(vacations);
     expect(next.events).toEqual([
-      expect.objectContaining({ id: 'teacher-vacation-january', offers: ['graduacao'] }),
+      expect.objectContaining({
+        id: 'copied',
+        activity: onceLink('teacher-vacation'),
+        name: 'Férias docentes — 30 dias',
+        offers: ['graduacao'],
+      }),
     ]);
   });
 

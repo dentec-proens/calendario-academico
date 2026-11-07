@@ -1,4 +1,4 @@
-import { civilDate, optionalCivilDate, type CivilDate } from '../civil-date.ts';
+import { civilDate, type CivilDate } from '../civil-date.ts';
 import { activityRef, type ActivityRef } from './activities/activity-ref.ts';
 
 type RangeDates<T> = { [K in keyof T]: K extends 'start' | 'end' ? CivilDate : T[K] };
@@ -20,15 +20,12 @@ type CalendarDates<T extends CalendarInput> = {
       ? ActivityDates<T['events'][number]>[]
       : K extends 'observanceDates'
         ? Record<string, CivilDate>
-        : K extends 'teacherVacations'
-          ? ReturnType<typeof readVacationDates>
-          : T[K];
+        : T[K];
 };
 interface CalendarInput {
   periods: RangeInput[];
   events: ActivityInput[];
   observanceDates?: Record<string, string>;
-  teacherVacations?: VacationInput;
 }
 
 interface RangeInput {
@@ -42,15 +39,6 @@ interface ActivityInput extends RangeInput {
   deadlineAdjustment?: { date: string };
   activity?: unknown;
 }
-export interface VacationInput {
-  firstStart: string;
-  firstEnd: string;
-  secondStart?: string;
-  secondEnd?: string;
-  thirdStart?: string;
-  thirdEnd?: string;
-}
-
 export function readDateRange<T extends RangeInput>(value: T) {
   return { ...value, start: civilDate(value.start), end: civilDate(value.end) };
 }
@@ -79,21 +67,6 @@ export function readActivityDates<T extends ActivityInput>(value: T): ActivityDa
   } as ActivityDates<T>;
 }
 
-export function readVacationDates(value: VacationInput) {
-  const secondStart = optionalCivilDate(value.secondStart),
-    secondEnd = optionalCivilDate(value.secondEnd),
-    thirdStart = optionalCivilDate(value.thirdStart),
-    thirdEnd = optionalCivilDate(value.thirdEnd);
-  return {
-    firstStart: civilDate(value.firstStart),
-    firstEnd: civilDate(value.firstEnd),
-    ...(secondStart === undefined ? {} : { secondStart }),
-    ...(secondEnd === undefined ? {} : { secondEnd }),
-    ...(thirdStart === undefined ? {} : { thirdStart }),
-    ...(thirdEnd === undefined ? {} : { thirdEnd }),
-  };
-}
-
 export function readCalendarDates<T extends CalendarInput>(value: T): CalendarDates<T> {
   return {
     ...value,
@@ -106,8 +79,5 @@ export function readCalendarDates<T extends CalendarInput>(value: T): CalendarDa
             Object.entries(value.observanceDates).map(([key, date]) => [key, civilDate(date)]),
           ),
         }),
-    ...(value.teacherVacations === undefined
-      ? {}
-      : { teacherVacations: readVacationDates(value.teacherVacations) }),
   } as CalendarDates<T>;
 }

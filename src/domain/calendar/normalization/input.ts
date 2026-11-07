@@ -1,4 +1,4 @@
-import { civilDate, optionalCivilDate } from '../../civil-date.ts';
+import { civilDate } from '../../civil-date.ts';
 import { academicTerms, modalityIds, organizations } from '../config.ts';
 import {
   calendarSchemaVersion,
@@ -8,7 +8,6 @@ import {
   type CalendarOffer,
   type CalendarPeriod,
   type OfferStages,
-  type VacationPeriods,
 } from '../model.ts';
 import { activityRef } from '../activities/activity-ref.ts';
 import { DomainError } from '../../errors.ts';
@@ -28,13 +27,6 @@ const text = (value: unknown): string =>
 const date = (value: unknown) => {
   try {
     return civilDate(value);
-  } catch {
-    return fail('Data civil do calendário inválida.');
-  }
-};
-const optionalDate = (value: unknown) => {
-  try {
-    return optionalCivilDate(value);
   } catch {
     return fail('Data civil do calendário inválida.');
   }
@@ -170,21 +162,9 @@ const activity = (value: unknown): CalendarEvent => {
       : {}),
   };
 };
-function vacations(value: unknown): VacationPeriods {
-  const row = calendarObject(value);
-  return {
-    firstStart: date(row.firstStart),
-    firstEnd: date(row.firstEnd),
-    secondStart: optionalDate(row.secondStart),
-    secondEnd: optionalDate(row.secondEnd),
-    thirdStart: optionalDate(row.thirdStart),
-    thirdEnd: optionalDate(row.thirdEnd),
-  };
-}
-
 /**
- * Message for a copy exported before format 6. It is refused, never converted: a conversion
- * belongs only to the migration of its format, already concluded.
+ * Message for a copy exported before format 7. It is refused, never converted: a conversion
+ * belongs only to the migration of its format.
  */
 export const earlierFormatCopyMessage = (format: number) =>
   `Esta cópia está no formato ${format}, anterior à versão atual do calendário. Exporte uma nova cópia do calendário.`;
@@ -194,7 +174,7 @@ export function readCalendarOfferInput(
   value: unknown,
 ): CalendarContent & { year: number; campus: string } {
   const row = calendarObject(value);
-  if (row.schemaVersion === 4 || row.schemaVersion === 5)
+  if (row.schemaVersion === 4 || row.schemaVersion === 5 || row.schemaVersion === 6)
     return fail(earlierFormatCopyMessage(row.schemaVersion));
   if (row.schemaVersion !== calendarSchemaVersion)
     return fail(
@@ -217,6 +197,5 @@ export function readCalendarOfferInput(
         Object.entries(calendarObject(value)).map(([key, value]) => [key, date(value)]),
       ),
     ),
-    teacherVacations: optional(row.teacherVacations, vacations),
   };
 }

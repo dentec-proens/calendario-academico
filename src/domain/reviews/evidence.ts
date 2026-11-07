@@ -10,6 +10,7 @@ import { calendarOffers, labelFor, offerFor } from '../calendar/offers.ts';
 import { automaticEventSource } from '../calendar/counting/core.ts';
 import { isInternalDate } from '../calendar/internal-dates.ts';
 import { evaluatePlan, type ActivityEvaluation } from '../calendar/activities/plan-evaluation.ts';
+import { coincidentDays, vacationDates, vacationDays } from '../calendar/activities/vacations.ts';
 import { organizationForOffer, periodsForOffer } from '../calendar/organization/periods.ts';
 import type { CalendarPolicy } from '../policies/contract.ts';
 import type { evaluateCalendar } from '../calendar/counting/evaluation.ts';
@@ -75,6 +76,8 @@ const reviewCandidate = (e: SearchableEvent) => ({
 
 export interface EvidenceContext {
   state: TeachingState;
+  /** The dates of the calendar itself, without the institutional base. */
+  localEvents: readonly CalendarEvent[];
   policy: CalendarPolicy;
   /** The count, even when provisional; `null` when it could not be made. */
   result: ReturnType<typeof evaluateCalendar> | null;
@@ -258,6 +261,28 @@ const periods = ({ state }: EvidenceContext): Measured => ({
     : { kind: 'dates', state: 'empty', rows: [] },
 });
 
+/** The total and the coincidence, computed so the reviewer does not add dates by hand. */
+function teacherVacations({ state, localEvents }: EvidenceContext): Measured {
+  const dates = vacationDates(localEvents, 'teacher');
+  if (!dates.length) return { evidence: { kind: 'search' } };
+  const coincidence = calendarOffers(state).map((offer) => ({
+    offer: labelFor(state, offer.id),
+    days: coincidentDays(localEvents, offer.id),
+  }));
+  const same = new Set(coincidence.map(({ days }) => days)).size === 1;
+  return {
+    evidence: { kind: 'search' },
+    toCheck: [
+      `Total das férias docentes no ano: ${vacationDays(dates)} dias.`,
+      same
+        ? `Coincidem com as férias escolares: ${coincidence[0]?.days ?? 0} dias (orientação; a parcial é válida).`
+        : `Coincidem com as férias escolares (orientação; a parcial é válida): ${coincidence
+            .map(({ offer, days }) => `${offer}, ${days} dias`)
+            .join('; ')}.`,
+    ],
+  };
+}
+
 /**
  * The criteria the system measures, by the identifiers every review policy declares. Those
  * identifiers are already stable: saved reviews and activity rules refer to them.
@@ -267,6 +292,7 @@ export const measuredCriteria: Readonly<Record<string, (context: EvidenceContext
   semester,
   window: schoolYear,
   I: periods,
+  IV: teacherVacations,
 };
 
 const coverageRow = (state: TeachingState, row: ActivityEvaluation) => ({

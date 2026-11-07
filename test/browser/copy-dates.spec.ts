@@ -37,12 +37,19 @@ async function openCopyScreen(page: Page, origin: string) {
               organization: 'anual',
             },
           ],
-          teacherVacations: { firstStart: '2027-01-03', firstEnd: '2027-02-01' },
           events: events,
         },
       } as never);
     },
     [
+      sourceDate('Férias docentes — 30 dias', {
+        id: 'source-teacher-vacation',
+        activity: { activityId: 'teacher-vacation' },
+        start: '2027-01-03',
+        end: '2027-02-01',
+        effect: 'exclude',
+        category: 'ferias',
+      }),
       sourceDate('Aniversário do município'),
       sourceDate('Recesso do subsequente', { offers: ['subsequente'] }),
       sourceDate('Semana da Ética', {

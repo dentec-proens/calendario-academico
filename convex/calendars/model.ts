@@ -15,13 +15,23 @@ export async function calendarRow(ctx: Context, user: Member, id: Id<'calendars'
   return row;
 }
 
+/**
+ * Narrows a stored document to format 7. Format 6 exists only during the format 7 migration, under
+ * maintenance; the schema accepts it until the contraction and no reader understands it.
+ */
+export function currentFormat<D extends { state: { schemaVersion: number } }>(row: D) {
+  if (row.state.schemaVersion !== 7)
+    fail('O calendário está em atualização. Tente novamente em instantes.', 503);
+  return row as Extract<D, { state: { schemaVersion: 7 } }>;
+}
+
 export async function contents(ctx: Context, id: Id<'calendars'>) {
   const row = await ctx.db
     .query('calendarContents')
     .withIndex('by_calendarId', (q) => q.eq('calendarId', id))
     .unique();
   if (!row) fail('Conteúdo do calendário não encontrado.', 404);
-  return row;
+  return currentFormat(row);
 }
 
 export async function summary(ctx: Context, row: Doc<'calendars'>, campus: Doc<'campuses'>) {

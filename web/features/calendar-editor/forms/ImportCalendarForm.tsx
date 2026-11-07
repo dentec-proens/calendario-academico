@@ -32,7 +32,8 @@ export default function ImportCalendarForm({
           : undefined;
       // A copy of an earlier format is refused, never converted: conversion belongs only to the
       // migration of that format.
-      if (version === 4 || version === 5) throw new Error(earlierFormatCopyMessage(version));
+      if (version === 4 || version === 5 || version === 6)
+        throw new Error(earlierFormatCopyMessage(version));
       if (version !== calendarSchemaVersion)
         throw new Error(
           'Esta cópia foi gerada por uma versão anterior do sistema e não pode mais ser importada.',

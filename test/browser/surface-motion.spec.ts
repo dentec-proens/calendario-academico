@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test';
 import { test, expect } from './test.ts';
+import { fillRequiredVacations } from './editor-navigation.ts';
 
 const running = (selector: string) =>
   `document.querySelector(${JSON.stringify(selector)})?.getAnimations().length ?? 0`;
@@ -42,7 +43,10 @@ test('with reduced motion the panel simply appears', async ({ page, fixtureServe
 test('a pressed button sinks and comes back', async ({ page, fixtureServer }) => {
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.goto(await fixtureServer('editor'));
-  const button = page.locator('.ui-button--primary, .ui-button:not(.ui-button--secondary)').first();
+  await fillRequiredVacations(page);
+  const button = page
+    .locator('.ui-button--primary:enabled, .ui-button:not(.ui-button--secondary):enabled')
+    .first();
   await button.scrollIntoViewIfNeeded();
   const box = (await button.boundingBox())!;
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
