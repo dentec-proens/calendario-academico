@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test';
 import { test, expect } from './test.ts';
-import { savedState } from './editor-navigation.ts';
+import { addPeriod, savedState, selectEditorSection } from './editor-navigation.ts';
 import type { FixtureServer } from './fixture-server.ts';
 import type {} from '../fixtures/editor-client.ts';
 
@@ -102,4 +102,42 @@ test('typed values are kept: other periods wait for them, and closing returns th
   await page.locator('#vacation-discard').click();
   await expect(page.locator('#vacation-add-teacher')).toBeFocused();
   await expect(page.locator('#vacation-add-school')).toBeEnabled();
+});
+
+test('a period says what it takes from the count only when it takes something', async ({
+  page,
+  fixtureServer,
+}) => {
+  await open(page, fixtureServer);
+  await addPeriod(page, '2027-03-01', '2027-04-30');
+  await selectEditorSection(page, 'vacations');
+  await page.locator('#vacation-add-teacher').click();
+  await fillPeriod(page, '2027-01-04', '2027-01-08');
+  await page.locator('#vacation-apply').click();
+  await page.locator('#vacation-add-teacher').click();
+  await fillPeriod(page, '2027-03-01', '2027-03-05');
+  await expect(page.locator('#vacation-preview')).toContainText('Retira 5 dias letivos');
+  await page.locator('#vacation-apply').click();
+  const periods = page.locator('[data-vacation-period]');
+  await expect(periods.nth(0)).not.toContainText('Retira');
+  await expect(periods.nth(1)).toContainText('Retira 5 dias letivos');
+  await page.locator('#vacation-add-teacher').click();
+  await fillPeriod(page, '2027-03-08', '2027-03-08');
+  await page.locator('#vacation-apply').click();
+  await expect(periods.nth(2)).toContainText(/· 1 dia(?!s)/);
+  await expect(periods.nth(2)).toContainText('Retira 1 dia letivo');
+});
+
+test('with several offers, the period says how many days each one loses', async ({
+  page,
+  fixtureServer,
+}) => {
+  const origin = new URL(await fixtureServer('editor-mixed-offers')).origin;
+  await page.goto(origin + '/calendarios/synthetic-calendar/ferias');
+  await page.locator('#vacation-add-teacher').click();
+  await fillPeriod(page, '2027-03-01', '2027-03-05');
+  await page.locator('#vacation-apply').click();
+  await expect(page.locator('[data-vacation-period]')).toContainText(
+    /Retira 5 dias letivos de .+ · 5 dias letivos de /,
+  );
 });

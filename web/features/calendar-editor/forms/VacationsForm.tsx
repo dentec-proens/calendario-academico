@@ -56,15 +56,13 @@ const closed: VacationValues = {
 // Which list is open says nothing about values not applied yet.
 const browsingFields = ['kind', 'id'] as const;
 
-const copy: Record<VacationKind, { title: string; legal: string; help: string }> = {
+const copy: Record<VacationKind, { title: string; help: string }> = {
   school: {
     title: 'Férias escolares',
-    legal: 'Art. 11, III',
-    help: 'Inclui o recesso escolar de julho. Não há número fixo de períodos: basta que cada oferta tenha férias.',
+    help: 'Não há número fixo de períodos: basta que cada oferta tenha férias.',
   },
   teacher: {
     title: 'Férias docentes',
-    legal: 'Art. 11, IV',
     help: 'Únicas para todo o campus: valem para todas as ofertas do calendário.',
   },
 };
@@ -77,15 +75,20 @@ const parsed = (value: string): CivilDate | undefined => {
   }
 };
 
+/** Says nothing about an offer that loses no day: only what the period takes from the count. */
 function RemovedDays({ removed }: { removed: ReturnType<typeof vacationRemovedDays> }) {
   const { state } = useCalendarEditor();
-  if (!removed?.length) return null;
+  const affected = removed?.filter(({ days }) => days > 0) ?? [];
+  if (!affected.length) return null;
+  const amount = (days: number) => `${days} ${days === 1 ? 'dia letivo' : 'dias letivos'}`;
   return (
     <p className="help">
       Retira{' '}
-      {removed.length === 1 && offerIds(state).length === 1
-        ? `${removed[0]!.days} dias letivos`
-        : `${removed.map(({ offerId, days }) => `${labelFor(state, offerId)} ${days}`).join(' · ')} dias letivos`}
+      {offerIds(state).length === 1
+        ? amount(affected[0]!.days)
+        : affected
+            .map(({ offerId, days }) => `${amount(days)} de ${labelFor(state, offerId)}`)
+            .join(' · ')}
     </p>
   );
 }
@@ -321,7 +324,8 @@ export default function VacationsForm() {
           <div>
             {kind === 'school' && <strong>{event.name}</strong>}
             <p>
-              {compactRange(event, state.year)} · {vacationDays([event])} dias
+              {compactRange(event, state.year)} · {vacationDays([event])}{' '}
+              {vacationDays([event]) === 1 ? 'dia' : 'dias'}
               {startsDecemberVacation(event, state.year) && ' · até o fim do ano'}
             </p>
             {kind === 'school' && offerIds(state).length > 1 && (
@@ -402,9 +406,7 @@ export default function VacationsForm() {
             aria-labelledby={`vacations-${kind}-title`}
           >
             <h3 id={`vacations-${kind}-title`}>{copy[kind].title}</h3>
-            <p className="help">
-              {copy[kind].legal}. {copy[kind].help}
-            </p>
+            <p className="help">{copy[kind].help}</p>
             {dates.length > 0 && (
               <ul className="vacation-periods">{dates.map((event) => periodLine(kind, event))}</ul>
             )}
