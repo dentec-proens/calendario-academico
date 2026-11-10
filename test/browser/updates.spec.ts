@@ -799,7 +799,7 @@ test('choosing Google with local credentials filled preserves the existing depar
 }) => {
   const { origin } = await startUpdateServer(cleanup, 'router-auth');
   await page.goto(origin + '/?google=1');
-  await page.locator('#email').fill('acesso-local@example.invalid');
+  await page.locator('#email').fill('acesso-local@ifpr.edu.br');
   const dialogs: string[] = [];
   page.once('dialog', (dialog) => {
     dialogs.push(dialog.type());
@@ -808,5 +808,5 @@ test('choosing Google with local credentials filled preserves the existing depar
   await page.locator('#google-login').click({ noWaitAfter: true });
   await expect.poll(() => dialogs).toEqual(['beforeunload']);
   await expect(page.locator('#google-login')).toBeEnabled();
-  await expect(page.locator('#email')).toHaveValue('acesso-local@example.invalid');
+  await expect(page.locator('#email')).toHaveValue('acesso-local@ifpr.edu.br');
 });

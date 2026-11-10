@@ -2,11 +2,25 @@ import { Field } from '@base-ui/react/field';
 import type { ComponentProps, ReactNode } from 'react';
 
 type FieldContent = { label: ReactNode; description?: string };
-type TextFieldProps = Omit<ComponentProps<typeof Field.Control>, 'className'> & FieldContent;
+type TextFieldProps = Omit<ComponentProps<typeof Field.Control>, 'className'> &
+  FieldContent &
+  Pick<ComponentProps<typeof Field.Root>, 'validate' | 'validationMode'>;
 
-export function TextField({ label, description, disabled, ...props }: TextFieldProps) {
+export function TextField({
+  label,
+  description,
+  disabled,
+  validate,
+  validationMode,
+  ...props
+}: TextFieldProps) {
   return (
-    <Field.Root className="ui-field" disabled={disabled}>
+    <Field.Root
+      className="ui-field"
+      disabled={disabled}
+      validate={validate}
+      validationMode={validationMode}
+    >
       <Field.Label className="ui-field__label">{label}</Field.Label>
       <Field.Control {...props} className="ui-control" />
       {description ? (

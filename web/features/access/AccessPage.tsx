@@ -8,6 +8,17 @@ import { useAccounts } from '../../shared/convex/accounts.ts';
 import { useAction } from '../../shared/forms/useAction.ts';
 import { useDraftForm } from '../../shared/forms/useDraftForm.ts';
 import { FormFeedback } from '../../shared/forms/FormFeedback.tsx';
+import {
+  institutionalEmailMessage,
+  isInstitutionalEmail,
+  normalizeEmail,
+} from '#src/domain/institution/institutional-email.ts';
+
+/** Checks only what was typed; an empty field is left to `required`. */
+function emailProblem(value: unknown) {
+  const email = normalizeEmail(String(value ?? ''));
+  return email && !isInstitutionalEmail(email) ? institutionalEmailMessage : null;
+}
 
 export default function AccessPage() {
   const { status, notify, isLoading, setArrivalPending } = useSessionState();
@@ -23,6 +34,9 @@ export default function AccessPage() {
   } = useDraftForm({
     defaultValues: { email: '', password: '', name: '', code: '' },
     onSubmit: async (value, { isCurrent }) => {
+      // Enter in the e-mail field submits before it loses focus, so the rule is applied here too.
+      const problem = emailProblem(value.email);
+      if (problem) throw new Error(problem);
       const credentials = { email: value.email.trim(), password: value.password };
       if (setup)
         await accounts.setup({ ...credentials, name: value.name.trim(), code: value.code });
@@ -96,6 +110,8 @@ export default function AccessPage() {
             type="email"
             required
             autoComplete="username"
+            validationMode="onBlur"
+            validate={emailProblem}
             value={values.email}
             onValueChange={(value) => form.setFieldValue('email', value)}
           />

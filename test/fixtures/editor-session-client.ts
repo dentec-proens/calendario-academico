@@ -33,7 +33,7 @@ let maintenance = initial.maintenance ?? false;
 let bootstrapUnavailable = initial.bootstrapUnavailable ?? false;
 let holdSaves = false;
 const pendingSaves: Array<() => void> = [];
-export const counters = { signOuts: 0, saveStarted: 0 };
+export const counters = { signOuts: 0, signIns: 0, saveStarted: 0 };
 function publishSession() {
   subscribers.forEach((listener) => listener());
 }
@@ -56,6 +56,7 @@ export const actions = {
     return Promise.resolve();
   },
   signIn: () => {
+    counters.signIns++;
     authenticated = true;
     publishSession();
     return Promise.resolve();

@@ -3,14 +3,18 @@ import type { QueryCtx, MutationCtx } from '../_generated/server';
 import type { Member, PublicMember } from './contracts';
 import { getAuthSessionId, getAuthUserId } from '@convex-dev/auth/server';
 import { fail } from '../lib/shared';
+import {
+  institutionalEmailMessage,
+  isInstitutionalEmail,
+  normalizeEmail,
+} from '../../src/domain/institution/institutional-email';
 
 export type Context = QueryCtx | MutationCtx;
 
 export function institutionalEmail(value: unknown): string {
-  if (typeof value !== 'string') fail('Use um e-mail @ifpr.edu.br.');
-  const email = value.trim().toLowerCase();
-  if (email.length > 240 || !/^[^\s@]+@ifpr\.edu\.br$/.test(email))
-    fail('Use um e-mail @ifpr.edu.br.');
+  if (typeof value !== 'string') fail(institutionalEmailMessage);
+  const email = normalizeEmail(value);
+  if (!isInstitutionalEmail(email)) fail(institutionalEmailMessage);
   return email;
 }
 
@@ -37,7 +41,7 @@ export function memberFromRow(row: Doc<'users'> | null): Member | null {
     !row ||
     typeof row.name !== 'string' ||
     typeof row.email !== 'string' ||
-    !/^[^\s@]+@ifpr\.edu\.br$/.test(row.email) ||
+    !isInstitutionalEmail(row.email) ||
     !['ADMIN', 'CAMPUS', 'PARECERISTA'].includes(row.role) ||
     (row.role === 'CAMPUS' && !row.campusId) ||
     row.active !== true ||

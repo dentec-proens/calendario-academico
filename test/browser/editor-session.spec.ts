@@ -38,7 +38,7 @@ test.describe('compact Saturday access interruptions', () => {
         await page.evaluate(() => window.editorSessionTest.maintenance(false));
       } else {
         await page.locator('#expired-editor-login').click();
-        await page.locator('#email').fill('editor@example.invalid');
+        await page.locator('#email').fill('editor@ifpr.edu.br');
         await page.locator('#password').fill('synthetic-password');
         await page.locator('#auth-submit').click();
       }
@@ -79,11 +79,36 @@ test('login focuses the destination title instead of announcing the access', asy
   await expect(page.locator('#calendar-list')).toBeVisible();
   await page.locator('#account').click();
   await page.locator('#logout').click();
-  await page.locator('#email').fill('editor@example.invalid');
+  await page.locator('#email').fill('editor@ifpr.edu.br');
   await page.locator('#password').fill('synthetic-password');
   await page.locator('#auth-submit').click();
   await expect(page.locator('#panel-title')).toBeFocused();
   await expect(page.locator('#message')).toBeEmpty();
+});
+
+test('login refuses a non-institutional e-mail before asking the server', async ({
+  page,
+  fixtureServer,
+}) => {
+  await page.goto(await fixtureServer('editor-session'));
+  await expect(page.locator('#record-title')).toBeVisible();
+  await page.locator('#account').click();
+  await page.locator('#logout').click();
+  const email = page.locator('#email');
+  await email.fill('pessoa@gmail.com');
+  await page.locator('#password').focus();
+  await expect(page.locator('#auth-form')).toContainText('Use um e-mail @ifpr.edu.br.');
+  await expect(email).toHaveAttribute('aria-invalid', 'true');
+  await page.locator('#password').fill('synthetic-password');
+  await page.locator('#auth-submit').click();
+  await email.fill('outra@gmail.com');
+  await email.press('Enter');
+  await expect(page.locator('#auth-form')).toContainText('Use um e-mail @ifpr.edu.br.');
+  expect(await page.evaluate(() => window.editorSessionTest.counters.signIns)).toBe(0);
+  await email.fill('Editor@IFPR.edu.br');
+  await page.locator('#auth-submit').click();
+  await expect(page.locator('#record-title')).toBeVisible();
+  expect(await page.evaluate(() => window.editorSessionTest.counters.signIns)).toBe(1);
 });
 
 test('a new login in the same tab protects the editor on its next expiration', async ({
@@ -95,7 +120,7 @@ test('a new login in the same tab protects the editor on its next expiration', a
   await page.locator('#account').click();
   await page.locator('#logout').click();
   await expect(page.locator('#auth-title')).toHaveText('Entrar');
-  await page.locator('#email').fill('editor@example.invalid');
+  await page.locator('#email').fill('editor@ifpr.edu.br');
   await page.locator('#password').fill('synthetic-password');
   await page.locator('#auth-submit').click();
   await expect(page.locator('#record-title')).toBeFocused();
@@ -165,7 +190,7 @@ test('expired editor offers only reauthentication and preserves applied changes 
   await expect(notice.getByRole('button')).toHaveCount(1);
   await expect(notice).toContainText('Mantenha esta aba aberta para preservar suas alterações.');
   await page.locator('#expired-editor-login').click();
-  await page.locator('#email').fill('editor@example.invalid');
+  await page.locator('#email').fill('editor@ifpr.edu.br');
   await page.locator('#password').fill('synthetic-password');
   await page.locator('#auth-submit').click();
   await expect(page.locator('#editor-access-notice')).toHaveCount(0);
@@ -263,7 +288,7 @@ for (const viewport of [
       await expect(page.locator('#expired-editor-login')).toBeFocused();
       await page.keyboard.press('Tab');
       await expect(page.locator('#email')).toBeFocused();
-      await page.keyboard.type('editor@example.invalid');
+      await page.keyboard.type('editor@ifpr.edu.br');
       await page.keyboard.press('Tab');
       await expect(page.locator('#password')).toBeFocused();
       await page.keyboard.type('synthetic-password');
