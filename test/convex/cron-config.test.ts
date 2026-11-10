@@ -15,5 +15,10 @@ test('a configuração real de cron carrega e exporta as limpezas', async () => 
       args: [{}],
       schedule: { type: 'daily', hourUTC: 6, minuteUTC: 0 },
     },
+    'feedback-cleanup': {
+      name: 'feedback:sweep',
+      args: [{}],
+      schedule: { type: 'daily', hourUTC: 6, minuteUTC: 15 },
+    },
   });
 });

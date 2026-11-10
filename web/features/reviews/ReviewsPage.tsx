@@ -70,7 +70,7 @@ export default function ReviewsPage() {
     <section id="review-panel" className="page">
       <div className="panel">
         <div
-          className="review-tabs"
+          className="ui-tabs review-tabs"
           role="tablist"
           aria-label="Situação dos calendários"
           onKeyDown={(event) => {
@@ -100,7 +100,7 @@ export default function ReviewsPage() {
                 onClick={() => select(value)}
               >
                 {/* Reserves the bold width, so selecting a tab does not move its neighbors. */}
-                <span className="review-tab-label" data-label={label}>
+                <span className="ui-tab-label" data-label={label}>
                   {label}
                 </span>
                 {waiting?.count ? (

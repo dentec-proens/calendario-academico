@@ -8,7 +8,7 @@ for (const width of [1440, 390]) {
     if (width === 390) await page.locator('.sidebar-toggle').click();
     const navigation = page.locator('#portal-navigation');
     const link = navigation.getByRole('link', {
-      name: 'Registro de operações',
+      name: 'Registros',
       exact: true,
       includeHidden: true,
     });
@@ -30,10 +30,10 @@ for (const width of [1440, 390]) {
     await link.focus();
     await page.keyboard.press('Enter');
     await expect(page).toHaveURL(/\/logs$/);
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Registro de operações');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Registros');
     await expect(link).toHaveAttribute('aria-current', 'page');
     await expect(link).toHaveClass(/active/);
-    const table = page.getByRole('table', { name: 'Registro de operações' });
+    const table = page.getByRole('table', { name: 'Operações' });
     await expect(table.getByRole('columnheader')).toHaveText([
       'Data e hora',
       'Operação',
@@ -124,7 +124,7 @@ test('the administration sees failures people met, in their own table', async ({
 }) => {
   const { origin } = new URL(await fixtureServer('portal'));
   await page.goto(origin + '/logs');
-  await expect(page.getByRole('table', { name: 'Registro de operações' })).toBeVisible();
+  await expect(page.getByRole('table', { name: 'Operações' })).toBeVisible();
   await page.evaluate(() => {
     window.auditTest.failures = {
       entries: [
@@ -144,9 +144,133 @@ test('the administration sees failures people met, in their own table', async ({
     };
     window.auditTest.publish(window.auditTest.first);
   });
+  await page.getByRole('tab', { name: 'Falhas' }).click();
+  await expect(page).toHaveURL(/\/logs\?aba=falhas$/);
   const failures = page.getByRole('table', { name: 'Falhas registradas' });
   await expect(failures).toContainText(
     'Salvamento recusado (409): Há versão mais recente. Reabra o calendário. · /calendarios/abc · publicação build-id',
   );
   await expect(failures).toContainText('Pessoa editora');
+});
+
+test('the administration reads the feedback with the time left before it is removed', async ({
+  page,
+  fixtureServer,
+}) => {
+  const { origin } = new URL(await fixtureServer('portal'));
+  await page.goto(origin + '/logs');
+  await expect(page.getByRole('table', { name: 'Operações' })).toBeVisible();
+  await page.evaluate(() => {
+    const day = 24 * 60 * 60_000;
+    const base = {
+      route: '/calendarios/abc',
+      actor: 'Pessoa editora',
+      role: 'CAMPUS' as const,
+      calendar: 'Calendário 2027 — Campus de teste',
+    };
+    window.auditTest.feedback = {
+      entries: [
+        {
+          ...base,
+          id: 'recent' as never,
+          at: Date.now() - day / 2,
+          context: 'submit',
+          rating: 4,
+          comment: 'Faltou um atalho para copiar as férias.',
+        },
+        {
+          ...base,
+          id: 'old' as never,
+          at: Date.now() - 361.5 * day,
+          context: 'spontaneous',
+          rating: null,
+          comment: 'Sugestão antiga.',
+          calendar: null,
+        },
+      ],
+      isDone: true,
+      continueCursor: '',
+    };
+    window.auditTest.publish(window.auditTest.first);
+  });
+  await page.getByRole('tab', { name: 'Feedback' }).click();
+  const panel = page.getByRole('tabpanel', { name: 'Feedback' });
+  await expect(panel).toContainText('apagados 1 ano depois de recebidos');
+  const entries = panel.getByRole('list', { name: 'Feedback recebido' }).getByRole('listitem');
+  await expect(entries).toHaveCount(2);
+  await expect(panel.getByRole('status')).toHaveText('2 respostas');
+  await expect(entries.first()).toContainText('Fácil');
+  await expect(entries.first()).toContainText('Após enviar calendário');
+  await expect(entries.first()).toContainText('Expira em 364 dias');
+  await expect(entries.first().locator('.feedback-card__comment')).toHaveText(
+    'Faltou um atalho para copiar as férias.',
+  );
+  await expect(entries.first()).toContainText('Pessoa editora · Campus');
+  await expect(entries.nth(1)).toContainText('Sem nota');
+  await expect(entries.nth(1).locator('.feedback-card__removal')).toHaveText('Expira em 3 dias');
+  await expect(entries.nth(1).locator('.feedback-card__removal')).toHaveAttribute(
+    'data-close',
+    'true',
+  );
+
+  // The summary counts by rating and filters; the other filters narrow further.
+  const summary = panel.getByRole('group', { name: 'Filtrar por nota' });
+  await expect(summary.getByRole('button', { name: /Fácil/ }).first()).toContainText('1');
+  await expect(summary.getByRole('button', { name: /^Difícil/ })).toBeDisabled();
+  await summary.getByRole('button', { name: /Sem nota/ }).click();
+  await expect(entries).toHaveCount(1);
+  await expect(panel.getByRole('status')).toHaveText('1 de 2 respostas');
+  await expect(entries.first()).toContainText('Sugestão antiga.');
+  await summary.getByRole('button', { name: /Sem nota/ }).click();
+  await panel.getByLabel('Origem').selectOption('submit');
+  await expect(entries).toHaveCount(1);
+  await panel.getByLabel('Perfil').selectOption('PARECERISTA');
+  await expect(panel).toContainText('Nenhum feedback corresponde aos filtros.');
+  await panel.getByRole('button', { name: 'Limpar filtros' }).click();
+  await expect(entries).toHaveCount(2);
+});
+
+test('the administration switches between operations, feedback and failures in tabs', async ({
+  page,
+  fixtureServer,
+}) => {
+  const { origin } = new URL(await fixtureServer('portal'));
+  await page.goto(origin + '/logs');
+  const tabs = page.getByRole('tablist', { name: 'Tipo de registro' }).getByRole('tab');
+  await expect(tabs).toHaveText(['Operações', 'Feedback', 'Falhas']);
+  await expect(tabs.first()).toHaveAttribute('aria-selected', 'true');
+  await expect(
+    page.getByRole('tabpanel', { name: 'Operações' }).getByRole('table', { name: 'Operações' }),
+  ).toBeVisible();
+
+  // Arrows move and select, and the tab is kept in the URL for a reload or a link.
+  await tabs.first().focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(page).toHaveURL(/\/logs\?aba=feedback$/);
+  await expect(tabs.nth(1)).toBeFocused();
+  await expect(tabs.nth(1)).toHaveAttribute('aria-selected', 'true');
+  // Before anything arrives, the tab says so instead of staying blank.
+  await page.evaluate(() => {
+    window.auditTest.feedback = { entries: [], isDone: true, continueCursor: '' };
+    window.auditTest.failures = { entries: [], isDone: true, continueCursor: '' };
+    window.auditTest.publish(window.auditTest.first);
+  });
+  await expect(page.getByRole('tabpanel', { name: 'Feedback' })).toContainText(
+    'Nenhum feedback recebido ainda.',
+  );
+  await page.keyboard.press('End');
+  await expect(page).toHaveURL(/\/logs\?aba=falhas$/);
+  await expect(page.getByRole('tabpanel', { name: 'Falhas' })).toContainText(
+    'Nenhuma falha registrada.',
+  );
+  await page.reload();
+  await expect(tabs.nth(2)).toHaveAttribute('aria-selected', 'true');
+  // Home goes back to the first tab, and from it the left arrow wraps to the last one.
+  await tabs.nth(2).focus();
+  await page.keyboard.press('Home');
+  await expect(page).toHaveURL(/\/logs$/);
+  await page.keyboard.press('ArrowLeft');
+  await expect(page).toHaveURL(/\/logs\?aba=falhas$/);
+  await page.getByRole('tab', { name: 'Operações' }).click();
+  await expect(page).toHaveURL(/\/logs$/);
 });

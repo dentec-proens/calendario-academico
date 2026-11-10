@@ -10,7 +10,8 @@ Os componentes compartilhados ficam em `web/components/ui/` e usam Base UI com C
 - `FormActions` (`web/shared/forms/FormActions.tsx`): área compartilhada para botões de formulário, com espaçamento e reorganização pela largura disponível. Painéis que conservam alterações ao fechar não anunciam isso no rodapé: o editor avisa quando há alterações ainda não incluídas, e reabrir o painel as recupera. Use `Button` com ação principal, secundária e destrutiva explícitas. **Descartar alterações** só aparece quando existem campos alterados; não remove registros aplicados. Um formulário com ação principal não repete **Fechar** no rodapé, porque já sai ao aplicar; uma visão sem formulário oferece **Fechar**, ou **Concluir** numa atividade com datas e nada pendente, para que o fim do trabalho não dependa de achar o X.
 - `CategoryMark` (`web/components/ui/CategoryMark.tsx`): amostra da cor da legenda impressa para a categoria de uma data, definida em `src/domain/calendar/activities/categories.ts`, sempre acompanhada do nome. Com `withLabel`, o nome fica visível (detalhe da data, editor, catálogo); sem ele, nas linhas de datas do passo Atividades, o nome fica para leitores de tela e na dica. Categorias sem cor na legenda mostram só o nome.
 - `StatusBadge`: identifica estados e evidências com texto. Não use somente cor para transmitir significado.
-- `Notice` (`web/components/ui/Notice.tsx`): componente único para avisos, erros, pendências e confirmações. Tons `info` (padrão), `success`, `warning` e `danger`; os três últimos correspondem às intenções de mesmo nome de `ConfirmationDialog`. Cada tom tem um ícone decorativo, que pode ser trocado por `icon` ou removido com `icon={null}`. Aceita `title` (com `titleAs` para virar título da página e `titleProps` para `id` ou alvo de foco), conteúdo livre, com blocos espaçados automaticamente, e `actions` com os botões ou links que resolvem o aviso. `announce="polite"` torna o aviso um status e `announce="assertive"` um alerta; avisos que fazem parte da página ficam sem anúncio. Leitores de tela podem ignorar um status inserido junto com o texto: mensagens transitórias (`#message` e equivalentes) mantêm a região viva sempre montada e exibem dentro dela um `Notice` sem anúncio, com `elevated` quando ficam fixas sobre a página. `as="section"` com `aria-labelledby` cria uma região nomeada. Atributos como `id` e `hidden` são repassados. O texto precisa explicar o problema e a ação sem depender da cor. Erros de formulário usam `FormFeedback`, que apresenta um `Notice` de perigo com anúncio assertivo. Não crie classes próprias de aviso nem estilize as partes internas do `Notice`: use `className` apenas para posicionamento. A fixture `test/fixtures/notice.html` reúne as variações, verificadas por `test/browser/notice.spec.ts` e pela referência visual `notice-gallery.png`.
+- `Tabs` (`web/components/ui/Tabs.tsx`): abas que escolhem o que um painel mostra, como em **Registros** (Operações, Feedback, Falhas). Só a aba selecionada entra na ordem do Tab; setas, Home e End trocam de aba e a selecionam. A tela guarda a aba na URL, para recarregar e compartilhar o link. O estilo é `.ui-tabs` em `ui.css`, também usado pela fila de **Revisões e pareceres**, que mantém o próprio teclado por causa das contagens. Cada aba mostra um estado vazio explícito em vez de sumir.
+- `Notice` (`web/components/ui/Notice.tsx`): componente único para avisos, erros, pendências e confirmações. Tons `info` (padrão), `success`, `warning` e `danger`; os três últimos correspondem às intenções de mesmo nome de `ConfirmationDialog`. Cada tom tem um ícone decorativo, que pode ser trocado por `icon` ou removido com `icon={null}`. Aceita `title` (com `titleAs` para virar título da página e `titleProps` para `id` ou alvo de foco), conteúdo livre, com blocos espaçados automaticamente, e `actions` com os botões ou links que resolvem o aviso. `announce="polite"` torna o aviso um status e `announce="assertive"` um alerta; avisos que fazem parte da página ficam sem anúncio. Leitores de tela podem ignorar um status inserido junto com o texto: mensagens transitórias (`#message` e equivalentes) mantêm a região viva sempre montada e exibem dentro dela um `Notice` sem anúncio, com `elevated` quando ficam fixas sobre a página. `as="section"` com `aria-labelledby` cria uma região nomeada. Atributos como `id` e `hidden` são repassados. O texto precisa explicar o problema e a ação sem depender da cor. Erros de formulário usam `FormFeedback`, que apresenta um `Notice` de perigo com anúncio assertivo. Não crie classes próprias de aviso nem estilize as partes internas do `Notice`: use `className` apenas para posicionamento. A exceção é o convite de feedback, que flutua sobre o fundo cinza da página: ele redefine só as variáveis do próprio aviso (`--ui-notice-surface`, `--ui-notice-border`, `--ui-notice-icon`) para superfície branca, com faixa azul e `--ui-shadow-floating` (`web/features/feedback/feedback.css`). A fixture `test/fixtures/notice.html` reúne as variações, verificadas por `test/browser/notice.spec.ts` e pela referência visual `notice-gallery.png`.
 
 ## Vocabulário do editor e da norma
 
@@ -38,6 +39,7 @@ O ícone acompanha o verbo da ação, não a tela. Um verbo tem sempre o mesmo �
 | Entrar, Sair                                | `LogIn`, `LogOut`             |
 | Desfazer                                    | `Undo2`                       |
 | Escolher no calendário                      | `CalendarDays`                |
+| Sugestões                                   | `MessageSquareHeart`          |
 
 Ações de ciclo de vida usam os ícones definidos em `LifecycleActions.tsx`. Um verbo novo entra nesta tabela antes de ganhar ícone.
 
@@ -65,9 +67,26 @@ Os critérios formam uma lista contínua, com divisórias simples. Cada um compa
 
 A navegação de seções e formulários usa `web/scroll.ts`: respeita `prefers-reduced-motion`, revela o início de formulários maiores que a tela e reserva a altura real do feedback fixo por meio de `ResizeObserver` e `scroll-padding`. Isso evita offsets fixos que deixam títulos sob avisos quando o texto quebra em mais linhas. Os testes `test/browser/scroll-layout.spec.ts` verificam a visibilidade e a recepção de cliques em desktop e mobile. As capturas visuais não corrigem a rolagem da aplicação antes de comparar as imagens.
 
+## Tempo de exibição de avisos
+
+Se um aviso pode sair sozinho depois de um tempo depende do que se perde quando ele sai.
+
+- **Sem prazo** quando o aviso carrega uma decisão ou uma saída que não volta depois: **Desfazer**, erros, pendências, confirmações que pedem ação. Um limite de tempo excluiria quem precisa de mais tempo para ler ou para alcançar o botão. O aviso sai ao ser fechado ou quando o próprio contexto o torna obsoleto.
+- **Com prazo** quando o aviso é opcional e ignorá-lo não custa nada: um convite que se pode recusar, como o pedido de feedback. Fechar à mão seria um passo a mais sem ganho.
+
+Um aviso com prazo segue estas regras:
+
+- dá tempo de leitura folgado, de pelo menos 10 s;
+- pausa o tempo enquanto o ponteiro está sobre ele ou o foco está dentro dele, e o desliga de vez na primeira interação;
+- nunca some com algo que a pessoa começou: texto digitado ou escolha em andamento tiram o prazo;
+- sair sozinho equivale a ignorar e não registra recusa nem erro;
+- respeita `prefers-reduced-motion` na entrada e na saída.
+
+Na dúvida, o aviso fica sem prazo.
+
 ## Remover, desfazer e confirmar
 
-Remover uma data, um sábado ou férias altera só o rascunho e é imediato: `removeDate`, do editor, oferece **Desfazer** no `#message`. A oferta não tem prazo, porque um limite de tempo excluiria quem precisa de mais tempo para ler; ela some ao fechar o aviso ou na mudança seguinte do calendário, e nunca desfaz o que veio depois. O contador `edits` da sessão separa mudança de confirmação: o salvamento automático não encerra a oferta. O preenchimento em andamento na data removida não volta. A confirmação fica para o que tem efeito fora do rascunho, como enviar, devolver ou importar uma cópia.
+Remover uma data, um sábado ou férias altera só o rascunho e é imediato: `removeDate`, do editor, oferece **Desfazer** no `#message`. A oferta não tem prazo (ver “Tempo de exibição de avisos”); ela some ao fechar o aviso ou na mudança seguinte do calendário, e nunca desfaz o que veio depois. O contador `edits` da sessão separa mudança de confirmação: o salvamento automático não encerra a oferta. O preenchimento em andamento na data removida não volta. A confirmação fica para o que tem efeito fora do rascunho, como enviar, devolver ou importar uma cópia.
 
 ## Listagens de calendários
 

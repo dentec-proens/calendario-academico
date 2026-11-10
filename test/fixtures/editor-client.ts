@@ -57,6 +57,8 @@ export const record: WireCalendarRecord = {
 record.state.rulesetVersion = rulesetVersion(record.state);
 record.institutionalSnapshot = structuredClone(record.institutionalEvents);
 export const calls = { saves: 0, transitions: 0, failTransition: false };
+/** Feedback requests, apart from `calls`; no invitation unless a test asks for one. */
+const feedback = { invite: false, calls: [] as { name: string; args: Record<string, unknown> }[] };
 export const fixtureProfile: { role: Bootstrap['user']['role'] } = { role: 'ADMIN' };
 /** Other calendars of the campus, for the screen that copies their dates. */
 const copySources: WireCalendarRecord[] = [];
@@ -201,6 +203,17 @@ export const convex = {
         publish();
         return Promise.resolve({ status: record.status, statusRevision: record.statusRevision });
       }
+      case 'feedback:openFeedbackPrompt':
+      case 'feedback:rateFeedback':
+      case 'feedback:dismissFeedback':
+      case 'feedback:commentFeedback':
+      case 'feedback:sendFeedback': {
+        const name = getFunctionName(reference);
+        feedback.calls.push({ name, args: structuredClone(args) });
+        return Promise.resolve(
+          name === 'feedback:openFeedbackPrompt' && feedback.invite ? 'feedback-1' : null,
+        );
+      }
       default:
         return Promise.reject(
           new Error(`Mutação sintética não implementada: ${getFunctionName(reference)}`),
@@ -216,6 +229,7 @@ export const convex = {
 window.editorTest = {
   record,
   calls,
+  feedback,
   addCopySource(source) {
     copySources.push({ ...structuredClone(record), ...source });
     publish();
@@ -230,6 +244,7 @@ declare global {
     editorTest: {
       record: typeof record;
       calls: typeof calls;
+      feedback: typeof feedback;
       addCopySource: (source: Partial<WireCalendarRecord>) => void;
     };
     publishReviewerCalendar: () => Promise<void>;

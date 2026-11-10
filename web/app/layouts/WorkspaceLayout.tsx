@@ -88,7 +88,7 @@ export default function WorkspaceLayout() {
   const audit: NavigationItem = {
     id: 'logs',
     to: portalPaths.logs,
-    label: 'Registro de operações',
+    label: 'Registros',
     Icon: ScrollText,
   };
   if (info.user.role === 'CAMPUS') navigation.push(audit);

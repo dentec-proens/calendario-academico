@@ -319,6 +319,49 @@ dialog.ui-panel-dialog--with-footer[open] {
   color: var(--ui-warning);
 }
 /* Notice: one message with its tone, an optional title, content and actions. */
+/* Tabs select what a panel shows, so they read differently from the actions inside it. */
+.ui-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  margin-bottom: var(--ui-space-4);
+  border-bottom: 1px solid var(--ui-border);
+}
+#root .ui-tabs [role='tab'] {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-space-2);
+  min-height: 44px;
+  margin-bottom: -1px;
+  padding: 8px 12px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  border-radius: var(--ui-radius) var(--ui-radius) 0 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--ui-text);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+#root .ui-tabs [role='tab']:hover {
+  background: var(--ui-surface-muted);
+  box-shadow: none;
+}
+/* Blue, as filters and selected views are elsewhere: green stays for the actions in the panel. */
+#root .ui-tabs [role='tab'][aria-selected='true'] {
+  border-bottom-color: var(--ui-info);
+  background: var(--ui-info-soft);
+  color: var(--ui-info);
+  font-weight: 700;
+}
+.ui-tab-label::after {
+  content: attr(data-label);
+  display: block;
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  font-weight: 700;
+}
 .ui-notice {
   --ui-notice-text: var(--ui-text);
   --ui-notice-icon: var(--ui-muted);

@@ -1,0 +1,132 @@
+/*
+ * The suggestions and the account menu share one group on the right. The menu inserts focus guards
+ * beside its trigger when it opens, so the layout cannot rely on the two being siblings.
+ */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  min-width: 0;
+  margin-left: auto;
+}
+.header-actions .account-menu {
+  margin-left: 0;
+}
+/* The header wraps below the brand on narrow screens: the group spans the second line. */
+@media (max-width: 700px) {
+  .header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+/* Fixed over the page, out of the flow: it never pushes content or covers the top notices. */
+.feedback-invite {
+  position: fixed;
+  right: var(--ui-space-4);
+  bottom: var(--ui-space-4);
+  z-index: 40;
+  width: min(440px, calc(100vw - 2 * var(--ui-space-4)));
+}
+.feedback-invite:empty {
+  display: none;
+}
+.feedback-invite .ui-notice {
+  margin: 0;
+}
+/*
+ * The invitation floats over the page, whose background is the same light gray as an info notice:
+ * a white surface, a darker border, a blue band and the floating shadow set it apart. Only the
+ * notice's own custom properties change, so its parts keep the shared look.
+ */
+.feedback-invite .ui-notice--info {
+  --ui-notice-surface: var(--ui-surface);
+  --ui-notice-border: var(--ui-border);
+  --ui-notice-icon: var(--ui-info);
+  border-top: 4px solid var(--ui-info);
+  box-shadow: var(--ui-shadow-floating);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .feedback-invite__frame {
+    animation: feedback-enter var(--ui-motion-surface) var(--ui-ease-surface);
+  }
+}
+@keyframes feedback-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+/* The notice's content keeps its blocks at their own width; the scale and the comment span it. */
+.feedback-scale,
+.feedback-comment {
+  align-self: stretch;
+}
+.feedback-scale {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--ui-space-1);
+  margin-top: var(--ui-space-2);
+}
+#root .feedback-scale__option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ui-space-1);
+  min-height: 44px;
+  padding: var(--ui-space-2) var(--ui-space-1);
+  border: 1px solid transparent;
+  border-radius: var(--ui-radius);
+  background: transparent;
+  box-shadow: none;
+  color: var(--ui-text);
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.2;
+  text-align: center;
+}
+#root .feedback-scale__option:hover:not(:disabled) {
+  border-color: var(--ui-border);
+  background: var(--ui-surface-subtle);
+}
+#root .feedback-scale__option:focus-visible {
+  outline: 3px solid var(--ui-focus);
+  outline-offset: 1px;
+}
+#root .feedback-scale__option[aria-pressed='true'] {
+  border-color: var(--ui-action);
+  background: var(--ui-action-soft);
+  color: var(--ui-action);
+  font-weight: 650;
+}
+
+.feedback-comment {
+  display: grid;
+  gap: var(--ui-space-2);
+  justify-items: end;
+  margin-top: var(--ui-space-3);
+}
+.feedback-comment .ui-field {
+  justify-self: stretch;
+  margin: 0;
+}
+.feedback-invite__error {
+  margin: var(--ui-space-2) 0 0;
+  color: var(--ui-danger);
+  font-size: 0.875rem;
+}
+
+@media (max-width: 600px) {
+  .feedback-invite {
+    right: var(--ui-space-2);
+    bottom: var(--ui-space-2);
+    width: calc(100vw - 2 * var(--ui-space-2));
+  }
+}
+@media print {
+  .feedback-invite,
+  .header-suggestions {
+    display: none !important;
+  }
+}

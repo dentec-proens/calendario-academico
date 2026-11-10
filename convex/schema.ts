@@ -163,6 +163,25 @@ export default defineSchema({
   })
     .index('by_at', ['at'])
     .index('by_userId_and_at', ['userId', 'at']),
+  /** Quick feedback: one row per invitation shown, or per spontaneous suggestion. */
+  feedback: defineTable({
+    at: v.number(),
+    userId: v.id('users'),
+    /** The role when the feedback was given; it may change later. */
+    role: v.union(v.literal('ADMIN'), v.literal('CAMPUS'), v.literal('PARECERISTA')),
+    context: v.union(v.literal('submit'), v.literal('review'), v.literal('spontaneous')),
+    /** `shown` until the person rates, comments or closes the invitation. */
+    outcome: v.union(v.literal('shown'), v.literal('answered'), v.literal('dismissed')),
+    rating: v.optional(v.number()),
+    comment: v.optional(v.string()),
+    route: v.string(),
+    calendarId: v.optional(v.id('calendars')),
+    release: v.string(),
+  })
+    .index('by_at', ['at'])
+    .index('by_outcome_and_at', ['outcome', 'at'])
+    .index('by_userId_and_at', ['userId', 'at'])
+    .index('by_userId_and_context_and_calendarId', ['userId', 'context', 'calendarId']),
   audit: defineTable({
     at: v.number(),
     actorId: v.optional(v.id('users')),

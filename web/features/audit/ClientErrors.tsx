@@ -1,4 +1,5 @@
 import { useQuery } from 'convex/react';
+import { LoadingIndicator } from '../../components/ui/LoadingIndicator.tsx';
 import { functions } from '../../shared/convex/client.ts';
 import AuditTable from './AuditTable.tsx';
 
@@ -13,23 +14,27 @@ export default function ClientErrors() {
   const failures = useQuery(functions.clientErrors.list, {
     paginationOpts: { cursor: null, numItems: 50 },
   });
-  if (!failures?.entries.length) return null;
   return (
     <>
-      <h2>Falhas registradas</h2>
-      <p className="help">As 50 mais recentes vistas pelas pessoas no navegador.</p>
-      <AuditTable
-        id="client-errors"
-        label="Falhas registradas"
-        showVersion={false}
-        entries={failures.entries.map((failure) => ({
-          at: failure.at,
-          action: `${kinds[failure.kind]}${failure.status ? ` (${failure.status})` : ''}: ${failure.message} · ${failure.route} · publicação ${failure.release.slice(0, 8)}`,
-          actor: failure.actor,
-          calendar: failure.calendar,
-          version: null,
-        }))}
-      />
+      <p className="help">
+        As 50 mais recentes vistas pelas pessoas no navegador. São apagadas 90 dias depois.
+      </p>
+      {!failures ? <LoadingIndicator label="Carregando falhas…" /> : null}
+      {failures && !failures.entries.length ? <p>Nenhuma falha registrada.</p> : null}
+      {failures?.entries.length ? (
+        <AuditTable
+          id="client-errors"
+          label="Falhas registradas"
+          showVersion={false}
+          entries={failures.entries.map((failure) => ({
+            at: failure.at,
+            action: `${kinds[failure.kind]}${failure.status ? ` (${failure.status})` : ''}: ${failure.message} · ${failure.route} · publicação ${failure.release.slice(0, 8)}`,
+            actor: failure.actor,
+            calendar: failure.calendar,
+            version: null,
+          }))}
+        />
+      ) : null}
     </>
   );
 }

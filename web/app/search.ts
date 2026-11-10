@@ -59,6 +59,10 @@ export function applicationSearch(input: Record<string, unknown>) {
     ...(text(input.origem) ? { origem: text(input.origem)?.slice(0, 200) } : {}),
     ...(input.devtools === '1' ? { devtools: '1' } : {}),
     ...(input.aviso === 'acesso-negado' ? { aviso: 'acesso-negado' } : {}),
+    // Operations log: the tab the administration reads; absent means the operations.
+    ...(input.aba === 'feedback' || input.aba === 'falhas'
+      ? { aba: input.aba as 'feedback' | 'falhas' }
+      : {}),
     ...(typeof input.atividadeBusca === 'string' && input.atividadeBusca.trim()
       ? { atividadeBusca: input.atividadeBusca.slice(0, 200) }
       : {}),

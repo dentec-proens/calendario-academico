@@ -1,17 +1,69 @@
 import { LoadingIndicator } from '../../components/ui/LoadingIndicator.tsx';
 import { useEffect, useRef, useState } from 'react';
+import { useNavigate, useSearch } from '@tanstack/react-router';
 import { useQuery } from 'convex/react';
 import type { FunctionReturnType } from 'convex/server';
 import { convex, functions } from '../../shared/convex/client.ts';
 import { nativeError } from '../../shared/convex/errors.ts';
 import { Button } from '../../components/ui/Button.tsx';
+import { Tabs } from '../../components/ui/Tabs.tsx';
 import { useAppSession } from '../../app/session.tsx';
 import AuditTable from './AuditTable.tsx';
 import ClientErrors from './ClientErrors.tsx';
+import FeedbackList from './FeedbackList.tsx';
 
 type Logs = FunctionReturnType<typeof functions.workspace.logs>;
+type AuditTab = 'operacoes' | 'feedback' | 'falhas';
+
+const tabs = [
+  { value: 'operacoes', label: 'Operações' },
+  { value: 'feedback', label: 'Feedback' },
+  { value: 'falhas', label: 'Falhas' },
+] as const satisfies readonly { value: AuditTab; label: string }[];
+
+/**
+ * The administration reads three kinds of records here, each in its own tab: what people did, what
+ * they said about the app, and the failures they met. Other profiles see only the operations.
+ */
 export default function AuditPage() {
   const { info } = useAppSession();
+  const search = useSearch({ strict: false });
+  const navigate = useNavigate();
+  if (info.user.role !== 'ADMIN')
+    return (
+      <section className="panel audit-page" aria-label="Registros">
+        <OperationsLog />
+      </section>
+    );
+  const selected: AuditTab = search.aba ?? 'operacoes';
+  return (
+    <section className="panel audit-page" aria-label="Registros">
+      <Tabs
+        id="audit"
+        label="Tipo de registro"
+        tabs={tabs}
+        selected={selected}
+        onSelect={(next) =>
+          void navigate({
+            to: '/logs',
+            search: { aba: next === 'operacoes' ? undefined : next },
+            replace: true,
+          })
+        }
+      >
+        {selected === 'feedback' ? (
+          <FeedbackList />
+        ) : selected === 'falhas' ? (
+          <ClientErrors />
+        ) : (
+          <OperationsLog />
+        )}
+      </Tabs>
+    </section>
+  );
+}
+
+function OperationsLog() {
   const first = useQuery(functions.workspace.logs, {
     paginationOpts: { cursor: null, numItems: 50 },
   });
@@ -46,7 +98,7 @@ export default function AuditPage() {
     }
   }
   return (
-    <section className="panel audit-page" aria-label="Registro de operações">
+    <>
       <div className="audit-heading">
         <p className="help">Da mais recente à mais antiga · Horário de Brasília.</p>
         {older.length > 0 && (
@@ -71,7 +123,7 @@ export default function AuditPage() {
         {message ||
           (first && !entries.length ? 'Nenhuma operação registrada para este acesso.' : '')}
       </p>
-      {entries.length > 0 && <AuditTable entries={entries} label="Registro de operações" />}
+      {entries.length > 0 && <AuditTable entries={entries} label="Operações" />}
       {last && !last.isDone ? (
         <Button
           type="button"
@@ -83,7 +135,6 @@ export default function AuditPage() {
           Carregar anteriores
         </Button>
       ) : null}
-      {info.user.role === 'ADMIN' && <ClientErrors />}
-    </section>
+    </>
   );
 }

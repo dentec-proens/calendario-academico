@@ -14,6 +14,7 @@ import { DevelopmentTools } from '../devtools.tsx';
 import { parseEditorPath } from '#src/app/routes.ts';
 import { Notice } from '../../components/ui/Notice.tsx';
 import { useArrivalFocus } from '../arrival-focus.ts';
+import { FeedbackProvider, SuggestionsButton } from '../../features/feedback/FeedbackProvider.tsx';
 import ifprLogo from '../../assets/ifpr-logo-horizontal.png';
 
 export default function RootLayout() {
@@ -45,85 +46,92 @@ export default function RootLayout() {
   return (
     <FormDraftProvider key={identity} identity={identity}>
       <UpdateProvider>
-        <header>
-          <Link to="/" className="brand" aria-label="Calendários Acadêmicos — página inicial">
-            <img src={ifprLogo} width={235} height={54} alt="Instituto Federal do Paraná" />
-            <span className="brand-copy">
-              <strong>Calendários Acadêmicos</strong>
-              <span>PROENS</span>
-            </span>
-          </Link>
-          {checkingSession ? (
-            <span className="account-menu account-menu--pending" id="account">
-              <span className="account-menu__scope">Verificando sessão…</span>
-            </span>
-          ) : user ? (
-            <AccountMenu
-              name={user.name}
-              email={user.email}
-              scope={accountScope}
-              role={user.role}
-              loggingOut={session.loggingOut}
-              onLogout={() => {
-                void session.logout();
-              }}
-            />
-          ) : session.isAuthenticated ? (
-            // Without the bootstrap (maintenance) there is no identity to show, only the way out.
-            <Button
-              type="button"
-              id="logout"
-              variant="secondary"
-              className="header-logout"
-              disabled={session.loggingOut}
-              onClick={() => {
-                void session.logout();
-              }}
-            >
-              <LogOut aria-hidden="true" size={18} /> Sair
-            </Button>
-          ) : null}
-        </header>
-        <main id="app-main" ref={main}>
-          {!editorPath && (
-            <div id="message" role="status" aria-live="polite">
-              {session.message?.text ? (
-                <Notice
-                  tone={session.message.error ? 'danger' : 'success'}
-                  elevated
-                  onDismiss={session.dismissMessage}
-                >
-                  {session.message.text}
-                </Notice>
-              ) : null}
-            </div>
-          )}
-          <BackendStatus
-            loading={session.isLoading}
-            allowReload={pathname !== '/ativar-conta' && pathname !== '/recuperar-senha'}
-          />
-          {accessDenied ? (
-            <Notice tone="danger" announce="assertive">
-              Seu perfil não permite acessar a área solicitada.
-            </Notice>
-          ) : null}
-          {session.maintenance && (!editorPath || paused) ? (
-            <Notice tone="warning" announce="assertive">
-              O portal está em manutenção. Mantenha esta página aberta; novas alterações estarão
-              disponíveis após a conclusão.
-            </Notice>
-          ) : null}
-          <fieldset
-            className="app-operation-scope"
-            disabled={session.maintenance && session.isAuthenticated && !session.editorRecovery}
-          >
-            {session.isLoading || paused ? null : (
-              <Suspense fallback={<LoadingIndicator layout="overlay" label="Carregando página…" />}>
-                <Outlet />
-              </Suspense>
+        <FeedbackProvider>
+          <header>
+            <Link to="/" className="brand" aria-label="Calendários Acadêmicos — página inicial">
+              <img src={ifprLogo} width={235} height={54} alt="Instituto Federal do Paraná" />
+              <span className="brand-copy">
+                <strong>Calendários Acadêmicos</strong>
+                <span>PROENS</span>
+              </span>
+            </Link>
+            {checkingSession ? (
+              <span className="account-menu account-menu--pending" id="account">
+                <span className="account-menu__scope">Verificando sessão…</span>
+              </span>
+            ) : user ? (
+              <div className="header-actions">
+                <SuggestionsButton />
+                <AccountMenu
+                  name={user.name}
+                  email={user.email}
+                  scope={accountScope}
+                  role={user.role}
+                  loggingOut={session.loggingOut}
+                  onLogout={() => {
+                    void session.logout();
+                  }}
+                />
+              </div>
+            ) : session.isAuthenticated ? (
+              // Without the bootstrap (maintenance) there is no identity to show, only the way out.
+              <Button
+                type="button"
+                id="logout"
+                variant="secondary"
+                className="header-logout"
+                disabled={session.loggingOut}
+                onClick={() => {
+                  void session.logout();
+                }}
+              >
+                <LogOut aria-hidden="true" size={18} /> Sair
+              </Button>
+            ) : null}
+          </header>
+          <main id="app-main" ref={main}>
+            {!editorPath && (
+              <div id="message" role="status" aria-live="polite">
+                {session.message?.text ? (
+                  <Notice
+                    tone={session.message.error ? 'danger' : 'success'}
+                    elevated
+                    onDismiss={session.dismissMessage}
+                  >
+                    {session.message.text}
+                  </Notice>
+                ) : null}
+              </div>
             )}
-          </fieldset>
-        </main>
+            <BackendStatus
+              loading={session.isLoading}
+              allowReload={pathname !== '/ativar-conta' && pathname !== '/recuperar-senha'}
+            />
+            {accessDenied ? (
+              <Notice tone="danger" announce="assertive">
+                Seu perfil não permite acessar a área solicitada.
+              </Notice>
+            ) : null}
+            {session.maintenance && (!editorPath || paused) ? (
+              <Notice tone="warning" announce="assertive">
+                O portal está em manutenção. Mantenha esta página aberta; novas alterações estarão
+                disponíveis após a conclusão.
+              </Notice>
+            ) : null}
+            <fieldset
+              className="app-operation-scope"
+              disabled={session.maintenance && session.isAuthenticated && !session.editorRecovery}
+            >
+              {session.isLoading || paused ? null : (
+                <Suspense
+                  fallback={<LoadingIndicator layout="overlay" label="Carregando página…" />}
+                >
+                  <Outlet />
+                </Suspense>
+              )}
+            </fieldset>
+          </main>
+        </FeedbackProvider>
         <DevelopmentTools />
       </UpdateProvider>
     </FormDraftProvider>

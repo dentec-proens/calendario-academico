@@ -31,6 +31,7 @@ import { confirmAction, type ConfirmationItem } from '../../components/confirmat
 import { calendars } from '../../shared/convex/calendars.ts';
 import { functions } from '../../shared/convex/client.ts';
 import { nativeError } from '../../shared/convex/errors.ts';
+import { useFeedback } from '../feedback/FeedbackProvider.tsx';
 import './lifecycle.css';
 
 export function CalendarStatusBadge({ status }: { status: CalendarStatus }) {
@@ -140,6 +141,7 @@ export default function LifecycleActions({
 }) {
   const [form, setForm] = useState<'return' | 'publish' | null>(null);
   const [pending, setPending] = useState(false);
+  const feedback = useFeedback();
   const actions = offered.filter(
     (action) =>
       canTransition(calendar.status, action, role) &&
@@ -184,6 +186,7 @@ export default function LifecycleActions({
     notify(
       action === 'submit' ? 'Calendário enviado à PROENS.' : `${actionLabels[action]}: concluído.`,
     );
+    feedback.offer(action, calendar.id);
   }
 
   function start(action: LifecycleAction) {

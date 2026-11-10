@@ -34,6 +34,7 @@ let resolveMore: (() => void) | undefined;
 window.auditTest = {
   first: new URLSearchParams(location.search).has('audit-loading') ? undefined : first,
   failures: undefined,
+  feedback: undefined,
   deferMore: false,
   pending: false,
   failMore: false,
@@ -75,6 +76,7 @@ declare global {
     auditTest: {
       first: AuditPage | undefined;
       failures: FunctionReturnType<typeof functions.clientErrors.list> | undefined;
+      feedback: FunctionReturnType<typeof functions.feedback.listFeedback> | undefined;
       deferMore: boolean;
       pending: boolean;
       failMore: boolean;

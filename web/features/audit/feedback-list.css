@@ -1,0 +1,193 @@
+.feedback-list {
+  container: feedback-list / inline-size;
+}
+
+/* Rating tones: hard in red, middle in amber, easy in green; the label says it too. */
+.feedback-list [data-tone='hard'] {
+  --feedback-tone: var(--ui-danger);
+  --feedback-tone-soft: var(--ui-danger-soft);
+  --feedback-tone-border: var(--ui-danger-border);
+}
+.feedback-list [data-tone='middle'] {
+  --feedback-tone: var(--ui-warning);
+  --feedback-tone-soft: var(--ui-warning-soft);
+  --feedback-tone-border: var(--ui-warning-border);
+}
+.feedback-list [data-tone='easy'] {
+  --feedback-tone: var(--ui-action);
+  --feedback-tone-soft: var(--ui-action-soft);
+  --feedback-tone-border: var(--ui-success-border);
+}
+.feedback-list [data-tone='none'] {
+  --feedback-tone: var(--ui-muted);
+  --feedback-tone-soft: var(--ui-surface-muted);
+  --feedback-tone-border: var(--ui-border-soft);
+}
+
+/* The summary counts the answers by rating, and each count filters the cards. */
+.feedback-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ui-space-2);
+  margin: var(--ui-space-4) 0 var(--ui-space-3);
+}
+#root .feedback-summary__item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-space-2);
+  min-height: 44px;
+  padding: 6px 12px;
+  border: 1px solid var(--feedback-tone-border);
+  border-radius: 999px;
+  background: var(--ui-surface);
+  box-shadow: none;
+  color: var(--ui-text);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+#root .feedback-summary__item svg {
+  color: var(--feedback-tone);
+}
+#root .feedback-summary__item:hover:not(:disabled) {
+  background: var(--feedback-tone-soft);
+}
+#root .feedback-summary__item[aria-pressed='true'] {
+  border-color: var(--feedback-tone);
+  background: var(--feedback-tone-soft);
+  box-shadow: inset 0 0 0 1px var(--feedback-tone);
+  font-weight: 650;
+}
+#root .feedback-summary__item:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.feedback-summary__count {
+  min-width: 22px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--feedback-tone-soft);
+  color: var(--feedback-tone);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.feedback-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--ui-space-3) var(--ui-space-5);
+}
+#root .feedback-filters > label {
+  flex: 0 1 16rem;
+  min-width: 0;
+  margin: 0;
+}
+#root .feedback-filters > label:has(> input[type='checkbox']) {
+  flex: none;
+}
+.feedback-list__status {
+  margin: var(--ui-space-3) 0;
+  color: var(--ui-muted);
+  font-size: 0.875rem;
+}
+.feedback-list__no-match {
+  display: grid;
+  justify-items: start;
+  gap: var(--ui-space-2);
+  padding: var(--ui-space-4) 0;
+}
+.feedback-list__no-match p {
+  margin: 0;
+}
+
+.feedback-cards {
+  display: grid;
+  gap: var(--ui-space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.feedback-card {
+  display: grid;
+  grid-template-columns: 104px minmax(0, 1fr);
+  overflow: hidden;
+  border: 1px solid var(--ui-border-soft);
+  border-radius: var(--ui-radius-panel);
+  background: var(--ui-surface);
+}
+.feedback-card__rating {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ui-space-1);
+  padding: var(--ui-space-3) var(--ui-space-2);
+  border-right: 1px solid var(--feedback-tone-border);
+  background: var(--feedback-tone-soft);
+  color: var(--feedback-tone);
+  font-size: 0.8125rem;
+  font-weight: 650;
+  line-height: 1.2;
+  text-align: center;
+}
+.feedback-card__body {
+  display: grid;
+  gap: 2px;
+  padding: var(--ui-space-3) var(--ui-space-4);
+  min-width: 0;
+}
+.feedback-card__body p {
+  margin: 0;
+}
+.feedback-card__comment {
+  margin-bottom: var(--ui-space-2) !important;
+  color: var(--ui-text);
+  font-size: 1rem;
+  line-height: 1.5;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+.feedback-card__comment--none {
+  color: var(--ui-muted);
+  font-size: 0.875rem;
+  font-style: italic;
+}
+.feedback-card__who,
+.feedback-card__where,
+.feedback-card__when {
+  color: var(--ui-muted);
+  font-size: 0.8125rem;
+  overflow-wrap: anywhere;
+}
+.feedback-card__who strong {
+  color: var(--ui-text);
+  font-weight: 600;
+}
+.feedback-card__when {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--ui-space-1) var(--ui-space-3);
+}
+.feedback-card__removal[data-close] {
+  color: var(--ui-warning);
+  font-weight: 650;
+}
+
+/* Narrow: the rating becomes a band on top of the card, with the face beside its label. */
+@container feedback-list (max-width: 520px) {
+  .feedback-card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .feedback-card__rating {
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: var(--ui-space-2);
+    border-right: 0;
+    border-bottom: 1px solid var(--feedback-tone-border);
+  }
+  #root .feedback-filters > label {
+    flex: 1 1 100%;
+  }
+}
