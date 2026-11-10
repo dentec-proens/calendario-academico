@@ -4,7 +4,7 @@ import { createNativeFixture } from '../helpers/native-database.ts';
 import { withRequiredVacations } from '../helpers/required-vacations.ts';
 import { proensLayout } from '../../src/printing/calendar-layout.ts';
 
-test('a submitted calendar prints as a copy for analysis without approving or changing it', async () => {
+test('a submitted calendar prints as under PROENS analysis without approving or changing it', async () => {
   const { as, inspect } = await createNativeFixture();
   const campus = as('campus-a');
   const record = await campus.write('/api/calendars', {
@@ -22,7 +22,7 @@ test('a submitted calendar prints as a copy for analysis without approving or ch
   assert.equal(reopened.readiness.ready, false);
   assert.equal(reopened.readiness.officialApproval, false);
   const html = proensLayout(reopened.state, [], null, reopened);
-  assert.match(html, /Cópia para análise da PROENS/);
+  assert.match(html, /Em análise na PROENS — sem validade/);
   assert.doesNotMatch(html, /Sem aprovação oficial/);
   assert.deepEqual(await inspect(), before, 'printing never writes');
   assert.deepEqual(reopened.state, withRequiredVacations(record.state));

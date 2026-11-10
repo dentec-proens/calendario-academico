@@ -209,7 +209,7 @@ test('explicit technical modality inherits scoped events and the PDF mark depend
     proensLayout({ year: 2027, campus: 'Test', periods: [], offers: [] }, [], null, record);
   assert.match(layout({ status: 'rascunho' }), /Rascunho — sem validade/);
   assert.match(layout({}), /Rascunho — sem validade/);
-  assert.match(layout({ status: 'em_revisao' }), /Cópia para análise da PROENS/);
+  assert.match(layout({ status: 'em_revisao' }), /Em análise na PROENS — sem validade/);
   assert.match(layout({ status: 'devolvido' }), /Em ajuste — sem validade/);
   assert.match(layout({ status: 'revisado' }), /Revisado — aguardando publicação/);
   const published = layout({ status: 'vigente', seiProcess: '23411.000001/2027-11' });

@@ -146,7 +146,7 @@ export function printMark(
       return 'Rascunho — sem validade';
     case 'enviado':
     case 'em_revisao':
-      return 'Cópia para análise da PROENS';
+      return 'Em análise na PROENS — sem validade';
     case 'devolvido':
       return 'Em ajuste — sem validade';
     case 'revisado':

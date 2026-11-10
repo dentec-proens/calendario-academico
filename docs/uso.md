@@ -106,7 +106,7 @@ Este guia registra as regras de negócio e as decisões que o código sozinho n�
 
 ## Impressão
 
-- A marca depende só da situação: **Rascunho — sem validade**, **Cópia para análise da PROENS**, **Em ajuste — sem validade**, **Revisado — aguardando publicação**, **Processo SEI nº …**, **Arquivado** ou **Substituído por …**. Só o vigente sai sem **Sem aprovação oficial**.
+- A marca depende só da situação: **Rascunho — sem validade**, **Em análise na PROENS — sem validade**, **Em ajuste — sem validade**, **Revisado — aguardando publicação**, **Processo SEI nº …**, **Arquivado** ou **Substituído por …**. Só o vigente sai sem **Sem aprovação oficial**.
 - Um calendário travado é impresso sem salvar.
 - Com datas internas há duas versões: **oficial** (padrão, a enviada e publicada) e **completa** (marca as datas internas, avisa que não substitui a oficial, PDF com sufixo `-completo`). A contagem é a mesma.
 - Ofertas entre colchetes só quando há mais de uma oferta e a data não abrange todas; datas iguais de ofertas diferentes saem numa linha só. A legenda lista só as categorias presentes na grade.
