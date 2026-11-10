@@ -569,8 +569,7 @@ test('a reviewer consults activities and records without editing or saving', asy
   await expect(page.locator('#event-form')).toBeHidden();
   await expect(page.locator('#event-panel [data-prepare-activity]')).toBeDisabled();
   await page.locator('#close-event-panel').click();
-  await selectEditorSection(page, 'calendar');
-  await page.locator('#calendar-dates').click();
+  await page.locator('#activity-mode-data').check();
   await expect(page).toHaveURL(/\/atividades\?.*atividadeVisao=data/);
   const dates = page.locator('#date-list');
   await expect(dates).toContainText('Evento local salvo');
@@ -704,18 +703,6 @@ test('the offer filter decides what is left to fill for that offer only', async 
   await expect(page.locator('[data-activity-row="women-week"]')).toHaveCount(0);
   await page.locator('#activity-modality').selectOption('integrado');
   await expect(page.locator('[data-activity-row="women-week"]')).toBeVisible();
-});
-
-test('the link to every date stays out of the printed calendar', async ({
-  page,
-  fixtureServer,
-}) => {
-  await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
-  await selectEditorSection(page, 'calendar');
-  await expect(page.locator('#calendar-dates')).toBeVisible();
-  await page.emulateMedia({ media: 'print' });
-  await expect(page.locator('#calendar-dates')).toBeHidden();
-  await expect(page.locator('#months .proens-document')).toBeVisible();
 });
 
 test('an hours activity lists the hours of each period and their registered total', async ({

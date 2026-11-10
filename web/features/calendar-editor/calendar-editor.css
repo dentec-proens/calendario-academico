@@ -1651,19 +1651,11 @@ fieldset.event-fields {
   color: var(--ui-muted);
   overflow-wrap: anywhere;
 }
-.calendar-dates-link {
-  margin-block: 1rem 0;
-}
 .print-version {
   margin-block: 0 1rem;
 }
 .print-version .help {
   margin-block: 0.5rem 0;
-}
-@media print {
-  .calendar-dates-link {
-    display: none;
-  }
 }
 /* Review step: a summary, the pending decisions, progress and the issues grouped by area. */
 .review-step {

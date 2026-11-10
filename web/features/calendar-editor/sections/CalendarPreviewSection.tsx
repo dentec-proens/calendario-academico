@@ -8,7 +8,7 @@ import logoUrl from '../../../../assets/printing/ifpr-logo.png?url';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useCalendarExport } from '../export/CalendarExportProvider.tsx';
 import '../../../../assets/printing/calendar.css';
-import { Link, useNavigate, useSearch } from '@tanstack/react-router';
+import { useNavigate, useSearch } from '@tanstack/react-router';
 import { ChoiceGroup } from '../../../components/ui/ChoiceGroup.tsx';
 import { applicationSearch } from '../../../app/search.ts';
 
@@ -86,18 +86,6 @@ export default function CalendarPreviewSection() {
           }}
         />
       </div>
-      <p className="calendar-dates-link">
-        <Link
-          id="calendar-dates"
-          to="/calendarios/$calendarId/atividades"
-          params={{ calendarId: record.id }}
-          search={(previous) => ({ ...previous, atividadeVisao: 'data' as const })}
-          hashScrollIntoView={false}
-        >
-          Ver por data
-        </Link>{' '}
-        todas as datas do calendário, com vínculo, efeito e ofertas.
-      </p>
     </section>
   );
 }
