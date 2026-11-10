@@ -11,6 +11,7 @@ export interface CatalogueEvent extends DateFields {
 export const campusNames = [
   'Assis Chateaubriand',
   'Arapongas',
+  'Araucária',
   'Astorga',
   'Barracão',
   'Campo Largo',
