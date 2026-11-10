@@ -16,7 +16,7 @@ import {
 
 /** Checks only what was typed; an empty field is left to `required`. */
 function emailProblem(value: unknown) {
-  const email = normalizeEmail(String(value ?? ''));
+  const email = normalizeEmail(typeof value === 'string' ? value : '');
   return email && !isInstitutionalEmail(email) ? institutionalEmailMessage : null;
 }
 
