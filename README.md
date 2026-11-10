@@ -35,7 +35,7 @@ pnpm check
 ## Documentação
 
 - [Desenvolvimento](docs/desenvolvimento.md)
-- [Guia da aplicação](docs/uso.md)
+- [Regras da aplicação](docs/uso.md)
 - [Arquitetura](docs/arquitetura-convex.md)
 - [Acesso e contas](docs/recuperacao-de-senha.md)
 - [Segurança da aplicação](docs/seguranca.md)

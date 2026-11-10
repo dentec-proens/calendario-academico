@@ -28,6 +28,7 @@ Before editing files for a substantial task:
 ## Planos
 
 - Planos de implementação ficam em `docs/plans/` só enquanto a implementação acontece. Ao concluí-la, leve as decisões que continuam valendo para a documentação permanente (`docs/arquitetura-convex.md`, `docs/uso.md`, `docs/componentes-interface.md`, `docs/migracao-schema.md`), registre o que ficou para depois em [Pendências](docs/pendencias.md) e apague o plano; o histórico fica no Git. Comentários de código e testes explicam a regra em vez de citar seções de plano.
+- `docs/uso.md` guarda só regras de negócio e decisões que o código não explica sozinho (permissões, bloqueios, contagem, normas, impressão oficial), em tópicos curtos. Não descreva ali a interface — nomes de botões, posição de controles, textos de apoio ou o caminho de cliques —, que fica no código e nos testes de navegador. Mudanças só de interface não exigem editar esse arquivo.
 
 ## Testes e validação
 
