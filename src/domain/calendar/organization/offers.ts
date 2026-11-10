@@ -243,10 +243,12 @@ export function offerOrganizationIssues(
   const issues: OrganizationIssue[] = [];
   const issue = (path: string, message: string) => issues.push({ path, message });
   const original = state;
-  if (!(
-    offerFor(state, modality) ||
-    (newOffer?.id === modality && modalityIds.some((kind) => kind === newOffer.kind))
-  )) {
+  if (
+    !(
+      offerFor(state, modality) ||
+      (newOffer?.id === modality && modalityIds.some((kind) => kind === newOffer.kind))
+    )
+  ) {
     issue('organization', 'Oferta inválida.');
     return issues;
   }

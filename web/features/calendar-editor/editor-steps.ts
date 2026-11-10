@@ -112,7 +112,8 @@ export function issueSection({ target }: Pick<ContentIssue, 'target'>): EditorSe
 export function issueDestination({
   target,
 }: Pick<ContentIssue, 'target'>):
-  { to: EditorPage['path']; search: Record<string, string | undefined> } | undefined {
+  | { to: EditorPage['path']; search: Record<string, string | undefined> }
+  | undefined {
   switch (target?.area) {
     case 'organization':
       return { to: editorPages.periods.path, search: {} };

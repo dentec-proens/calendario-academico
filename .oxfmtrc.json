@@ -1,0 +1,29 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "printWidth": 100,
+  "tabWidth": 2,
+  "singleQuote": true,
+  "semi": true,
+  "htmlWhitespaceSensitivity": "css",
+  "proseWrap": "preserve",
+  "sortPackageJson": false,
+  "ignorePatterns": [
+    "node_modules/",
+    "dist/",
+    "coverage/",
+    "playwright-report/",
+    "test-results/",
+    "pnpm-lock.yaml",
+    ".env",
+    ".env.*",
+    "*.log",
+    "backup-*/",
+    "*.zip",
+    "convex/_generated/",
+    ".agents/skills/convex*/",
+    ".claude/skills/convex*/",
+    ".claude/worktrees/",
+    "test/fixtures/catalogue-expected.json",
+    "test/fixtures/offers-catalogue-expected.json"
+  ]
+}

@@ -6,7 +6,7 @@ import { oracleValues, recordedOracle, writeOracle } from '../helpers/stored-ora
  * Regression oracle of the stored documents (`test/fixtures/stored/oracle.json`): the counting,
  * the coverage with dates, issues or warnings, the base identity, the print layout and the
  * breakdown the domain computes for each of them must stay equal. `UPDATE_STORED_ORACLE=1`
- * rewrites the file (format it afterwards with `prettier --write`, as the repository checks it);
+ * rewrites the file (format it afterwards with `oxfmt --write`, as the repository checks it);
  * use it only for a change that is meant to alter these results, and say which values changed and
  * why in the commit.
  */
