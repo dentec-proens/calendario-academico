@@ -9,6 +9,7 @@ import { inviteError } from '../../convex/access/invitations';
 import { resetError } from '../../convex/access/passwordRecovery';
 import {
   nativeError,
+  networkFailureMessage,
   outdatedClientMessage,
   serverFailureMessage,
 } from '../../web/shared/convex/errors';
@@ -331,4 +332,10 @@ test('a request without a message of the application says what can be said of it
     'Server Error do domínio',
   );
   assert.equal(nativeError(new Error('Sem conexão')).message, 'Sem conexão');
+  assert.equal(nativeError(new TypeError('Failed to fetch')).message, networkFailureMessage);
+  // Only the browser's own TypeError: the same text from elsewhere is not a lost connection.
+  assert.equal(nativeError(new Error('Load failed')).message, 'Load failed');
+  const withStatus = nativeError(Object.assign(new TypeError('Failed to fetch'), { status: 503 }));
+  assert.equal(withStatus.message, networkFailureMessage);
+  assert.equal(withStatus.status, 503);
 });

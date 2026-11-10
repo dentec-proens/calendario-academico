@@ -1,4 +1,9 @@
-import { nativeError, outdatedClientMessage, serverFailureMessage } from './convex/errors.ts';
+import {
+  nativeError,
+  networkFailureMessage,
+  outdatedClientMessage,
+  serverFailureMessage,
+} from './convex/errors.ts';
 
 export type ClientErrorKind = 'save' | 'render' | 'rejection';
 export interface ClientErrorReport {
@@ -30,7 +35,11 @@ export function describeClientError(error: unknown) {
   const { message, status } = nativeError(error);
   if (status !== undefined)
     return { message: describedRefusals.has(status) ? message : 'Recusa do servidor', status };
-  if (message === outdatedClientMessage || message === serverFailureMessage)
+  if (
+    message === outdatedClientMessage ||
+    message === serverFailureMessage ||
+    message === networkFailureMessage
+  )
     return { message, status };
   if (!(error instanceof Error)) return { message: typeof error, status };
   const frame = firstFrame(error);
@@ -51,6 +60,12 @@ export function createClientErrorReporter({
   const seen = new Map<string, number>();
   return (kind: ClientErrorKind, error: unknown, calendarId?: string) => {
     const { message, status } = describeClientError(error);
+    // A lost connection left unhandled, such as the session renewal of `@convex-dev/auth` after the
+    // computer wakes up, is almost always the person's network. Skipping it keeps the log readable;
+    // the cost is that a transport failure for everyone (a blocked endpoint, a paused deployment)
+    // shows up only when a save fails or someone complains. The described message also catches an
+    // error already converted by `request()`.
+    if (kind === 'rejection' && message === networkFailureMessage) return;
     // An expired session is expected, and the report itself would be refused.
     if (status === 401) return;
     const key = `${kind}:${status}:${message}:${calendarId}`;
