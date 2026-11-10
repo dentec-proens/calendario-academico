@@ -6,6 +6,7 @@ import { Link, Outlet, useRouterState } from '@tanstack/react-router';
 import { LogOut } from 'lucide-react';
 import { Button } from '../../components/ui/Button.tsx';
 import BackendStatus from '../BackendStatus.tsx';
+import { AccountMenu } from '../AccountMenu.tsx';
 import { sessionIdentity, useSessionState } from '../session.tsx';
 import { clearPrivateLinkWhenLeaving } from '../private-links.ts';
 import { FormDraftProvider } from '../../shared/forms/drafts.tsx';
@@ -30,14 +31,7 @@ export default function RootLayout() {
       : user
         ? roleLabels[user.role]
         : undefined;
-  const accountLabel =
-    session.isLoading || session.editorRecovery?.checkingIdentity
-      ? 'Verificando sessão…'
-      : user
-        ? accountScope
-          ? `${user.name} · ${accountScope}`
-          : user.name
-        : null;
+  const checkingSession = session.isLoading || session.editorRecovery?.checkingIdentity;
   // A tab opened while the bootstrap is unavailable has no portal to show until maintenance ends.
   const paused = session.maintenance && session.isAuthenticated && !session.info;
   const main = useRef<HTMLElement>(null);
@@ -59,20 +53,28 @@ export default function RootLayout() {
               <span>PROENS</span>
             </span>
           </Link>
-          {accountLabel ? (
-            <span
-              className="badge"
-              id="account"
-              data-profile={session.isLoading ? undefined : session.info?.user.role}
-            >
-              {accountLabel}
+          {checkingSession ? (
+            <span className="account-menu account-menu--pending" id="account">
+              <span className="account-menu__scope">Verificando sessão…</span>
             </span>
-          ) : null}
-          {session.isAuthenticated ? (
+          ) : user ? (
+            <AccountMenu
+              name={user.name}
+              email={user.email}
+              scope={accountScope}
+              role={user.role}
+              loggingOut={session.loggingOut}
+              onLogout={() => {
+                void session.logout();
+              }}
+            />
+          ) : session.isAuthenticated ? (
+            // Without the bootstrap (maintenance) there is no identity to show, only the way out.
             <Button
               type="button"
               id="logout"
               variant="secondary"
+              className="header-logout"
               disabled={session.loggingOut}
               onClick={() => {
                 void session.logout();

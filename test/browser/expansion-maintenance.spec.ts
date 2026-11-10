@@ -30,7 +30,7 @@ test('an open editor keeps its draft under the maintenance notice and resumes af
   await expect(notice.getByRole('heading', { level: 2 })).toHaveText('Portal em manutenção');
   await expect(accessError(page)).toHaveCount(0);
   await expect(page.locator('#record-title')).toBeVisible();
-  await expect(page.locator('#account')).toHaveText('Pessoa de teste · Admin');
+  await expect(page.locator('#account')).toHaveText(/Pessoa de teste.*Admin/);
   await expansion(page, false);
   await expect(notice).toHaveCount(0);
   await expect(page.locator('#record-title')).toBeVisible();

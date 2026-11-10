@@ -59,9 +59,10 @@ for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: 1000 });
     await page.goto(await fixtureServer('editor-session'));
     await expect(page.locator('#record-title')).toBeVisible();
-    await expect(page.locator('#account')).toHaveText('Pessoa de teste · Admin');
+    await expect(page.locator('#account')).toHaveText(/Pessoa de teste.*Admin/);
     await page.locator('.ui-back-link').click();
     await expect(page.locator('#calendar-list')).toBeVisible();
+    await page.locator('#account').click();
     await page.locator('#logout').click();
     await expect(page.locator('#account')).toHaveCount(0);
     await expect(page.locator('#auth-title')).toHaveText('Entrar');
@@ -76,6 +77,7 @@ test('login focuses the destination title instead of announcing the access', asy
   await page.goto(await fixtureServer('editor-session'));
   await page.locator('.ui-back-link').click();
   await expect(page.locator('#calendar-list')).toBeVisible();
+  await page.locator('#account').click();
   await page.locator('#logout').click();
   await page.locator('#email').fill('editor@example.invalid');
   await page.locator('#password').fill('synthetic-password');
@@ -90,6 +92,7 @@ test('a new login in the same tab protects the editor on its next expiration', a
 }) => {
   await page.goto(await fixtureServer('editor-session'));
   await expect(page.locator('#record-title')).toBeVisible();
+  await page.locator('#account').click();
   await page.locator('#logout').click();
   await expect(page.locator('#auth-title')).toHaveText('Entrar');
   await page.locator('#email').fill('editor@example.invalid');
@@ -116,6 +119,7 @@ test('header logout can be cancelled and waits for an in-flight save before sign
   await page.locator('#event-name').fill('Campo não aplicado');
   // The side panel is modal; Fechar keeps the unapplied field.
   await page.locator('#close-event-panel').click();
+  await page.locator('#account').click();
   await page.locator('#logout').click();
   const dialog = page.getByRole('alertdialog');
   await expect(dialog).toContainText('os campos ainda não aplicados serão descartados');
@@ -125,6 +129,7 @@ test('header logout can be cancelled and waits for an in-flight save before sign
   await expect
     .poll(() => page.evaluate(() => window.editorSessionTest.counters.saveStarted))
     .toBe(1);
+  await page.locator('#account').click();
   await page.locator('#logout').click();
   await dialog.getByRole('button', { name: 'Descartar os campos e sair', exact: true }).click();
   await expect(dialog).toContainText('Salvando');

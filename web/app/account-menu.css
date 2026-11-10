@@ -1,0 +1,115 @@
+.account-menu {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-space-2);
+  min-width: 0;
+  max-width: 280px;
+  min-height: 44px;
+  margin-left: auto;
+  padding: 4px 8px 4px 4px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: none;
+  color: var(--ui-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color var(--ui-motion),
+    border-color var(--ui-motion);
+}
+.account-menu:hover,
+.account-menu[data-popup-open] {
+  border-color: var(--ui-border-soft);
+  background: var(--ui-surface-muted);
+}
+.account-menu:focus-visible {
+  outline: 3px solid var(--ui-focus);
+  outline-offset: 2px;
+}
+.account-menu__avatar {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--ui-action);
+  color: var(--ui-action-text);
+  font-size: 0.8125rem;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+}
+.account-menu__identity {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.25;
+}
+.account-menu__name,
+.account-menu__scope {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.account-menu__name {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.account-menu__scope {
+  color: var(--ui-muted);
+  font-size: 0.75rem;
+}
+.account-menu__chevron {
+  flex-shrink: 0;
+  color: var(--ui-muted);
+  transition: transform var(--ui-motion);
+}
+.account-menu[data-popup-open] .account-menu__chevron {
+  transform: rotate(180deg);
+}
+.account-menu--pending {
+  cursor: default;
+}
+.account-menu--pending:hover {
+  border-color: transparent;
+  background: none;
+}
+
+.account-menu__popup {
+  min-width: 240px;
+}
+.account-menu__summary {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px 10px;
+  line-height: 1.3;
+}
+.account-menu__summary-name {
+  color: var(--ui-text);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.account-menu__summary-email,
+.account-menu__summary-scope {
+  overflow-wrap: anywhere;
+  color: var(--ui-muted);
+  font-size: 0.8125rem;
+}
+.account-menu__separator {
+  height: 1px;
+  margin: 0 -6px 6px;
+  background: var(--ui-border-soft);
+}
+
+@media (max-width: 700px) {
+  .account-menu {
+    max-width: 100%;
+  }
+}
+@media print {
+  .account-menu {
+    display: none !important;
+  }
+}

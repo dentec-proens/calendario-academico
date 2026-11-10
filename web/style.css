@@ -82,13 +82,8 @@ h3[tabindex='-1']:focus {
   font-size: 0.875rem;
   margin-top: 4px;
 }
-.badge {
+.header-logout {
   margin-left: auto;
-  background: var(--ui-action-soft);
-  padding: 8px 14px;
-  border-radius: 30px;
-  font-size: 0.875rem;
-  color: var(--green);
 }
 main {
   max-width: 1550px;
@@ -497,10 +492,6 @@ footer {
   .brand-copy strong {
     font-size: 1rem;
   }
-  .badge {
-    max-width: 130px;
-    text-align: center;
-  }
   .workspace {
     grid-template-columns: 1fr;
   }
@@ -529,7 +520,7 @@ footer {
   }
 }
 @media print {
-  header .badge,
+  .header-logout,
   .intro .actions,
   aside,
   nav,

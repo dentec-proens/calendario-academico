@@ -195,6 +195,7 @@ test('native Convex preserves invitations, password recovery, PDFs and human rev
   await page.locator('.confirmation-dialog__confirm').click();
   await expect(page.locator('#recovery-link')).toBeVisible();
   const recovery = await page.locator('input#recovery-link').inputValue();
+  await guest.locator('#account').click();
   await guest.locator('#logout').click();
   await expect(guest.locator('#auth')).toBeVisible();
   await guest.goto(recovery);
