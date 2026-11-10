@@ -22,7 +22,9 @@ test('the form of an activity offers to go on to the next pending one', async ({
 }) => {
   const origin = new URL(await fixtureServer('editor-mixed-offers')).origin;
   await page.goto(`${origin}${events}`);
-  await page.locator('[data-activity-open="pit:semester:first"]').click();
+  // The capture is about the panel. A pointer click would first scroll the row into view, and the
+  // page behind would then settle at a timing-dependent position; the event opens it in place.
+  await page.locator('[data-activity-open="pit:semester:first"]').dispatchEvent('click');
   await expect(page.locator('#apply-and-next-pending')).toBeVisible();
   await expect(page).toHaveScreenshot('activity-form-next-pending.png');
 });
