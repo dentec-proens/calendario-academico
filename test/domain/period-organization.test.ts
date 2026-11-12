@@ -63,7 +63,7 @@ test('annual and semester periods of different offers survive normalization', ()
   const annual = add(calendar(), 'integrado', 'annual', 'annual', '2027-02-01', '2027-12-17');
   const first = add(annual, 'graduacao', 'first', 'first', '2027-02-01', '2027-06-30');
   const second = add(first, 'graduacao', 'second', 'second', '2027-08-02', '2027-12-17');
-  expect(normalizeOfferCalendar({ ...second, ignoredHistory: [] }).periods).toEqual(second.periods);
+  expect(normalizeOfferCalendar(second).periods).toEqual(second.periods);
   expect(() =>
     normalizeOfferCalendar(add(second, 'integrado', 'annual', 'again', '2027-02-01', '2027-03-01')),
   ).toThrow('mais de um período');

@@ -515,6 +515,10 @@
   .editor-step-menu[open] > summary {
     margin-bottom: 12px;
   }
+  .editor-step-menu-total {
+    margin-left: auto;
+    white-space: nowrap;
+  }
   .editor-guide-title {
     display: none;
   }

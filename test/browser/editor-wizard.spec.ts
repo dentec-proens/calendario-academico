@@ -128,6 +128,13 @@ test('the mobile step picker follows the URL', async ({ page, fixtureServer }) =
   ).toBeVisible();
   const steps = page.locator('.editor-step-menu');
   await expect(steps).not.toHaveAttribute('open');
+  // Closed, the picker still carries the total of the review step.
+  const total = await page
+    .locator('[data-view="issues"] .editor-step-note')
+    .getAttribute('data-issue-count');
+  expect(Number(total)).toBeGreaterThan(0);
+  await expect(steps.locator('.editor-step-menu-total')).toBeVisible();
+  await expect(steps.locator('.editor-step-menu-total')).toContainText(`${total} pendência`);
   await steps.locator('summary').focus();
   await page.keyboard.press('Enter');
   await expect(page.locator('[data-view="events"]')).toBeVisible();

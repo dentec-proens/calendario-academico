@@ -5,7 +5,7 @@ import { normalizeOfferCalendar } from '../../src/domain/calendar/normalization/
 import { releaseReadiness } from '../../src/domain/calendar/readiness.ts';
 import type { ActivityState } from '../../src/domain/calendar/model.ts';
 
-const state: ActivityState & { ignoredHistory: string[] } = {
+const state: ActivityState = {
   schemaVersion: 7 as const,
   year: 2027,
   campus: 'Campus sintético',
@@ -13,7 +13,6 @@ const state: ActivityState & { ignoredHistory: string[] } = {
   weekConfirmed: true,
   periods: [],
   events: [],
-  ignoredHistory: [],
   offers: [
     {
       id: 'integrado',

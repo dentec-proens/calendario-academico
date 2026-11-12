@@ -46,6 +46,13 @@ export default function EditorSteps({
               ? `Passo ${stepIndex + 1} de ${editorSteps.length} · ${active.title}`
               : 'Passos de elaboração'}
           </span>
+          {/* Closed on a narrow screen, the picker still says why the submission waits. */}
+          {issueCount > 0 && (
+            <span className="editor-step-note editor-step-menu-total">
+              <span className="visually-hidden">, </span>
+              {issueCount} {issueCount === 1 ? 'pendência' : 'pendências'}
+            </span>
+          )}
           <ChevronDown aria-hidden="true" />
         </summary>
         <p className="editor-guide-title">Elabore seu calendário</p>

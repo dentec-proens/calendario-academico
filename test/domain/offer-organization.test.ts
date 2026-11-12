@@ -94,7 +94,7 @@ test('one application splits a shared period and keeps the other offer and all s
     ['integrado-0', '2027-03-01', '2027-03-12', undefined],
     ['integrado-1', '2027-03-15', '2027-03-31', undefined],
   ]);
-  expect(normalizeOfferCalendar({ ...next, ignoredHistory: [] }).events).toHaveLength(4);
+  expect(normalizeOfferCalendar(next).events).toHaveLength(4);
 });
 
 test('moving period endpoints only warns about unchanged stages and validates edited ones', () => {
@@ -151,9 +151,7 @@ test('a stage cannot span the semester gap, overlap another stage or use another
   bad.events.find((e) =>
     sameActivity(e.activity, definedStage('stage', 'integrado', 'second', 1)),
   )!.start = civilDate('2027-03-15');
-  expect(() => normalizeOfferCalendar({ ...bad, ignoredHistory: [] }, next)).toThrow(
-    /etapa.*período/,
-  );
+  expect(() => normalizeOfferCalendar(bad, next)).toThrow(/etapa.*período/);
 });
 
 test('existing inclusions are checked before changing periods; records are never silently deleted', () => {
@@ -259,10 +257,7 @@ test('calendar records no longer require or retain manual references', () => {
   expect(draft).not.toHaveProperty('evidence');
   expect(draft.stages[0]).not.toHaveProperty('evidence');
   expect(offerOrganizationIssues(state, 'integrado', draft)).toEqual([]);
-  const next = normalizeOfferCalendar({
-    ...applyOfferOrganization(state, 'integrado', draft, id),
-    ignoredHistory: [],
-  });
+  const next = normalizeOfferCalendar(applyOfferOrganization(state, 'integrado', draft, id));
   expect(
     next.events
       .filter((event) => isAssessmentStage(event.activity))
@@ -303,7 +298,5 @@ test('reducing date-only stages keeps the retired dates and their links to revie
     [definedStage('stage', 'integrado', 'annual', 4), '2027-03-22', '2027-03-26'],
   ]);
   expect(retired.every((event) => event.effect === 'note')).toBe(true);
-  expect(normalizeOfferCalendar({ ...two, ignoredHistory: [] }, four).events).toHaveLength(
-    two.events.length,
-  );
+  expect(normalizeOfferCalendar(two, four).events).toHaveLength(two.events.length);
 });

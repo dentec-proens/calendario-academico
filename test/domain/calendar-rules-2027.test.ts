@@ -166,7 +166,7 @@ test('one event covers only the explicitly declared offers and does not waive ve
 });
 test('mixed organizations count disjoint periods separately and keep simultaneous offers valid on roundtrip', () => {
   const state = calendar();
-  const normalized = normalizeOfferCalendar({ ...state, ignoredHistory: [] }),
+  const normalized = normalizeOfferCalendar(state),
     count = evaluateCalendar(normalized, []);
   expect(normalized.schemaVersion).toBe(7);
   expect(count.byOffer.integrado.byPeriod).toHaveProperty('annual');
@@ -193,7 +193,7 @@ test('prior publication keeps dates and destination after manual sources are rem
   const state = calendar(),
     event = notice();
   const applied = applyDate(state, event),
-    saved = normalizeOfferCalendar({ ...applied, ignoredHistory: [] });
+    saved = normalizeOfferCalendar(applied);
   const expected = event;
   expect(saved.events[0]).toMatchObject(expected);
   expect(saved.events[0]).not.toHaveProperty('evidence');
@@ -261,9 +261,7 @@ test('prior/cross-year references are informative even if the received discrimin
   ]) {
     const event = notice(changes);
     expect(() => applyDate(state, event)).toThrow();
-    expect(() =>
-      normalizeOfferCalendar({ ...state, ignoredHistory: [], events: [event] }),
-    ).toThrow();
+    expect(() => normalizeOfferCalendar({ ...state, events: [event] })).toThrow();
   }
   const old = notice({
     start: civilDate('1900-01-01'),
@@ -271,9 +269,7 @@ test('prior/cross-year references are informative even if the received discrimin
     activity: undefined,
     notice: undefined,
   });
-  expect(
-    normalizeOfferCalendar({ ...state, ignoredHistory: [], events: [old] }).events[0].start,
-  ).toBe('1900-01-01');
+  expect(normalizeOfferCalendar({ ...state, events: [old] }).events[0].start).toBe('1900-01-01');
   expect(() =>
     normalizeOfferCalendar({ ...state, events: [{ ...old, start: '2026-02-30' }] }),
   ).toThrow();
@@ -433,13 +429,9 @@ test('commands and direct import reject teaching inclusion outside the selected 
     offers: ['graduacao'],
   };
   expect(() => applyDate(state, event)).toThrow('período letivo');
-  expect(() => normalizeOfferCalendar({ ...state, ignoredHistory: [], events: [event] })).toThrow(
-    'período letivo',
-  );
+  expect(() => normalizeOfferCalendar({ ...state, events: [event] })).toThrow('período letivo');
   const integrated = { ...event, offers: ['integrado'] };
-  expect(
-    normalizeOfferCalendar({ ...state, ignoredHistory: [], events: [integrated] }).events,
-  ).toHaveLength(1);
+  expect(normalizeOfferCalendar({ ...state, events: [integrated] }).events).toHaveLength(1);
 });
 
 test('preserved duplicate occurrences remain editable after PDF provenance is retired', () => {
