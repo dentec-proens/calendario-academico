@@ -59,10 +59,9 @@ export default defineSchema({
     statusRevision: v.number(),
     /**
      * When the calendar entered its current status; orders the review queue. The short name keeps
-     * the longest queue index within Convex's 64 characters. Optional only until
-     * `fillStatusAt` concludes in production: contract it to `v.number()` after that.
+     * the longest queue index within Convex's 64 characters.
      */
-    statusAt: v.optional(v.number()),
+    statusAt: v.number(),
     label: v.optional(v.string()),
     currentSubmissionId: v.optional(v.id('calendarSubmissions')),
     /** Who is responsible for the parecer now; `reviews.reviewer` records who saved each revision. */

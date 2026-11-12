@@ -53,6 +53,7 @@ test('E2E reserves its own year/campus/account and publishing its fixture preser
       offerKinds: ['integrado'],
       status: 'rascunho' as const,
       statusRevision: 0,
+      statusAt: 1,
       courses: 'Existente',
       classes: '',
       shifts: '',

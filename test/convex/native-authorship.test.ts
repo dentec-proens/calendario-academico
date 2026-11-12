@@ -105,6 +105,7 @@ test('legacy authorship uses recorded labels and never guesses a missing creator
       offerKinds: ['integrado'],
       status: 'rascunho' as const,
       statusRevision: 0,
+      statusAt: 2,
       courses: 'Calendário anterior',
       classes: '',
       shifts: '',

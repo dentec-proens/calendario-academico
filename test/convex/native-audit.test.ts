@@ -33,6 +33,7 @@ async function fixture() {
       offerKinds: ['integrado' as const],
       status: 'rascunho' as const,
       statusRevision: 0,
+      statusAt: 1,
       courses: 'Teste',
       classes: '',
       shifts: '',
