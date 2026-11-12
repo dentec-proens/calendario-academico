@@ -25,6 +25,12 @@ Before editing files for a substantial task:
 - Router define rotas em código e valida o estado da URL. TanStack Form possui os valores de preenchimento; comandos puros aplicam alterações ao calendário; somente confirmação Convex representa gravação concluída.
 - Formulários com senhas, códigos, tokens ou arquivos têm identidade privada na instrumentação. Esses valores permanecem efêmeros; formulários mistos podem conservar somente os demais campos com `excludeFromDraft`. Use o hook compartilhado de formulários para preservar esse contrato.
 
+## Normas
+
+- O texto literal das normas que o sistema implementa fica em `docs/normas/`, copiado da publicação oficial, com o link de origem no topo de cada arquivo. A Resolução CONSUP/IFPR nº 292/2026 (calendário de referência de 2027) está em [`docs/normas/resolucao-consup-292-2026.md`](docs/normas/resolucao-consup-292-2026.md).
+- Antes de criar ou mudar uma regra, um critério ou um texto que cite a norma, consulte o texto literal; não parta de paráfrases do código (`criteria.ts`, `requirements.ts`), que podem acrescentar o que a norma não diz. Uma leitura que vá além do texto é uma interpretação: registre-a com a fonte da decisão em `history.ts` da política.
+- Não edite o texto copiado. Para uma norma nova ou republicada, baixe a publicação do SEI, converta para Markdown sem alterar palavras nem numeração (o SEI pode gerar numeração por CSS) e confira que nenhuma palavra mudou.
+
 ## Planos
 
 - Planos de implementação ficam em `docs/plans/` só enquanto a implementação acontece. Ao concluí-la, leve as decisões que continuam valendo para a documentação permanente (`docs/arquitetura-convex.md`, `docs/uso.md`, `docs/componentes-interface.md`, `docs/migracao-schema.md`), registre o que ficou para depois em [Pendências](docs/pendencias.md) e apague o plano; o histórico fica no Git. Comentários de código e testes explicam a regra em vez de citar seções de plano.
