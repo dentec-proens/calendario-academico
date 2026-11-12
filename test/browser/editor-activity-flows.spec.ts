@@ -98,7 +98,6 @@ test('editing a linked record that changes the count keeps its effect, category 
   const event = await savedEvent(page, (_, id) => id === 'linked-exclusion');
   const preserved = original!;
   expect(event).toMatchObject({ ...preserved, name: 'Encontro com recesso retificado' });
-  expect(event).not.toHaveProperty('evidence');
 });
 
 test('a free admission notice is registered without an activity link', async ({

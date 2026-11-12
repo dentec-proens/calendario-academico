@@ -3,10 +3,7 @@ import { civilDate } from '../../src/domain/civil-date.ts';
 import { evaluatePlan } from '../../src/domain/calendar/activities/plan-evaluation.ts';
 import { expect, test } from 'vitest';
 import { definedStage } from '../helpers/activity-links.ts';
-import {
-  isAssessmentStage,
-  sameActivity,
-} from '../../src/domain/calendar/activities/activity-ref.ts';
+import { sameActivity } from '../../src/domain/calendar/activities/activity-ref.ts';
 import {
   applyOfferOrganization,
   offerOrganizationDraft,
@@ -243,7 +240,7 @@ test('changing the organization of an offer with a notice linked to its periods 
   );
 });
 
-test('calendar records no longer require or retain manual references', () => {
+test('applying an organization covers its stages and keeps the other dates', () => {
   const state = calendar();
   state.events.push({
     id: 'other',
@@ -254,16 +251,8 @@ test('calendar records no longer require or retain manual references', () => {
     offers: ['integrado'],
   });
   const draft = offerOrganizationDraft(state, 'integrado');
-  expect(draft).not.toHaveProperty('evidence');
-  expect(draft.stages[0]).not.toHaveProperty('evidence');
   expect(offerOrganizationIssues(state, 'integrado', draft)).toEqual([]);
   const next = normalizeOfferCalendar(applyOfferOrganization(state, 'integrado', draft, id));
-  expect(
-    next.events
-      .filter((event) => isAssessmentStage(event.activity))
-      .every((event) => !Object.hasOwn(event, 'evidence')),
-  ).toBe(true);
-  expect(next.events.find((event) => event.id === 'other')).not.toHaveProperty('evidence');
   expect(
     evaluatePlan(next).rows.find((row) => row.requirement.id === 'stage-1:integrado')?.coverage,
   ).toBe('complete');

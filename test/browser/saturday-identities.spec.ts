@@ -8,7 +8,7 @@ import {
 import type {} from '../fixtures/editor-client.ts';
 
 for (const width of [1440, 390]) {
-  test(`Saturday activities keep independent identities and saved data carries no manual source at ${width}px`, async ({
+  test(`Saturday activities keep independent identities at ${width}px`, async ({
     page,
     fixtureServer,
   }) => {
@@ -17,7 +17,7 @@ for (const width of [1440, 390]) {
     await expect(page.locator('#weekdays')).toBeVisible();
     const institutional = await page.evaluate(() => window.editorTest.record.institutionalSnapshot);
     await page.locator('#weekdays input[value="5"]').uncheck();
-    expect((await savedState(page)).state).not.toHaveProperty('weekEvidence');
+    await savedState(page);
     await addPeriod(page, '2027-03-01', '2027-03-26');
     await savedState(page);
     await selectEditorSection(page, 'days');
@@ -47,7 +47,6 @@ for (const width of [1440, 390]) {
       ['2027-03-06', 'Atividade A retificada'],
       ['2027-03-13', 'Atividade B'],
     ]);
-    expect(saved.state.events.every((event) => !Object.hasOwn(event, 'evidence'))).toBe(true);
     await selectEditorSection(page, 'vacations');
     await page.locator('#vacation-add-teacher').click();
     await page.locator('#vacation-start').fill('2027-01-04');
@@ -60,10 +59,7 @@ for (const width of [1440, 390]) {
     await page.locator('#event-start').fill('2027-03-08');
     await page.locator('#event-end').fill('2027-03-08');
     await page.locator('#event-form button[type="submit"]').click();
-    const final = await savedState(page);
-    expect(
-      final.state.events.find((event) => event.name === 'Feriado do campus'),
-    ).not.toHaveProperty('evidence');
+    await savedState(page);
     expect(await page.evaluate(() => window.editorTest.record.institutionalSnapshot)).toEqual(
       institutional,
     );

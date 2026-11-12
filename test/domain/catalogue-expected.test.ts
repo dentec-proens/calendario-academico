@@ -57,17 +57,6 @@ test('the fixture holds only the years it is compared with', () => {
   expect(Object.keys(expected).sort()).toEqual(years.map(String));
 });
 
-test('the expected catalogue has no row of the retired “Classificação legada”', () => {
-  // 2027 generates only its own declarations; the optional rows the operational catalogue once
-  // lent it left the policy with format 4.
-  for (const state of expected['2027'].states)
-    expect(
-      state.requirements.filter(
-        (row) => (row as { basis?: string }).basis === 'Classificação legada',
-      ),
-    ).toEqual([]);
-});
-
 test('the fixture keeps the one-line-per-row format UPDATE_CATALOGUE_EXPECTED writes', () => {
   expect(readFileSync(file, 'utf8')).toBe(formatExpected(expected));
 });

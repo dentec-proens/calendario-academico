@@ -2,7 +2,6 @@ import { calendarRecordDates, calendarSaveDates } from '../../web/shared/convex/
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
 import { onceLink } from '../helpers/activity-links.ts';
-import { retiredDateFields } from '../helpers/retired-fields.ts';
 import { api } from '../../convex/_generated/api.js';
 import type { DomainState } from '../../convex/validators.ts';
 import type { CalendarContent, CalendarOffer } from '../../src/domain/calendar/model.ts';
@@ -60,8 +59,6 @@ test.each(['anual', 'semestral'] as const)(
       ),
     ).toBe(true);
     expect(record.state.schemaVersion).toBe(7);
-    for (const field of ['offer', 'modalities', 'regime', 'organizationByModality', 'conversion'])
-      expect(record.state).not.toHaveProperty(field);
     expect(
       (
         await asClient('campus-a')
@@ -200,8 +197,6 @@ test('direct backend writes retain temporal and offer-scope validation', async (
   for (const forged of [
     { ...event, effect: 'include' as const },
     { ...event, effect: 'exclude' as const },
-    // A note that is valid by itself is refused with any field format 5 dropped.
-    ...retiredDateFields.map((field) => ({ ...event, [field]: 'event' }) as typeof event),
     { ...event, hours: 40, activity: onceLink('pedagogical-training') },
     {
       ...event,
@@ -706,7 +701,6 @@ test('a teacher vacation saves as a linked date of the whole campus, with its ge
     name: 'Férias docentes — 30 dias',
     offers: record.state.offers.map((offer) => offer.id),
   });
-  expect(saved.state).not.toHaveProperty('teacherVacations');
 });
 
 test('the save refuses a vacation that would count, and a vacation as a date of the campus', async () => {

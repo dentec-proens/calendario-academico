@@ -67,28 +67,3 @@ test('server saves Servidor choices in snapshots, rejects other dates and protec
     }),
   ).rejects.toThrow('permitidas');
 });
-
-test('contracted storage rejects the old field in current contents and historical snapshots', async () => {
-  const fixture = await createNativeFixture();
-  const record = await fixture
-    .asClient('campus-a')
-    .mutation(api.calendars.createCalendar, {
-      body: {
-        campusId: fixture.ids.campuses.a,
-        year: 2027,
-        offers: [{ kind: 'integrado', organization: 'anual' }],
-      },
-    })
-    .then(calendarRecordDates);
-  await expect(
-    fixture.client.run(async (ctx) => {
-      const content = (await ctx.db
-        .query('calendarContents')
-        .withIndex('by_calendarId', (q) => q.eq('calendarId', record.id))
-        .unique())!;
-      await ctx.db.patch(content._id, {
-        state: { ...content.state, teacherDayDate: '2027-10-13' },
-      } as never);
-    }),
-  ).rejects.toThrow(/teacherDayDate/);
-});

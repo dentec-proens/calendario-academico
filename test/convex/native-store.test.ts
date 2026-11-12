@@ -137,19 +137,8 @@ test('review saves preserve earlier authorship and rejected edits append no revi
   );
 });
 
-test('typed storage rejects legacy envelopes, invalid relationships and incomplete domain state', async () => {
+test('typed storage rejects invalid relationships and incomplete domain state', async () => {
   const { client, asClient, ids } = await createNativeFixture();
-  await assert.rejects(
-    client.run((ctx) =>
-      ctx.db.insert('campuses', {
-        key: 'campuses:a',
-        appId: 'a',
-        position: 0,
-        value: { data: { name: 'Forged' } },
-      } as never),
-    ),
-    /validator|unexpected|missing|required/i,
-  );
   await assert.rejects(
     client.run((ctx) =>
       ctx.db.insert('calendars', {

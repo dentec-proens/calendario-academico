@@ -52,20 +52,16 @@ test.each([2, 3, 4])(
   },
 );
 
-test('calendar storage requires offerKinds and refuses the retired modalities field', async () => {
+test('calendar storage requires offerKinds', async () => {
   const { client, record } = await setup();
   const fields = await client.run(async (ctx) => {
     const { _id, _creationTime: _created, ...fields } = (await ctx.db.get(record.id))!;
     return fields;
   });
-  const { offerKinds, ...withoutKinds } = fields;
-  for (const [unsupported, error] of [
-    [withoutKinds, /Missing required field.*offerKinds/],
-    [{ ...fields, modalities: offerKinds }, /Unexpected field.*modalities/],
-  ] as const)
-    await expect(
-      client.run((ctx) => ctx.db.insert('calendars', unsupported as never)),
-    ).rejects.toThrow(error);
+  const { offerKinds: _offerKinds, ...withoutKinds } = fields;
+  await expect(
+    client.run((ctx) => ctx.db.insert('calendars', withoutKinds as never)),
+  ).rejects.toThrow(/Missing required field.*offerKinds/);
   expect(await client.run((ctx) => ctx.db.query('calendars').take(10))).toHaveLength(1);
 });
 

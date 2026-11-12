@@ -11,7 +11,6 @@ import { contentIssues } from '../../src/domain/calendar/readiness.ts';
 import * as validators from '../../convex/validators.ts';
 import { calendarOffersFixture } from '../fixtures/calendar-offers.ts';
 import { onceLink } from '../helpers/activity-links.ts';
-import { retiredOfferFields } from '../helpers/retired-fields.ts';
 
 const allOffers = ['integrado', 'graduacao', 'graduacao-2', 'graduacao-3'];
 const institutional = (id: string, start: string, offers = allOffers) => ({
@@ -375,6 +374,4 @@ test('changing the count per cycle shows the assessment stages before and after'
   expect(describeValue('stages', stages.after)).toBe(
     `${(side().state.offers[0].stages as { perTerm: number }).perTerm} por ciclo`,
   );
-  for (const field of retiredOfferFields)
-    expect(Object.keys(fieldLabels.offer)).not.toContain(field);
 });

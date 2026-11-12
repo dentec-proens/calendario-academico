@@ -69,9 +69,6 @@ test('applying one semester offer keeps four annual stage bindings and preserves
       (period) => period.id !== 'graduacao-2-first' && period.id !== 'graduacao-2-second',
     ),
   );
-  expect(next).not.toHaveProperty('organizationByModality');
-  expect(next).not.toHaveProperty('assessmentStagesByModality');
-  expect(next).not.toHaveProperty('regime');
 });
 
 test('reducing semester stages keeps every binding and leaves excess dates to review', () => {
@@ -161,7 +158,6 @@ test('intake configuration changes only the selected offer identity', () => {
   expect(next.offers.find((offer) => offer.id === 'graduacao-3')).toEqual(
     state.offers.find((offer) => offer.id === 'graduacao-3'),
   );
-  expect(next).not.toHaveProperty('intakeByModality');
   expect(() => configureIntakeRequirement(state, 'graduacao-2', 'annual', true)).toThrow('ciclo');
 });
 

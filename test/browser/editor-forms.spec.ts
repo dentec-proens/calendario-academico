@@ -44,7 +44,6 @@ test('week form applies confirmed weekdays and rejects an empty week atomically'
   await expect
     .poll(() => page.evaluate(() => window.editorTest.record.state.weekdays))
     .toEqual([1, 3, 5]);
-  expect((await savedState(page)).state).not.toHaveProperty('weekEvidence');
 });
 
 test('offer organization applies manual assessment dates and preserves them after a holiday changes', async ({

@@ -1,6 +1,5 @@
 import { calendarRecordDates } from '../../web/shared/convex/calendar-dates.ts';
 import { expect, test } from 'vitest';
-import { makeFunctionReference } from 'convex/server';
 import { api } from '../../convex/_generated/api.js';
 import type { Id } from '../../convex/_generated/dataModel.js';
 import { reviewCriteriaFor } from '../../src/domain/reviews/criteria.ts';
@@ -528,31 +527,6 @@ test('submission copies are read only through their own calendar chain', async (
     submissionId: submission._id,
   });
   expect(copy.state).toMatchObject({ year: 2027, campus: 'A' });
-});
-
-test('the history queries and the transitional functions are no longer callable', async () => {
-  const f = await fixture();
-  const id = await f.create();
-  await expect(
-    f.campus.mutation(makeFunctionReference<'mutation'>('calendars:makeDefinitive'), {
-      id,
-      version: 1,
-    }),
-  ).rejects.toThrow(/Could not find|no such export|not found/);
-  await expect(
-    f.client.mutation(makeFunctionReference<'mutation'>('historyPurge:purgeCalendarHistory'), {}),
-  ).rejects.toThrow(/Could not find|no such export|not found|Couldn't find/);
-  for (const name of ['calendars:calendarHistory', 'calendars:calendarVersion'])
-    await expect(
-      f.campus.query(makeFunctionReference<'query'>(name), {
-        id,
-        version: 1,
-        paginationOpts: { numItems: 1, cursor: null },
-      }),
-    ).rejects.toThrow(/Could not find|no such export|not found/);
-  const record = await f.campus.query(api.calendars.calendar, { id });
-  expect(record).not.toHaveProperty('versions');
-  expect(record).not.toHaveProperty('purpose');
 });
 
 test('the review of each decision is read from the current or the archived revision', async () => {

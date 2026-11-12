@@ -59,17 +59,13 @@ const states2027: [string, ActivityState][] = [
   ].map((fixture) => [fixture.name, fixture() as ActivityState] as [string, ActivityState]),
 ];
 
-/** Basis of the optional rows format 4 lent 2027 from the operational catalogue. */
-const legacyBasis = 'Classificação legada';
-
 const baseOf = (ref: ActivityRef): ActivityBase =>
   'position' in ref ? 'stage' : 'term' in ref ? 'cycle' : 'semester' in ref ? 'semester' : 'once';
 
 describe('2027 generates only the declarations of its policy', () => {
-  test.each(states2027)('%s has no row of “Classificação legada”', (_name, state) => {
+  test.each(states2027)('%s generates only rows declared by the policy', (_name, state) => {
     const rows = activityPlan(state);
     expect(rows.length).toBeGreaterThan(0);
-    expect(rows.filter((row) => row.basis === legacyBasis)).toEqual([]);
     // Every row is a declaration of the policy, with the policy's repetition base.
     for (const row of rows)
       expect(

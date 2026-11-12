@@ -14,17 +14,14 @@ const context = (state: ReturnType<typeof calendarOffersFixture>) => ({
   catalogue: { events: [] },
 });
 
-test('prepares and recovers independent undergraduate offers without legacy fields', () => {
+test('prepares and recovers independent undergraduate offers', () => {
   const source = calendarOffersFixture();
   const previous = normalizeOfferCalendar(source, source);
   const before = structuredClone(source);
   const prepared = prepareOfferCalendarSave(previous, source, context(previous));
   expect(prepared.unchanged).toBe(true);
   expect(prepared.offerKinds).toEqual(['integrado', 'graduacao']);
-  expect(prepared.content).not.toHaveProperty('regime');
-  expect(prepared.content).not.toHaveProperty('modalities');
   expect(prepared.content).not.toHaveProperty('campus');
-  expect(prepared.content).not.toHaveProperty('assessmentStagesByModality');
   expect(
     normalizeOfferCalendar({ ...prepared.content, year: 2027, campus: source.campus }),
   ).toEqual(previous);

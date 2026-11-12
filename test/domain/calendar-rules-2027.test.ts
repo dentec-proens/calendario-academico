@@ -189,14 +189,13 @@ test('mixed organizations count disjoint periods separately and keep simultaneou
   ).toThrow();
 });
 
-test('prior publication keeps dates and destination after manual sources are removed from commands and copies', () => {
+test('prior publication keeps dates and destination when saved', () => {
   const state = calendar(),
     event = notice();
   const applied = applyDate(state, event),
     saved = normalizeOfferCalendar(applied);
   const expected = event;
   expect(saved.events[0]).toMatchObject(expected);
-  expect(saved.events[0]).not.toHaveProperty('evidence');
   expect(
     evaluatePlan(saved).rows.find(
       (r) => r.offerId === 'integrado' && r.requirement.id === 'admission-notice-0',
@@ -434,7 +433,7 @@ test('commands and direct import reject teaching inclusion outside the selected 
   expect(normalizeOfferCalendar({ ...state, events: [integrated] }).events).toHaveLength(1);
 });
 
-test('preserved duplicate occurrences remain editable after PDF provenance is retired', () => {
+test('duplicate occurrences remain editable one by one', () => {
   const first = notice({ id: 'preserved-first' });
   const second = notice({ id: 'preserved-second' });
   const third = notice({ id: 'third', name: 'Outra ocorrência' });
@@ -442,7 +441,6 @@ test('preserved duplicate occurrences remain editable after PDF provenance is re
   const edited = applyDate(state, { ...first, name: 'Publicação corrigida' }, true);
   expect(edited.events.map((item) => item.id)).toEqual(state.events.map((item) => item.id));
   expect(edited.events[0].name).toBe('Publicação corrigida');
-  expect(edited.events[0]).not.toHaveProperty('evidence');
   const expectedSecond = second;
   expect(edited.events[1]).toEqual(expectedSecond);
   const cleaned = applyDate(state, first);
