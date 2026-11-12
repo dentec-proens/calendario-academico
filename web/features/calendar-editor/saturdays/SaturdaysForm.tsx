@@ -57,7 +57,7 @@ export default function SaturdaysForm() {
     // the panel keeps their place: the dialog opens, or the aside returns, on the same field.
     const active = document.activeElement;
     const inPanel = active instanceof HTMLElement && Boolean(active.closest('#saturday-panel'));
-    // Controls without an id (chips, suggestions) come back on the panel's main field.
+    // Controls without an id (the date chips) come back on the panel's main field.
     const id = inPanel ? active.id || (editingId ? 'saturday-edit-title' : 'saturday-name') : '';
     setPanelOpen(narrow && inPanel);
     // A record left open beside the grid would otherwise take over the compact bar.
@@ -102,10 +102,6 @@ export default function SaturdaysForm() {
   const registeredDates: ReadonlySet<string> = new Set(registered.map((day) => day.date));
   const selection = saturdays.filter(
     (day) => day.status !== 'registered' && values.dates.includes(day.date),
-  );
-  const saturdayActivities = state.events.filter((event) => event.category === 'sabado');
-  const suggestions = [...new Set(saturdayActivities.map((event) => event.name))].filter(
-    (name) => name !== values.name,
   );
   const editing = registered.find((day) => day.registration!.id === editingId);
   const selectionLabel = plural(selection.length, 'sábado selecionado', 'sábados selecionados');
@@ -247,26 +243,6 @@ export default function SaturdaysForm() {
           />
         )}
       </form.Field>
-      {suggestions.length > 0 && (
-        <div className="saturday-suggestions">
-          <span id="saturday-suggestions-label">Usadas neste calendário:</span>
-          <ul aria-labelledby="saturday-suggestions-label">
-            {suggestions.map((name) => (
-              <li key={name}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    form.setFieldValue('name', name);
-                    document.getElementById('saturday-name')?.focus();
-                  }}
-                >
-                  {name}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
       <form.Field name="unmarkedOffers">
         {(field) => (
           <SaturdayOfferChoice

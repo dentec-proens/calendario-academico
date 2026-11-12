@@ -22,7 +22,10 @@ export default function SaturdayRegisteredList({
 }) {
   const { state } = useCalendarEditor();
   return (
-    <section className="saturday-panel-section" aria-label="Sábados registrados">
+    <section
+      className="saturday-panel-section saturday-registered"
+      aria-label="Sábados registrados"
+    >
       {!hasAvailable && (
         <p className="help" id="saturday-none-available">
           Não há sábados disponíveis para seleção:{' '}

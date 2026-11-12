@@ -235,9 +235,31 @@
   .saturday-layout {
     grid-template-columns: minmax(0, 1fr) minmax(260px, 300px);
   }
+  /* The panel never outgrows the window; otherwise its end is only reachable at the bottom of the
+    page, when the grid has run out. A long selection or edit form scrolls the whole panel. */
   #saturday-panel {
     position: sticky;
     top: calc(var(--scroll-inset-top, 0px) + 16px);
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100dvh - var(--scroll-inset-top, 0px) - 32px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  /* With nothing selected, the summary and the heading stay put and only the registrations scroll:
+    this section is the one that shrinks to fit. */
+  #saturday-panel .saturday-panel-section.saturday-registered {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  #saturday-panel .saturday-registered .saturday-registrations {
+    min-height: 0;
+    /* Room for the focus ring, which the scrolling edge would otherwise cut. */
+    margin: -6px;
+    padding: 6px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
 }
 
@@ -379,30 +401,6 @@ dialog#saturday-panel::backdrop {
   display: block;
   color: var(--ui-muted);
   font-size: 0.75rem;
-}
-.saturday-suggestions {
-  margin: -6px 0 16px;
-  color: var(--ui-muted);
-  font-size: 0.75rem;
-}
-.saturday-suggestions ul {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin: 6px 0 0;
-  padding: 0;
-  list-style: none;
-}
-#saturday-panel .saturday-suggestions button {
-  min-height: 30px;
-  padding: 4px 10px;
-  border-color: var(--ui-border-soft);
-  border-radius: 999px;
-  background: var(--ui-action-soft);
-  color: var(--ui-action);
-  font-size: 0.75rem;
-  font-weight: 500;
-  text-align: left;
 }
 .saturday-registration {
   margin: 0 0 14px;

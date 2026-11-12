@@ -122,15 +122,9 @@ test('Saturday panel applies one activity to the selected dates without moving f
   await expect(page.locator('#saturday-edit-title')).toBeFocused();
   await expect(page.locator('#saturday-edit-title')).toContainText('6 mar');
 
-  // The next selection offers the activities already used.
+  // The next selection starts with an empty activity.
   await page.locator('#saturday-dates input[value="2027-03-13"]').check();
   await expect(page.locator('#saturday-name')).toHaveValue('');
-  await page
-    .locator('.saturday-suggestions')
-    .getByRole('button', { name: 'Reposição de aulas' })
-    .click();
-  await expect(page.locator('#saturday-name')).toHaveValue('Reposição de aulas');
-  await expect(page.locator('#saturday-name')).toBeFocused();
 });
 
 test('the Saturday panel stays beside the grid while dates near the end of the year are checked', async ({
@@ -146,6 +140,35 @@ test('the Saturday panel stays beside the grid while dates near the end of the y
   await december.click();
   await expect(december).toBeFocused();
   await expect(page.locator('#saturday-name')).toBeInViewport({ ratio: 1 });
+});
+
+test('a long list of registered Saturdays scrolls under the panel summary beside the grid', async ({
+  page,
+  fixtureServer,
+}) => {
+  await openEditor(page, fixtureServer);
+  await page.setViewportSize({ width: 1440, height: 800 });
+  await addPeriod(page, '2027-03-01', '2027-12-17');
+  await page.locator('[data-view="days"]').click();
+  const available = page.locator('#saturday-dates input[type="checkbox"]:not(:disabled)');
+  await expect(available.first()).toBeVisible();
+  for (const checkbox of (await available.all()).slice(0, 30)) await checkbox.check();
+  await page.locator('#saturday-name').fill('Reposição de aulas');
+  await page.locator('#saturday-submit').click();
+  await expect(page.locator('#saturday-panel .saturday-registrations li')).toHaveCount(30);
+
+  const panel = page.locator('#saturday-panel');
+  await panel.evaluate((element) => element.scrollIntoView({ block: 'start' }));
+  const pageScroll = await page.evaluate(() => window.scrollY);
+  const last = page.locator('#saturday-panel [data-edit-saturday]').last();
+  await last.scrollIntoViewIfNeeded();
+  await expect(last).toBeInViewport({ ratio: 1 });
+  // The list scrolled, not the page, and the summary and the heading stayed in place.
+  expect(await page.evaluate(() => window.scrollY)).toBe(pageScroll);
+  await expect(page.locator('#saturday-summary')).toBeInViewport({ ratio: 1 });
+  await expect(panel.getByRole('heading', { name: 'Sábados registrados' })).toBeInViewport({
+    ratio: 1,
+  });
 });
 
 test('compact Saturday panel opens as a dialog and keeps focused dates unobstructed', async ({
