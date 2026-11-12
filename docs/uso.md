@@ -85,7 +85,7 @@ Este guia registra as regras de negócio e as decisões que o código sozinho n�
 - **Editais**: tipo, situação de publicação e destino do ingresso são separados das datas. O destino é por oferta e nunca é apagado ou trocado sozinho. **Publicação programada** não comprova execução; o tempo não a transforma em realizada. **Publicação realizada** conserva a data real, mesmo de outro ano.
 - Referências de outros anos são informativas, sem efeito em dias letivos, horas, férias ou etapas.
 - Prazos do art. 3º, § 2º: a política consulta o primeiro dia letivo subsequente por oferta quando um feriado municipal ou recesso identifica a causa, sem alterar a data cadastrada. Exclusão genérica não comprova a causa; a extensão não se aplica automaticamente aos prazos do art. 11.
-- **Cópia de datas** entre calendários do mesmo campus e ano é uma fotografia: as datas copiadas viram datas comuns, sem ligação com a origem. Etapas, resultados, conselhos e reuniões por etapa não são copiados; sábados só para ofertas com período na data.
+- **Cópia de datas** entre calendários do mesmo campus e ano é uma fotografia: as datas copiadas viram datas comuns, sem ligação com a origem. Etapas, resultados e conselhos (ou reuniões pedagógicas) por etapa não são copiados; sábados só para ofertas com período na data.
 
 ## Base institucional e normas
 

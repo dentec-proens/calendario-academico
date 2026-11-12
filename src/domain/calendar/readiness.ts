@@ -178,8 +178,12 @@ export function contentAssessment(record: ContentRecord) {
         );
       // The stage is one date: its start and its end come from the same record.
       const stageDate = eventFor('stage'),
-        results = eventFor('results'),
-        council = eventFor('council');
+        results = eventFor('results');
+      // Every council of the stage, also from a merged meeting, and in every offer: Art. 11, XIII,
+      // places them after the partial results whether or not the stage asks for one.
+      const councils = record.state.events.filter(
+        (e) => e.activity && sameActivity(e.activity, link('council')) && appliesTo(e, offer),
+      );
       const position =
         offer.organization === 'semestral' && offer.stages
           ? stageInTerm(n, offer.stages.perTerm)
@@ -211,22 +215,10 @@ export function contentAssessment(record: ContentRecord) {
           'stage-results',
           'o prazo de lançamento de resultados antecede o término da etapa. Confira a organização definida pelo campus.',
         );
-      const councilRequired = coverage.some(
-        (row) =>
-          sameActivity(row.requirement.activity, link('council')) &&
-          row.offerId === offer.id &&
-          row.applicability === 'required',
-      );
-      if (councilRequired && results && council && council.start < results.end)
+      if (results && councils.some((council) => council.start < results.end))
         stageWarning(
           'stage-council',
-          'o conselho antecede o prazo de lançamento dos resultados. Confira a organização definida pelo campus.',
-        );
-      const meeting = eventFor('pedagogical-meeting');
-      if (results && meeting && meeting.start < results.end)
-        stageWarning(
-          'stage-meeting',
-          'a reunião pedagógica antecede o prazo de lançamento dos resultados. Confira a organização definida pelo campus.',
+          'o conselho de classe ou a reunião pedagógica antecede o prazo de lançamento dos resultados. Confira a organização definida pelo campus.',
         );
     }
   }

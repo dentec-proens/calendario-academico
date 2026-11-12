@@ -67,5 +67,5 @@ test('the review judges in a criterion, so it never blocks by itself; the campus
   expect(blocks('deadline-adjusted')).toEqual({ submit: false, publish: false });
   expect(blocks('coverage-pending')).toEqual({ submit: true, publish: true });
   expect(blocks('system-error')).toEqual({ submit: true, publish: true });
-  expect(blocks('stage-meeting')).toEqual({ submit: false, publish: false });
+  expect(blocks('stage-council')).toEqual({ submit: false, publish: false });
 });

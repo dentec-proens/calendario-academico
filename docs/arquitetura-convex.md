@@ -168,7 +168,7 @@ Cada política vinculada mantém em `rulesetChanges` o histórico ordenado das v
 
 A base e a revisão se vinculam à última versão `establishes` ou `tightens` até a versão em que foram feitas. Somente uma nova versão desses dois tipos exige nova revisão e, em calendário já enviado, a devolução; o rascunho de parecer de outro vínculo perde as confirmações antigas. Em edição, a versão vale de imediato e o aviso resume o que mudou. Versões `relaxes` e `editorial` mantêm a identidade da base e as revisões atuais, pois a conferência feita continua válida. O servidor aceita conteúdo e revisão de uma versão equivalente e grava a versão vigente.
 
-Quando uma regra restringe ou amplia o que o inciso diz, `decision` registra a decisão e a versão que a adotou, e o detalhe da atividade a mostra ao lado da base normativa. Em 2027, `consup-292-2027-v2` restringiu ao técnico integrado a reunião com familiares, responsáveis e comunidade (Art. 11, XVI).
+Quando uma regra restringe ou amplia o que o inciso diz, `decision` registra a decisão e a versão que a adotou, e o detalhe da atividade a mostra ao lado da base normativa. Em 2027, `consup-292-2027-v2` restringiu ao técnico integrado a reunião com familiares, responsáveis e comunidade (Art. 11, XVI). `consup-292-2027-v11` tratou conselho de classe, coletivo pedagógico e reunião pedagógica como uma só atividade (Art. 11, XIII, que não pede uma data por etapa), exigida por etapa apenas no técnico integrado. A atividade antiga da reunião continua declarada com `mergedInto`, para que vínculos de envios continuem legíveis; o salvamento e a nova versão de um calendário vigente movem esses vínculos para o conselho.
 
 ## Controles de segurança
 

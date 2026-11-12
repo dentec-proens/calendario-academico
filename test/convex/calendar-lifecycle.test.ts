@@ -6,6 +6,7 @@ import { reviewCriteriaFor } from '../../src/domain/reviews/criteria.ts';
 import { createNativeFixture } from '../helpers/native-database.ts';
 import { act, actAsIs, calendarStatus, readyContent, saveReview } from '../helpers/lifecycle.ts';
 import { seedSubmittable } from '../helpers/required-vacations.ts';
+import { mergePedagogicalMeetings } from '../../src/domain/calendar/normalization/pedagogical-meetings.ts';
 
 const sei = '23411.000001/2027-11';
 
@@ -403,7 +404,10 @@ test('publication checks the SEI, the review and the content, and archives what 
   ).rejects.toThrow(/Registro não encontrado/);
   const next = await f.campus.mutation(api.calendars.createCalendarVersion, { id: old });
   expect(next).toMatchObject({ status: 'rascunho', derivedFrom: old, version: 1 });
-  expect(next.state.events).toEqual(published.record.state.events);
+  // The new draft starts under the rules in force: meeting dates already in the council (v11).
+  expect(next.state.events).toEqual(
+    mergePedagogicalMeetings(published.record.state.events) ?? published.record.state.events,
+  );
   expect(next.institutionalSnapshot).toEqual(published.record.institutionalSnapshot);
   await expect(
     f.campus.mutation(api.calendars.createCalendarVersion, { id: next.id }),

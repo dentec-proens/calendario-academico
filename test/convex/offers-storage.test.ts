@@ -65,9 +65,15 @@ test('calendar storage requires offerKinds', async () => {
   expect(await client.run((ctx) => ctx.db.query('calendars').take(10))).toHaveLength(1);
 });
 
-test('the offers storage never reruns the old backfill during maintenance', async () => {
+test('starting the pending migrations on an empty database writes nothing', async () => {
   const { client } = await createNativeFixture();
   expect(await client.mutation(internal.migrations.start, {})).toBeNull();
-  expect(await client.query(internal.migrations.status, {})).toEqual([]);
+  // Only the migration of this release is pending, and an empty database has nothing for it.
+  expect(
+    (await client.query(internal.migrations.status, {})).map(({ name, error }) => ({
+      name,
+      error,
+    })),
+  ).toEqual([{ name: 'migrations:mergePedagogicalMeetingLinks', error: null }]);
   expect(await client.run((ctx) => ctx.db.query('audit').take(10))).toEqual([]);
 });

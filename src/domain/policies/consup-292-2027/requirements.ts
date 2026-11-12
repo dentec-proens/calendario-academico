@@ -41,6 +41,17 @@ const perSemester = (title: string) => ({
   name: (s: Slot) => `${title} — ${s.n}º semestre`,
 });
 const familyMeetingOffers: readonly string[] = ['integrado'];
+const councilOnlyOnIntegrated = Object.fromEntries(
+  modalityIds
+    .filter((m) => m !== 'integrado')
+    .map((m) => [m, 'Exigido por etapa apenas no técnico integrado; cadastro permitido.']),
+);
+const meetingInCouncil = Object.fromEntries(
+  modalityIds.map((m) => [
+    m,
+    'É a mesma atividade do conselho de classe, coletivo pedagógico ou reunião pedagógica da etapa; registre a data lá.',
+  ]),
+);
 const notOnIntegrated = {
   integrado: 'Não exigido por este inciso para o integrado; cadastro permitido.',
 };
@@ -87,22 +98,32 @@ export const rules: ActivityRule[] = [
         group: 'teaching',
         criterion: 'IX',
       },
+      // Art. 11, XIII, names councils, pedagogical collectives and pedagogical meetings; campuses
+      // and courses use either term for the same meeting, so v11 asks for one activity. Its text does
+      // not say "each stage": one per stage is asked of the integrated offer only (v11).
       {
         id: 'council',
-        title: 'Conselho de classe/coletivo pedagógico de cada etapa',
+        title: 'Conselho de classe, coletivo pedagógico ou reunião pedagógica de cada etapa',
         name: (s) =>
-          `Conselho de classe/coletivo pedagógico da ${stageNumber(s)} — ${stageCycle(s)}`,
+          `Conselho de classe, coletivo pedagógico ou reunião pedagógica da ${stageNumber(s)} — ${stageCycle(s)}`,
         basis: 'Art. 11, XIII',
+        decision: 'por etapa apenas no técnico integrado (consup-292-2027-v11)',
+        optionalFor: councilOnlyOnIntegrated,
         group: 'teaching',
         criterion: 'XIII',
         category: 'conselho',
       },
+      // Released before v11, the meeting stays declared: dates of submissions keep linking to it.
+      // It asks for nothing; the migration moved the dates of calendars in editing to the council.
       {
         id: 'pedagogical-meeting',
         title: 'Reunião pedagógica após os resultados parciais de cada etapa',
         name: (s) =>
           `Reunião pedagógica após os resultados parciais da ${stageNumber(s)} — ${stageCycle(s)}`,
         basis: 'Art. 11, XIII',
+        decision: 'mesma atividade do conselho de classe da etapa (consup-292-2027-v11)',
+        mergedInto: 'council',
+        optionalFor: meetingInCouncil,
         group: 'teaching',
         criterion: 'XIII',
         category: 'institucional',

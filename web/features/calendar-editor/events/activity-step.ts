@@ -148,6 +148,8 @@ export function activityStep(input: {
   );
   const matches = (item: ActivityPlanItem, key: string) => {
     if (!consulted(key).length) return false;
+    // A row merged into another activity is kept only to read old links: listed while it has one.
+    if (item.mergedInto && !consulted(key).some((row) => row.events.length)) return false;
     if (origin && origin !== 'linked') return false;
     if (visibility === 'internas') return false;
     if (query && !searchText(`${item.name} ${item.basis ?? ''}`).includes(query)) return false;

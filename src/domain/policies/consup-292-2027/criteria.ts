@@ -153,7 +153,7 @@ export const criteria = frozenCriteria([
     id: 'XIII',
     title: 'Conselhos e reuniões pedagógicas',
     requirement:
-      'Registrar, para cada etapa e após a divulgação dos resultados parciais, as datas do conselho de classe ou coletivo pedagógico e da reunião pedagógica.',
+      'Registrar as datas destinadas aos conselhos de classe ou coletivos pedagógicos e às reuniões pedagógicas, após a divulgação dos resultados parciais; no técnico integrado, uma data em cada etapa, e opcional nas demais ofertas.',
     source: 'Art. 11, XIII',
     item: 'Art. 11, XIII',
     pattern: 'conselho|coletivo|reuniao pedagogica',

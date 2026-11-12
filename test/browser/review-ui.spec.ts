@@ -398,7 +398,8 @@ test('coverage reads by activity, without optional activities that have nothing 
   await expect(family.locator('.review-coverage li')).toHaveCount(1);
   await expect(family.locator('.review-coverage small').first()).toContainText('Obrigatório');
   // Many activities collapse behind how they stand.
-  const stages = page.locator('[data-registered="XIII"] .review-item__coverage-all summary');
+  // The partial results of each stage are asked of every offer (Art. 11, IX).
+  const stages = page.locator('[data-registered="IX"] .review-item__coverage-all summary');
   await expect(stages).toContainText(/^Ver \d+ atividades: \d+ completas/);
 });
 

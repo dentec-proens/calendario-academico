@@ -47,6 +47,7 @@ A migração do formato 5 para o 6 teve perda declarada: a organização das ofe
 
 Alguns valores antigos continuam válidos no formato atual:
 
+- Uma data vinculada à reunião pedagógica de uma etapa (`pedagogical-meeting`), anterior à `consup-292-2027-v11`, permanece assim nos envios e nos calendários fora de edição. A atividade continua declarada (`mergedInto: 'council'`), então o vínculo é lido e conta como registro opcional. Em edição, a migração `mergePedagogicalMeetingLinks` moveu esses vínculos para o conselho da mesma etapa, e todo salvamento e nova versão de calendário vigente fazem o mesmo.
 - Uma posição de etapa sem etapa correspondente na organização da oferta, inclusive as atribuídas pela migração, é um vínculo não gerado: fica em **Vínculo a conferir**, sem contar como atendimento, e volta a contar se a organização passar a gerá-la. Posições nunca são reinterpretadas.
 - Os calendários que eram de teste antes do ciclo de vida guardam a marca em `label: 'Teste'`.
 - O formato 7 converteu em férias escolares só as datas do campus aprovadas uma a uma; outras datas do campus com a categoria `ferias` continuam válidas e impedem o envio até serem corrigidas.

@@ -1890,7 +1890,7 @@
           "problems": false
         },
         "pedagogical-meeting-1:integrado": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -1914,7 +1914,7 @@
           "problems": false
         },
         "pedagogical-meeting-2:integrado": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -1938,7 +1938,7 @@
           "problems": false
         },
         "pedagogical-meeting-3:integrado": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -1962,7 +1962,7 @@
           "problems": false
         },
         "pedagogical-meeting-4:integrado": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -1980,13 +1980,13 @@
           "problems": false
         },
         "council-1:subsequente": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
         },
         "pedagogical-meeting-1:subsequente": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -2004,13 +2004,13 @@
           "problems": false
         },
         "council-2:subsequente": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
         },
         "pedagogical-meeting-2:subsequente": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -2890,7 +2890,7 @@
           "problems": false
         },
         "pedagogical-meeting-1:integrado": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -2914,7 +2914,7 @@
           "problems": false
         },
         "pedagogical-meeting-2:integrado": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -2938,7 +2938,7 @@
           "problems": false
         },
         "pedagogical-meeting-3:integrado": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -2962,7 +2962,7 @@
           "problems": false
         },
         "pedagogical-meeting-4:integrado": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -2980,13 +2980,13 @@
           "problems": false
         },
         "council-1:graduacao": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
         },
         "pedagogical-meeting-1:graduacao": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -3004,13 +3004,13 @@
           "problems": false
         },
         "council-2:graduacao": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
         },
         "pedagogical-meeting-2:graduacao": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -3028,13 +3028,13 @@
           "problems": false
         },
         "council-3:graduacao": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
         },
         "pedagogical-meeting-3:graduacao": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -3052,13 +3052,13 @@
           "problems": false
         },
         "council-1:graduacao-2": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
         },
         "pedagogical-meeting-1:graduacao-2": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -3076,13 +3076,13 @@
           "problems": false
         },
         "council-2:graduacao-2": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
         },
         "pedagogical-meeting-2:graduacao-2": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -3100,13 +3100,13 @@
           "problems": false
         },
         "council-3:graduacao-2": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
         },
         "pedagogical-meeting-3:graduacao-2": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -3124,13 +3124,13 @@
           "problems": false
         },
         "council-4:graduacao-2": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
         },
         "pedagogical-meeting-4:graduacao-2": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -3148,13 +3148,13 @@
           "problems": false
         },
         "council-1:graduacao-3": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
         },
         "pedagogical-meeting-1:graduacao-3": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -3172,13 +3172,13 @@
           "problems": false
         },
         "council-2:graduacao-3": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
         },
         "pedagogical-meeting-2:graduacao-3": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -4526,7 +4526,7 @@
           "problems": false
         },
         "pedagogical-meeting-1:integrado": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -4550,7 +4550,7 @@
           "problems": false
         },
         "pedagogical-meeting-2:integrado": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -4574,7 +4574,7 @@
           "problems": false
         },
         "pedagogical-meeting-3:integrado": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -4598,7 +4598,7 @@
           "problems": false
         },
         "pedagogical-meeting-4:integrado": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -5117,13 +5117,13 @@
           "problems": false
         },
         "council-1:graduacao": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
         },
         "pedagogical-meeting-1:graduacao": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -5141,13 +5141,13 @@
           "problems": false
         },
         "council-2:graduacao": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
         },
         "pedagogical-meeting-2:graduacao": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -5645,13 +5645,13 @@
           "problems": false
         },
         "council-1:graduacao": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
         },
         "pedagogical-meeting-1:graduacao": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -5669,13 +5669,13 @@
           "problems": false
         },
         "council-2:graduacao": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
         },
         "pedagogical-meeting-2:graduacao": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -5693,13 +5693,13 @@
           "problems": false
         },
         "council-3:graduacao": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
         },
         "pedagogical-meeting-3:graduacao": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -6224,13 +6224,13 @@
           "problems": false
         },
         "council-1:graduacao": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
         },
         "pedagogical-meeting-1:graduacao": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -6248,13 +6248,13 @@
           "problems": false
         },
         "council-2:graduacao": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
         },
         "pedagogical-meeting-2:graduacao": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -6272,13 +6272,13 @@
           "problems": false
         },
         "council-3:graduacao": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
         },
         "pedagogical-meeting-3:graduacao": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -6296,13 +6296,13 @@
           "problems": false
         },
         "council-4:graduacao": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
         },
         "pedagogical-meeting-4:graduacao": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -6821,13 +6821,13 @@
           "problems": false
         },
         "council-1:graduacao": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
         },
         "pedagogical-meeting-1:graduacao": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -6845,13 +6845,13 @@
           "problems": false
         },
         "council-2:graduacao": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
         },
         "pedagogical-meeting-2:graduacao": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -7437,13 +7437,13 @@
           "problems": false
         },
         "council-1:graduacao": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
         },
         "pedagogical-meeting-1:graduacao": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -7461,13 +7461,13 @@
           "problems": false
         },
         "council-2:graduacao": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
         },
         "pedagogical-meeting-2:graduacao": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -7485,13 +7485,13 @@
           "problems": false
         },
         "council-3:graduacao": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
         },
         "pedagogical-meeting-3:graduacao": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -7509,13 +7509,13 @@
           "problems": false
         },
         "council-4:graduacao": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
         },
         "pedagogical-meeting-4:graduacao": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -8898,7 +8898,7 @@
           "problems": false
         },
         "pedagogical-meeting-1:integrado": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -8922,7 +8922,7 @@
           "problems": false
         },
         "pedagogical-meeting-2:integrado": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -8946,7 +8946,7 @@
           "problems": false
         },
         "pedagogical-meeting-3:integrado": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -8970,7 +8970,7 @@
           "problems": false
         },
         "pedagogical-meeting-4:integrado": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -8988,13 +8988,13 @@
           "problems": false
         },
         "council-1:subsequente": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
         },
         "pedagogical-meeting-1:subsequente": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -9012,13 +9012,13 @@
           "problems": false
         },
         "council-2:subsequente": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
         },
         "pedagogical-meeting-2:subsequente": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -9036,13 +9036,13 @@
           "problems": false
         },
         "council-1:graduacao": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
         },
         "pedagogical-meeting-1:graduacao": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -9060,13 +9060,13 @@
           "problems": false
         },
         "council-2:graduacao": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
         },
         "pedagogical-meeting-2:graduacao": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -9084,13 +9084,13 @@
           "problems": false
         },
         "council-3:graduacao": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
         },
         "pedagogical-meeting-3:graduacao": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -9108,13 +9108,13 @@
           "problems": false
         },
         "council-4:graduacao": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
         },
         "pedagogical-meeting-4:graduacao": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -13509,13 +13509,13 @@
           "problems": false
         },
         "council-1:graduacao": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
         },
         "pedagogical-meeting-1:graduacao": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -13533,13 +13533,13 @@
           "problems": false
         },
         "council-2:graduacao": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
         },
         "pedagogical-meeting-2:graduacao": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -15703,7 +15703,7 @@
           "problems": false
         },
         "pedagogical-meeting-1:integrado": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -15727,7 +15727,7 @@
           "problems": false
         },
         "pedagogical-meeting-2:integrado": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -15751,7 +15751,7 @@
           "problems": false
         },
         "pedagogical-meeting-3:integrado": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -15775,7 +15775,7 @@
           "problems": false
         },
         "pedagogical-meeting-4:integrado": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -15793,13 +15793,13 @@
           "problems": false
         },
         "council-1:graduacao": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
         },
         "pedagogical-meeting-1:graduacao": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -15817,13 +15817,13 @@
           "problems": false
         },
         "council-2:graduacao": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
         },
         "pedagogical-meeting-2:graduacao": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -20499,7 +20499,7 @@
           "problems": false
         },
         "pedagogical-meeting-1:integrado": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -20523,7 +20523,7 @@
           "problems": false
         },
         "pedagogical-meeting-2:integrado": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -20774,7 +20774,7 @@
           "problems": false
         },
         "pedagogical-meeting-1:integrado": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -20798,7 +20798,7 @@
           "problems": false
         },
         "pedagogical-meeting-2:integrado": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -20822,7 +20822,7 @@
           "problems": false
         },
         "pedagogical-meeting-3:integrado": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -21073,7 +21073,7 @@
           "problems": false
         },
         "pedagogical-meeting-1:integrado": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -21097,7 +21097,7 @@
           "problems": false
         },
         "pedagogical-meeting-2:integrado": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -21121,7 +21121,7 @@
           "problems": false
         },
         "pedagogical-meeting-3:integrado": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -21145,7 +21145,7 @@
           "problems": false
         },
         "pedagogical-meeting-4:integrado": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -21612,7 +21612,7 @@
           "problems": false
         },
         "pedagogical-meeting-1:integrado": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -21636,7 +21636,7 @@
           "problems": false
         },
         "pedagogical-meeting-2:integrado": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -21660,7 +21660,7 @@
           "problems": false
         },
         "pedagogical-meeting-3:integrado": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -21684,7 +21684,7 @@
           "problems": false
         },
         "pedagogical-meeting-4:integrado": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -21702,13 +21702,13 @@
           "problems": false
         },
         "council-1:graduacao": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
         },
         "pedagogical-meeting-1:graduacao": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -21726,13 +21726,13 @@
           "problems": false
         },
         "council-2:graduacao": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
         },
         "pedagogical-meeting-2:graduacao": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -21750,13 +21750,13 @@
           "problems": false
         },
         "council-3:graduacao": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
         },
         "pedagogical-meeting-3:graduacao": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -21774,13 +21774,13 @@
           "problems": false
         },
         "council-1:graduacao-2": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
         },
         "pedagogical-meeting-1:graduacao-2": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -21798,13 +21798,13 @@
           "problems": false
         },
         "council-2:graduacao-2": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
         },
         "pedagogical-meeting-2:graduacao-2": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -21822,13 +21822,13 @@
           "problems": false
         },
         "council-3:graduacao-2": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
         },
         "pedagogical-meeting-3:graduacao-2": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -21846,13 +21846,13 @@
           "problems": false
         },
         "council-4:graduacao-2": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
         },
         "pedagogical-meeting-4:graduacao-2": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -21870,13 +21870,13 @@
           "problems": false
         },
         "council-1:graduacao-3": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
         },
         "pedagogical-meeting-1:graduacao-3": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -21894,13 +21894,13 @@
           "problems": false
         },
         "council-2:graduacao-3": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
         },
         "pedagogical-meeting-2:graduacao-3": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -25969,7 +25969,7 @@
           "problems": false
         },
         "pedagogical-meeting-1:integrado": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -25993,7 +25993,7 @@
           "problems": false
         },
         "pedagogical-meeting-2:integrado": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -26017,7 +26017,7 @@
           "problems": false
         },
         "pedagogical-meeting-3:integrado": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -26041,7 +26041,7 @@
           "problems": false
         },
         "pedagogical-meeting-4:integrado": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false

@@ -70,7 +70,6 @@ export const checks = {
   'stage-cycle': { label: 'Etapa fora do ciclo da oferta', resolver: 'none' },
   'stage-results': { label: 'Resultados antes do término da etapa', resolver: 'none' },
   'stage-council': { label: 'Conselho antes dos resultados', resolver: 'none' },
-  'stage-meeting': { label: 'Reunião pedagógica antes dos resultados', resolver: 'none' },
   'school-day': { label: 'Data que não constitui dia letivo', resolver: 'campus' },
   vacation: { label: 'Férias a corrigir', resolver: 'campus' },
   // The activity row reports the same destination for the campus to fix (`admission-destination`);

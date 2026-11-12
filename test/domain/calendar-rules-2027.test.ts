@@ -120,7 +120,9 @@ test('2027 requirements use offer and academic cycle while PE/PIT/RIT remain sem
     for (const n of [1, 2])
       for (const modality of ['integrado', 'subsequente', 'graduacao'])
         expect(required(`${prefix}-${n}`, modality)).toBe('required');
-  expect(required('council-1:graduacao', 'graduacao')).toBe('required');
+  // Art. 11, XIII, asks for one council per stage of the integrated offer only (v11).
+  expect(required('council-1:integrado', 'integrado')).toBe('required');
+  expect(required('council-1:graduacao', 'graduacao')).toBe('optional');
   for (const modality of ['integrado', 'subsequente', 'graduacao'])
     expect(required('extraordinary-council', modality)).toBe('required');
   const familyMeeting = requirements.find((r) => r.id === 'family-meeting')!;

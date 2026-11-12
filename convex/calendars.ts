@@ -9,7 +9,8 @@ import { calendarSchemaVersion, type CalendarOffer } from '../src/domain/calenda
 import { equalValues } from '../src/shared/equal';
 import { inspectBase } from './calendars/base';
 import { assertWritesOpen } from './lib/maintenance';
-import { equivalentRulesets, rulesetVersion } from '../src/domain/policies/registry';
+import { equivalentRulesets, policyFor, rulesetVersion } from '../src/domain/policies/registry';
+import { withPedagogicalMeetingsMerged } from '../src/domain/calendar/normalization/pedagogical-meetings';
 import { inheritedEvents } from '../src/domain/institution/catalogue';
 import { applyObservances } from '../src/domain/calendar/observances';
 import { query, mutation } from './_generated/server';
@@ -497,7 +498,8 @@ export const createCalendarVersion = mutation({
       calendarId: copy,
       // A new draft starts under what is in force, so it never begins with a pending update.
       state: {
-        ...content.state,
+        // A published content may predate a merge of activities; the new draft starts merged.
+        ...withPedagogicalMeetingsMerged(content.state, policyFor(row.year)),
         rulesetVersion: rulesetVersion({ year: row.year, offers: content.state.offers }),
       },
       catalogueRevision: content.catalogueRevision,

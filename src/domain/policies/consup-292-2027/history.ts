@@ -88,5 +88,14 @@ export const rulesetChanges: readonly RulesetChange[] = [
     summary:
       'Férias escolares e docentes passam a ser atividades exigidas, registradas no passo Férias. As docentes têm exatamente 45 dias no ano do calendário; as escolares pedem só a presença em cada oferta.',
   },
+  {
+    version: 'consup-292-2027-v11',
+    date: civilDate('2026-11-12'),
+    effect: 'relaxes',
+    criteria: ['XIII'],
+    source: 'Art. 11, XIII, da Resolução 292 e decisão da gestão do sistema em 12/11/2026',
+    summary:
+      'Conselho de classe, coletivo pedagógico e reunião pedagógica passam a ser uma só atividade por etapa, porque cada campus ou curso usa um desses termos; datas vinculadas à reunião pedagógica passam a valer para essa atividade. O inciso XIII não pede uma data por etapa: ela é exigida apenas no técnico integrado e é opcional nas demais ofertas.',
+  },
 ];
 export const rulesetVersion = rulesetChanges.at(-1)!.version;
