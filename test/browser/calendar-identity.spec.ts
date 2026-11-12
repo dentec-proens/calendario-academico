@@ -98,6 +98,23 @@ test('a reviewer reads the identity without the edit action', async ({ page, fix
   await expect(page.getByRole('button', { name: 'Renomear calendário' })).toHaveCount(0);
 });
 
+test('the administration still renames a calendar already sent', async ({
+  page,
+  fixtureServer,
+}) => {
+  await page.goto(await fixtureServer('editor'));
+  await expect(page.locator('#record-title')).toBeVisible();
+  await page.evaluate(async () => {
+    const { record } = window.editorTest;
+    record.status = 'enviado';
+    record.version++;
+    await window.publishReviewerCalendar();
+  });
+  // The content is locked, but the name is not part of what was sent.
+  await expect(page.locator('#calendar-identity button')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Renomear calendário' })).toBeVisible();
+});
+
 test('an unsaved name left in the closed panel counts as unapplied work', async ({
   page,
   fixtureServer,

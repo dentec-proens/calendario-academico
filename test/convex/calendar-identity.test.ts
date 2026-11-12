@@ -167,7 +167,7 @@ test('renaming changes only the label after campus and year', async () => {
   expect(cleared.record.name).toBe('Calendário 2027 - Campus A');
 });
 
-test('renaming follows the calendar locks, the campus scope and the length limit', async () => {
+test('the campus renames only while it edits; the administration in any state', async () => {
   const f = await fixture();
   const id = await f.create();
   await expect(f.rename(f.asClient('campus-b'), id, 'Alheio')).rejects.toThrow();
@@ -178,6 +178,12 @@ test('renaming follows the calendar locks, the campus scope and the length limit
     /enviado e não pode ser alterado/,
   );
   expect((await calendarStatus(f.campus, id)).record.name).toBe('Calendário 2027 - Campus A');
+  // The name is outside the submitted content: the administration corrects it, audited.
+  await f.rename(f.asClient('admin'), id, 'Proposta B');
+  const sent = await calendarStatus(f.campus, id);
+  expect(sent.status).toBe('enviado');
+  expect(sent.record.name).toBe('Calendário 2027 - Campus A — Proposta B');
+  expect(await f.audited(id, 'RENAME_CALENDAR')).toHaveLength(1);
 });
 
 test('renaming is attributed and audited, and a rename from another session is not overwritten', async () => {

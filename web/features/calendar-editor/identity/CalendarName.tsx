@@ -19,8 +19,10 @@ const nameDraftKey = (calendarId: string) => `calendar:${calendarId}:name`;
 export function CalendarTitle() {
   const [open, setOpen] = useState(false);
   const { editorRecovery, maintenance } = useAppSession();
-  const { record, readOnly } = useCalendarEditor();
+  const { record, readOnly, locked, role } = useCalendarEditor();
   const paused = Boolean(editorRecovery || maintenance);
+  // The name is outside the submitted content: the administration corrects it in any state.
+  const renames = !readOnly || (role === 'ADMIN' && locked && !paused);
   // An unsaved name, even with the panel closed, is unapplied work: it blocks the submission.
   useUnappliedDraft('name', nameDraftKey(record.id));
   return (
@@ -28,7 +30,7 @@ export function CalendarTitle() {
       <h1 id="record-title" tabIndex={-1}>
         {record.name}
       </h1>
-      {readOnly ? null : (
+      {renames ? (
         <button
           id="calendar-rename"
           type="button"
@@ -38,7 +40,7 @@ export function CalendarTitle() {
         >
           <Pencil aria-hidden="true" size={14} /> Renomear
         </button>
-      )}
+      ) : null}
       {/* Mounted only while open; an unsaved name stays in the form drafts. */}
       {open && !paused ? (
         <PanelDialog

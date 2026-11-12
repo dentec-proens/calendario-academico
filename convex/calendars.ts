@@ -335,8 +335,10 @@ export const updateCalendarIdentity = mutation({
 });
 
 /**
- * Year and campus stay fixed in the name; only its label changes, under the same locks and
- * concurrency check as the identity and without a new content version.
+ * Year and campus stay fixed in the name; only its label changes, with the concurrency check of
+ * the identity and without a new content version. The name is not part of what a submission
+ * fixes or the review judges, so the administration may correct it in any state; the campus
+ * renames only while it edits.
  */
 export const renameCalendar = mutation({
   args: { ...idArgs, expected: v.string(), label: v.string() },
@@ -346,7 +348,7 @@ export const renameCalendar = mutation({
     const { user } = await requireNativeUser(ctx);
     calendarEditor(user);
     const row = await calendarRow(ctx, user, id);
-    assertEditableStatus(row.status);
+    if (user.role !== 'ADMIN') assertEditableStatus(row.status);
     const next = domainRule(() => normalizeLabel(label));
     const stored = row.label ?? '';
     if (next === stored) return { ok: true };

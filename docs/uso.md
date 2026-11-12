@@ -30,6 +30,7 @@ Este guia registra as regras de negócio e as decisões que o código sozinho n�
 - Um único calendário em análise (enviado, em revisão, devolvido ou revisado) por campus, ano e tipo de oferta.
 - Se já existe vigente para algum tipo de oferta, o novo calendário precisa incluir todos os tipos dele; a ADMIN pode confirmar substituição parcial.
 - Publicar arquiva os vigentes que compartilham tipos de oferta.
+- O nome do calendário (ano e campus fixos, mais um complemento opcional) não faz parte do envio nem do parecer: o campus o muda só em edição; a ADMIN, em qualquer situação, com registro no histórico.
 - Vigente nunca é editado no lugar: **Nova versão** cria um rascunho com o conteúdo e a base dele, sem o parecer; o original segue vigente até a nova versão ser publicada.
 - Só rascunhos e devolvidos vão para a lixeira. Excluir um devolvido o torna rascunho e libera a vaga em análise; restaurar sempre devolve um rascunho. Não há descarte físico automático.
 - Identificação (cursos, turmas, turnos) e complemento do nome (até 120 caracteres) são editáveis em rascunho e devolvido e não alteram a versão do conteúdo. Campus e ano são fixos no nome.
