@@ -181,7 +181,10 @@ function EditorFrame() {
       : status === 'error' || status === 'blocked'
         ? 'Resolva o salvamento das alterações antes de enviar.'
         : !record.courses
-          ? missingCoursesIssue
+          ? // The courses come first, without hiding how much else is left.
+            pendencies.length
+            ? `${missingCoursesIssue} Corrija também ${pendencies.length === 1 ? 'a pendência' : `as ${pendencies.length} pendências`} de conteúdo.`
+            : missingCoursesIssue
           : pendencies.length
             ? `Corrija ${pendencies.length === 1 ? 'a pendência' : `as ${pendencies.length} pendências`} de conteúdo antes de enviar.`
             : undefined;

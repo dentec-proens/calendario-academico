@@ -233,7 +233,7 @@ export function evaluatePlan(
                 found(
                   issues,
                   'admission-destination',
-                  'Vincule o período de ingresso correspondente à oferta.',
+                  'Escolha um período de ingresso desta oferta. Um edital tem um só destino para todas as suas ofertas: se elas têm períodos diferentes, registre um edital para cada oferta.',
                   event.id,
                 );
                 return false;
@@ -262,7 +262,9 @@ export function evaluatePlan(
             found(
               issues,
               'deadline-late',
-              `Data posterior ao prazo de ${longDate(requirement.deadline!)}; confira eventual cronograma ajustado pela Proens.`,
+              requirement.admissionType === 'regular'
+                ? `Data posterior ao prazo de ${longDate(requirement.deadline!)}. Antecipe a data ou, se a Proens definiu outro prazo para o campus, informe-o em “Novo prazo definido pela Proens”.`
+                : `Data posterior ao prazo de ${longDate(requirement.deadline!)}. Antecipe a data para até o prazo.`,
               event.id,
             );
             return false;
@@ -284,7 +286,8 @@ export function evaluatePlan(
           }
           return true;
         });
-        if (requirement.minHours) {
+        // Like the exact days, a minimum the norm does not ask of this offer is not counted here.
+        if (requirement.minHours && applicability === 'required') {
           const hours = valid
             .filter((e) => temporalPosition(state, e) === 'current')
             .reduce((sum, e) => sum + (e.hours ?? 0), 0);

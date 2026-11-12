@@ -1,3 +1,4 @@
+import { readyContent } from '../helpers/lifecycle.ts';
 import { describe, expect, test } from 'vitest';
 import {
   activitySituation,
@@ -237,4 +238,23 @@ test('a review instruction is a note of the review, kept apart from what is pend
     state.events,
   ).criteria.find((item) => item.id === 'XXIV');
   expect(criterion?.toCheck).toEqual([instruction]);
+});
+
+test('a minimum of hours is counted only where the norm asks for the activity', () => {
+  const content = readyContent([
+    { id: 'integrado', kind: 'integrado', delivery: 'presencial', organization: 'anual' },
+    { id: 'posgraduacao', kind: 'posgraduacao', delivery: 'presencial', organization: 'anual' },
+  ]);
+  // The date that fulfils the training carries its hours; the criterion dates carry none.
+  const training = content.events.find((event) => event.hours === 40)!;
+  training.offers = ['integrado', 'posgraduacao'];
+  training.hours = 0;
+  const rows = evaluatePlan({ ...content, year: 2027 } as never).rows.filter(
+    (row) => row.requirement.minHours === 40,
+  );
+  const hours = (offerId: string) =>
+    rows.find((row) => row.offerId === offerId)!.issues.map((item) => item.check);
+  expect(hours('integrado')).toContain('min-hours');
+  // Post-graduate offers follow their own regulation: the same date asks them for nothing.
+  expect(hours('posgraduacao')).not.toContain('min-hours');
 });

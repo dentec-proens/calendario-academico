@@ -60,7 +60,7 @@ test('each offer is diagnosed against its own destination', () => {
     issues: [
       {
         check: 'admission-destination',
-        detail: 'Vincule o período de ingresso correspondente à oferta.',
+        detail: expect.stringContaining('registre um edital para cada oferta'),
         eventId: expect.any(String),
       },
     ],
