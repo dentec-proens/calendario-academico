@@ -112,7 +112,7 @@ export const initialize = internalMutation({
     }
     if (await ctx.db.system.query('_storage').first()) return { initialized: false, setupRequired };
 
-    for (const name of [...campusNames, 'Ponta Grossa', 'Toledo', 'Reitoria']) {
+    for (const name of campusNames) {
       await ctx.db.insert('campuses', { name, archived: false });
     }
     const catalogue = initialCatalogue();

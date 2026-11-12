@@ -9,7 +9,7 @@ import type { Doc, TableNames } from '../../convex/_generated/dataModel';
 import { api, internal } from '../../convex/_generated/api.js';
 import { environments } from '../../config/environments.ts';
 import { generateAuthKeys, validateAuthKeys } from '../../scripts/dev-setup.ts';
-import { initialCatalogue } from '../../src/domain/institution/catalogue.ts';
+import { campusNames, initialCatalogue } from '../../src/domain/institution/catalogue.ts';
 
 const { default: schema } = await import('../../convex/schema.ts');
 const devUrl = 'https://isolated-setup-test.convex.cloud';
@@ -89,9 +89,10 @@ test('empty dev initializes coherent collections, supports first ADMIN and creat
   }
   assert.deepEqual(await initialize(client), { initialized: true, setupRequired: true });
   const seeded = await snapshot(client);
-  assert.equal(seeded.campuses.length, 29);
-  assert.equal(new Set(seeded.campuses.map((row) => row._id)).size, 29);
-  assert.equal(new Set(seeded.campuses.map((row) => row.name)).size, 29);
+  // Exactly the initial list, once each: a campus added to it is seeded without editing this test.
+  assert.deepEqual(seeded.campuses.map((row) => row.name).sort(), [...campusNames].sort());
+  assert.equal(new Set(seeded.campuses.map((row) => row._id)).size, campusNames.length);
+  assert.equal(new Set(campusNames).size, campusNames.length);
   assert.deepEqual(
     seeded.institutionSettings.map(({ key, revision }) => ({ key, revision })),
     [{ key: 'catalogue', revision: 1 }],
@@ -142,7 +143,7 @@ test('empty dev initializes coherent collections, supports first ADMIN and creat
   const admin = client.withIdentity({ subject: payload.sub });
   const bootstrap = await admin.query(api.workspace.bootstrap, {});
   assert.equal(bootstrap.user.role, 'ADMIN');
-  assert.equal(bootstrap.campuses.length, 29);
+  assert.equal(bootstrap.campuses.length, campusNames.length);
   assert.equal(bootstrap.users.length, 1);
   assert.deepEqual(bootstrap.calendars, []);
   assert.deepEqual(bootstrap.catalogue, initialCatalogue());

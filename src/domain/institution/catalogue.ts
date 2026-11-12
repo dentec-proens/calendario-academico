@@ -7,7 +7,8 @@ export interface CatalogueEvent extends DateFields {
   category: string;
 }
 
-// User-supplied campus list, with Foz added by explicit request. Admin may extend it.
+// Campuses an empty installation starts with: the user-supplied list, with Foz added by explicit
+// request, and the Reitoria. Admin may extend it.
 export const campusNames = [
   'Assis Chateaubriand',
   'Arapongas',
@@ -32,8 +33,11 @@ export const campusNames = [
   'Paranavaí',
   'Pinhais',
   'Pitanga',
+  'Ponta Grossa',
   'Quedas do Iguaçu',
+  'Reitoria',
   'Telêmaco Borba',
+  'Toledo',
   'Umuarama',
   'União da Vitória',
 ];
