@@ -217,31 +217,30 @@ Cada etapa é um ou mais commits na `main`. Os commits rodam typecheck, lint e o
   por data (`link-review`), para que a etapa 2 possa tratá-los de forma diferente.
 - Removida a verificação vestigial `stage-order`.
 
-### 2. Quem resolve e bloqueio do envio
+### 2. Quem resolve e bloqueio do envio (concluída)
 
-- `resolver` em cada verificação, `blocks`, `submittable` e `ready`. `submitBlockers` some; servidor
-  (`transitions.ts`) e interface usam `submittable`. Cursos ausentes viram verificação `campus`.
-- O servidor confere o envio sobre a base vigente (`compatibility.snapshot.events`), como a prontidão.
-- `baseOutdatedIssue` não impede o envio: o próprio envio incorpora a base vigente
-  (`recordCurrentBase`). Passa a `none` no rascunho; no calendário travado, `lockedBaseIssue` é
-  `review`.
-- Erros inesperados conforme a seção acima; `week-unconfirmed`, `periods-missing` e `period-count`
-  como verificações `campus`.
-- `observanceIssues` com as três situações classificadas: referência divergente (`base`), alteração
-  sem exceção (`campus`) e escolha órfã (`campus`, resolvida restaurando a data;
-  `observances.ts:51-55`).
-- A janela fora da referência passa a `institution` sob `window`.
-- Anos sem norma: o mínimo `NOT_VERIFIABLE` (política `unconfigured`, `countingMinimums` nulo) vira
-  `none`; sem isso, nenhum calendário desses anos poderia ser enviado.
-- Remover “Enviar mesmo assim” e a lista de pendências dos diálogos de envio e de substituição
-  parcial (`LifecycleActions.tsx:204,216-223`; `CalendarEditorLayout.tsx:165,220,463`). O envio fica
-  indisponível com o motivo. Ajustar o texto de `IssuesSection.tsx:191`.
-- Unificar o relato de “Vínculo a conferir”: um achado por data, sem aviso repetido por oferta.
-- Testes: `test/convex/calendar-lifecycle.test.ts` (envio recusado com achado `campus` e `base`;
-  aceito com `institution`, `review` e `none`; envio conferido sobre a base vigente),
-  `test/browser/confirmation.spec.ts`, `test/domain/release.test.ts`.
-- Documentação: `docs/uso.md:92` e `docs/componentes-interface.md:145` descrevem o envio com
-  pendências.
+- `checks.ts` declara `resolver` em cada verificação, e `blocks(check)` deriva o que ela impede por
+  uma tabela exaustiva. `contentAssessment` manda cada achado para `issues` ou `notes` só por
+  `blocks`; `submitBlockers` saiu, e servidor e editor usam `contentIssues`. A resolução `review`
+  (portão da revisão) fica para a etapa 3, com os achados de `releaseReadiness`.
+- O servidor confere o envio sobre a base vigente (`compatibility.snapshot.events`).
+  `submitRefusal` dá a mensagem, sem contagem, porque o editor conta pendências agrupadas.
+- Semana letiva, períodos e inclusão letiva fora dos períodos são verificações `campus`, relatadas
+  antes da contagem, que só roda com a estrutura completa. Sem nenhum período, só “Cadastre os
+  períodos letivos”. Uma exceção da contagem, ou de uma data que não seja `DomainError`, é
+  `system-error` (`base`). Não há registro em log: a prontidão roda a cada leitura, no cliente e no
+  servidor, e o log se repetiria; fica para quando houver um caso real.
+- `observanceIssues`: referência divergente `base`; escolha órfã e escolha inválida `campus`.
+- `window`, `deadline-adjusted`, `deadline-extended` e `review-instruction` são `institution`; os
+  avisos de etapa, `notice-destination` (a linha da atividade já cobra o mesmo destino do campus) e
+  o mínimo de dias sem norma (`teaching-days-unverifiable`) são `none`.
+- “Enviar mesmo assim” e a lista de pendências dos diálogos de envio saíram; o envio fica
+  indisponível com o motivo.
+- Testes de Convex que enviam sem que o envio seja o assunto completam o rascunho com
+  `submittableState`/`seedSubmittable` (`test/helpers/required-vacations.ts`), que falha se ainda
+  restar pendência; os de navegador, com `completeForSubmission`.
+- Ficaram sem teste próprio: recusa por achado `base` e conferência sobre a base vigente diferente
+  da cópia gravada.
 
 ### 3. Prontidão estruturada e telas de revisão
 
@@ -286,8 +285,6 @@ decisão da Proens.
 - **Quais exceções a Proens admite**, e com que base normativa: prazo tardio de transferência por
   cronograma ajustado e alteração de efeméride com deliberação (critério II). Até a decisão, as duas
   cobram o campus. A janela do ano letivo já fica com a revisão (etapa 2).
-- **Avisos de etapa** (“Confira a organização definida pelo campus”, `readiness.ts:186-207`): `none`
-  ou `institution`? Proposta: `none`, porque nenhum critério depende deles.
 
 ## Fora do escopo
 

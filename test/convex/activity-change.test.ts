@@ -6,7 +6,7 @@ import type { ContentState } from '../../convex/validators.ts';
 import type { Id } from '../../convex/_generated/dataModel.js';
 import type { CalendarContent } from '../../src/domain/calendar/model.ts';
 import { createNativeFixture } from '../helpers/native-database.ts';
-import { act, calendarStatus, readyContent, saveReview } from '../helpers/lifecycle.ts';
+import { act, actAsIs, calendarStatus, readyContent, saveReview } from '../helpers/lifecycle.ts';
 import { cycleLink, definedStage } from '../helpers/activity-links.ts';
 import { offerCalendarContent } from '../../src/domain/calendar/normalization/normalize.ts';
 import { rulesetVersion } from '../../src/domain/policies/registry.ts';
@@ -191,7 +191,7 @@ async function reviewer(native: Awaited<ReturnType<typeof createNativeFixture>>)
   return native.client.withIdentity(identity);
 }
 
-test('a reviewed calendar with a link to review keeps its status and is published only after the correction', async () => {
+test('a link to review keeps the calendar from being submitted until it is corrected', async () => {
   const { native, actor, record, save, current } = await stored(readyWithLinkToReview(), [
     'integrado',
   ]);
@@ -206,25 +206,14 @@ test('a reviewed calendar with a link to review keeps its status and is publishe
     ],
   );
 
-  await act(actor, id, 'submit');
-  await saveReview(parecer, id);
-  await act(parecer, id, 'conclude');
-  expect((await calendarStatus(actor, id)).status).toBe('revisado');
-  await expect(act(admin, id, 'publish', { sei })).rejects.toThrow(
-    'Resolva as pendências da conferência antes de publicar.',
-  );
-  const refused = await calendarStatus(actor, id);
-  expect(refused.status).toBe('revisado');
-  expect(
-    refused.record.readiness.issues.some((issue) => issue.startsWith('Vínculo a conferir')),
-  ).toBe(true);
+  await expect(actAsIs(actor, id, 'submit')).rejects.toThrow('Vínculo a conferir');
+  expect((await calendarStatus(actor, id)).status).toBe('rascunho');
 
-  // The campus corrects the link after a return and the calendar is published.
-  await act(parecer, id, 'return', { note: 'Corrija a atividade vinculada.' });
-  const returned = await current();
+  // The campus corrects the link, and the calendar is submitted and published.
+  const draft = await current();
   const corrected = await save(
-    changeActivity(returned.state, 'pending-final-1', annualFinal),
-    returned.version,
+    changeActivity(draft.state, 'pending-final-1', annualFinal),
+    draft.version,
   );
   expect(corrected.state.events.find((event) => event.id === 'pending-final-1')?.activity).toEqual(
     annualFinal,
@@ -234,7 +223,7 @@ test('a reviewed calendar with a link to review keeps its status and is publishe
       issue.startsWith('Vínculo a conferir'),
     ),
   ).toEqual([]);
-  await act(actor, id, 'submit');
+  await actAsIs(actor, id, 'submit');
   await saveReview(parecer, id);
   await act(parecer, id, 'conclude');
   await act(admin, id, 'publish', { sei });

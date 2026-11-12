@@ -1,3 +1,4 @@
+import { readyContent } from '../helpers/lifecycle.ts';
 import { expect, test } from 'vitest';
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { cycleLink } from '../helpers/activity-links.ts';
@@ -63,12 +64,42 @@ test('warnings keep their messages and gain the same structure', () => {
   });
 });
 
-test('when the count is unavailable, its issue names the structure to fix', () => {
+test('without any period, one pendency asks for them, not one more per offer', () => {
   const state = calendarOffersFixture();
   state.periods = [];
-  const issue = contentAssessment({ state, institutionalSnapshot: [] }).issues.find(
-    (item) => item.check === 'count-unavailable' || item.check === 'periods-missing',
-  )!;
-  expect(issue.group).toBe('structure');
-  expect(issue.detail).toMatch(/períodos letivos/);
+  const checks = contentAssessment({ state, institutionalSnapshot: [] }).issues.map(
+    (item) => item.check,
+  );
+  expect(checks).toContain('periods-missing');
+  expect(checks).not.toContain('period-count');
+});
+
+test('a date that adds days outside the periods is the campus to fix, not an error of the count', () => {
+  const state = readyContent();
+  state.events.push({
+    id: 'extra-day',
+    name: 'Sábado letivo',
+    start: civilDate('2027-12-20'),
+    end: civilDate('2027-12-20'),
+    effect: 'include',
+    offers: ['integrado'],
+  });
+  const { issues } = contentAssessment({
+    state: { ...state, year: 2027 } as never,
+    institutionalSnapshot: [],
+  });
+  expect(issues.map((item) => item.key)).toEqual(['inclusion-outside-periods:extra-day']);
+});
+
+test('an incomplete structure is the campus to fix, never a failure of the count', () => {
+  const state = calendarOffersFixture();
+  state.periods = [];
+  state.weekConfirmed = false;
+  const { issues } = contentAssessment({ state, institutionalSnapshot: [] });
+  expect(issues.map((item) => item.check)).toEqual(
+    expect.arrayContaining(['week-unconfirmed', 'periods-missing']),
+  );
+  expect(issues.some((item) => item.check === 'system-error')).toBe(false);
+  for (const item of issues.filter((issue) => issue.group === 'structure'))
+    expect(item.title.trim()).not.toBe('');
 });

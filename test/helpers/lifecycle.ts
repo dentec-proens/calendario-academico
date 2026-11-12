@@ -1,5 +1,9 @@
 import { civilDate } from '../../src/domain/civil-date.ts';
-import type { CalendarEvent, CalendarContent } from '../../src/domain/calendar/model.ts';
+import type {
+  CalendarContent,
+  CalendarEvent,
+  CalendarOffer,
+} from '../../src/domain/calendar/model.ts';
 import { activityPlan } from '../../src/domain/calendar/activities/plan.ts';
 import { reviewCriteriaFor } from '../../src/domain/reviews/criteria.ts';
 import { rulesetVersion } from '../../src/domain/policies/registry.ts';
@@ -9,15 +13,32 @@ import { api } from '../../convex/_generated/api.js';
 import { calendarRecordDates } from '../../web/shared/convex/calendar-dates.ts';
 import { inspectCalendar } from '../../src/domain/calendar/base.ts';
 import type { createNativeFixture } from './native-database.ts';
-import { seedRequiredVacations } from './required-vacations.ts';
+import { seedSubmittable } from './required-vacations.ts';
 
 type Client = Pick<
   ReturnType<Awaited<ReturnType<typeof createNativeFixture>>['asClient']>,
   'query' | 'mutation' | 'run'
 >;
 
-/** Content that passes every machine check for 2027, as in the release test. */
-export function readyContent(): CalendarContent {
+const integrado: CalendarOffer = {
+  id: 'integrado',
+  kind: 'integrado',
+  delivery: 'presencial',
+  organization: 'anual',
+};
+
+/**
+ * Content that passes every machine check for 2027, as in the release test, for the offers given
+ * (by default one integrated offer). Each offer becomes annual, with four stages and the norm.
+ */
+export function readyContent(given: readonly CalendarOffer[] = [integrado]): CalendarContent {
+  const offers = given.map((offer) => ({
+    ...offer,
+    organization: 'anual' as const,
+    stages: { status: 'defined' as const, perTerm: 4 },
+    scope: { status: 'covered' as const },
+  }));
+  const ids = offers.map((offer) => offer.id);
   const state = {
     schemaVersion: 7 as const,
     year: 2027,
@@ -29,20 +50,11 @@ export function readyContent(): CalendarContent {
         name: 'Ano',
         start: civilDate('2027-02-01'),
         end: civilDate('2027-12-17'),
-        association: { status: 'defined' as const, offers: ['integrado'], term: 'annual' as const },
+        association: { status: 'defined' as const, offers: ids, term: 'annual' as const },
       },
     ],
     events: [] as CalendarEvent[],
-    offers: [
-      {
-        id: 'integrado',
-        kind: 'integrado' as const,
-        delivery: 'presencial' as const,
-        organization: 'anual' as const,
-        stages: { status: 'defined' as const, perTerm: 4 },
-        scope: { status: 'covered' as const },
-      },
-    ],
+    offers,
   };
   state.events = reviewCriteriaFor(2027).map((criterion, index) => ({
     id: 'criterion-' + index,
@@ -51,13 +63,13 @@ export function readyContent(): CalendarContent {
     end: civilDate('2027-02-01'),
     effect: 'note',
     category: 'institucional',
-    offers: ['integrado'],
+    offers: ids,
   }));
   for (const requirement of activityPlan(state)) {
     const event: CalendarEvent = {
       id: requirement.id.replace(/:/g, '-'),
       activity: requirement.activity,
-      offers: [requirement.offerId ?? 'integrado'],
+      offers: requirement.offerId ? [requirement.offerId] : ids,
       name: requirement.name,
       start: civilDate('2027-02-01'),
       end: civilDate('2027-02-01'),
@@ -104,10 +116,13 @@ export async function calendarStatus(client: Client, id: Id<'calendars'>) {
   return { status: record.status as CalendarStatus, statusRevision: record.statusRevision, record };
 }
 
-/** Submitting needs the vacations of the norm: `act` fills what is missing; see `actAsIs`. */
+/**
+ * Submitting needs content without pendencies: `act` completes it first, as `seedSubmittable`
+ * does; `actAsIs` submits the calendar as it is, for what the checks themselves decide.
+ */
 export async function act(...args: Parameters<typeof actAsIs>) {
   const [client, id, action] = args;
-  if (action === 'submit') await client.run((ctx) => seedRequiredVacations(ctx, id));
+  if (action === 'submit') await client.run((ctx) => seedSubmittable(ctx, id));
   return actAsIs(...args);
 }
 

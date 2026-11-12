@@ -22,7 +22,7 @@ import EventPanel from './events/EventPanel.tsx';
 import NewEventButton from './events/NewEventButton.tsx';
 import { SectionActionsProvider } from './section-actions.tsx';
 import { CalendarExportProvider, useCalendarExport } from './export/CalendarExportProvider.tsx';
-import { confirmAction, type ConfirmationItem } from '../../components/confirmation.ts';
+import { confirmAction } from '../../components/confirmation.ts';
 import { editorSections } from '#src/app/routes.ts';
 import {
   editorPages,
@@ -30,14 +30,12 @@ import {
   editorNavigation,
   unappliedFormSection,
   continueLabel,
-  focusPendingScope,
   criterionDestination,
-  issueDestination,
   stepIssueCounts,
 } from './editor-steps.ts';
 import { offerIds, labelFor } from '#src/domain/calendar/offers.ts';
 import { groupPendencies } from '#src/domain/calendar/pendencies.ts';
-import { contentIssues, submitBlockers } from '#src/domain/calendar/readiness.ts';
+import { contentIssues } from '#src/domain/calendar/readiness.ts';
 import EditorSteps from './EditorSteps.tsx';
 import TeachingDaySummary from './TeachingDaySummary.tsx';
 import BaseChangesNotice from './BaseChangesNotice.tsx';
@@ -161,31 +159,6 @@ function EditorFrame() {
     [state, baseEvents],
   );
   const stepCounts = useMemo(() => stepIssueCounts(pendencies), [pendencies]);
-  // Each row of the submission leads where its row in the review step does.
-  const submitIssues = pendencies.map((item): ConfirmationItem => {
-    const destination = issueDestination(item);
-    return {
-      key: item.key,
-      title: item.title,
-      detail: item.details.map((detail) => detail.text).join(' '),
-      badges:
-        state.offers.length > 1 ? item.offerIds.map((offerId) => labelFor(state, offerId)) : [],
-      onSelect: destination
-        ? () =>
-            void navigate({
-              to: destination.to,
-              params: { calendarId: record.id },
-              search: (previous: Record<string, unknown>) => ({
-                ...previous,
-                ...destination.search,
-              }),
-              hashScrollIntoView: false,
-            }).then(() => {
-              if (item.target?.area === 'scope') requestAnimationFrame(focusPendingScope);
-            })
-        : undefined,
-    };
-  });
   // The criteria of a return are resolved here, where the form in progress stays with the session.
   const criterionLink = (criterionId: string, title: string) => {
     const destination = criterionDestination(activityPlan(state), criterionId);
@@ -209,7 +182,9 @@ function EditorFrame() {
         ? 'Resolva o salvamento das alterações antes de enviar.'
         : !record.courses
           ? missingCoursesIssue
-          : submitBlockers(state, baseEvents)[0]?.message;
+          : pendencies.length
+            ? `Corrija ${pendencies.length === 1 ? 'a pendência' : `as ${pendencies.length} pendências`} de conteúdo antes de enviar.`
+            : undefined;
   // Shared by the header and by the review step's footer, which repeats only the submission.
   const lifecycle = {
     calendar: record,
@@ -217,7 +192,6 @@ function EditorFrame() {
     notify,
     submitSummary: returned ? diffSummary(sinceReturn) : undefined,
     unavailable: submitUnavailable ? { submit: submitUnavailable } : undefined,
-    submitIssues,
     prepare: async () => {
       if (session.getSnapshot().unapplied)
         throw new Error('Aplique ou descarte os campos em edição antes de enviar.');

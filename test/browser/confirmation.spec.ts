@@ -2,7 +2,7 @@ import { test, expect } from './test.ts';
 import { mkdtemp, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { fillRequiredVacations, selectEditorSection } from './editor-navigation.ts';
+import { completeForSubmission, selectEditorSection } from './editor-navigation.ts';
 import type {} from '../fixtures/confirmation.ts';
 import type {} from '../fixtures/editor-client.ts';
 
@@ -212,9 +212,11 @@ test('TypeScript editor preserves cancelled imports and saves before submitting 
         { cause: error },
       );
     });
+  await page.waitForFunction(() => window.editorTest.calls.saves === 1);
+  // Submitting refuses any pendency, and they are not the subject here.
+  await completeForSubmission(page);
   await page.locator('[data-edit-organization="integrado"]').click();
   await expect(page.locator('input#offer-integrado-period-0-start')).toHaveValue('2027-02-01');
-  await page.waitForFunction(() => window.editorTest.calls.saves === 1);
 
   // Invalid JSON never discards a field or asks to confirm an unusable file.
   await page.locator('#offer-integrado-period-0-start').fill('2027-02-17');
@@ -225,25 +227,11 @@ test('TypeScript editor preserves cancelled imports and saves before submitting 
   await expect(page.locator('dialog[open]')).toHaveCount(0);
   await expect(page.locator('input#offer-integrado-period-0-start')).toHaveValue('2027-02-17');
 
-  await fillRequiredVacations(page);
   await page.locator('[data-view="issues"]').click();
   const submit = page.locator('[data-lifecycle-action="submit"]');
-  // Besides vacations, open content issues never block the submission; they are listed for an
-  // explicit decision.
   await expect(submit).toBeEnabled();
-  // The count sits under the review step of the menu, not beside the submit button.
-  await expect(page.locator('[data-view="issues"] .editor-step-note')).toHaveText(
-    /^\d+ pendências no total$/,
-  );
   await submit.click();
-  await expect(page.locator('dialog.confirmation-dialog--warning[open] h2')).toHaveText(
-    /^Enviar com \d+ pendências\?$/,
-  );
-  await expect(page.locator('.confirmation-dialog__items li')).toHaveCount(7);
-  await expect(page.locator('.confirmation-dialog__items li').last()).toHaveText(
-    /^E mais \d+ pendências no passo Conferir e enviar\.$/,
-  );
-  await expect(page.locator('.confirmation-dialog__confirm')).toHaveText('Enviar mesmo assim');
+  await expect(page.locator('dialog[open] h2')).toHaveText('Enviar para análise?');
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.keyboard.press('Escape');

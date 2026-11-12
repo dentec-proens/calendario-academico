@@ -6,7 +6,7 @@ import { inspectCalendar } from '../../src/domain/calendar/base.ts';
 import { rulesetVersion } from '../../src/domain/policies/registry.ts';
 import { createNativeFixture } from '../helpers/native-database.ts';
 import { act, seedCourses } from '../helpers/lifecycle.ts';
-import { seedRequiredVacations } from '../helpers/required-vacations.ts';
+import { seedSubmittable } from '../helpers/required-vacations.ts';
 import type { Id } from '../../convex/_generated/dataModel';
 
 const previousRules = 'consup-292-2027-v6';
@@ -199,7 +199,7 @@ test('a submission of a base the person did not see is refused without writing',
 
 test('a tab from before this check is asked to update', async () => {
   const { account, record } = await draftUnderOldRules();
-  await account.run((ctx) => seedRequiredVacations(ctx, record.id));
+  await account.run((ctx) => seedSubmittable(ctx, record.id));
   await expect(
     account.mutation(api.calendars.transitionCalendar, {
       id: record.id,

@@ -23,10 +23,11 @@ import {
 } from './activities/vacations.ts';
 import { evaluateCalendar as calendarResult } from './counting/evaluation.ts';
 import { periodsForOffer } from './organization/periods.ts';
+import { datesBetween } from './counting/core.ts';
 import { policyFor } from '../policies/registry.ts';
 import { observanceIssues } from './observances.ts';
 import { isInternalDate } from './internal-dates.ts';
-import { findingKey, type CheckId, type FindingSubject } from './checks.ts';
+import { blocks, findingKey, type CheckId, type FindingSubject } from './checks.ts';
 
 const observanceChecks = {
   orphan: 'observance-orphan',
@@ -73,11 +74,15 @@ type ContentRecord = { institutionalSnapshot: InstitutionalEventSnapshot[]; stat
 export function contentAssessment(record: ContentRecord) {
   const issues: ContentIssue[] = [],
     notes: ContentIssue[] = [];
-  const issue = (check: CheckId, subject: FindingSubject, message: string, info: IssueInfo) =>
-    issues.push({ check, key: findingKey(check, ...subject), message, ...info });
-  // Warnings never block; they keep the same shape so the review step lists them alike.
-  const warn = (check: CheckId, subject: FindingSubject, message: string, info: IssueInfo) =>
-    notes.push({ check, key: findingKey(check, ...subject), message, ...info });
+  // The check decides where a finding goes: what keeps the campus from submitting is an issue; the
+  // rest is a note, which keeps the same shape so the review step lists it alike.
+  const report = (check: CheckId, subject: FindingSubject, message: string, info: IssueInfo) =>
+    (blocks(check).submit ? issues : notes).push({
+      check,
+      key: findingKey(check, ...subject),
+      message,
+      ...info,
+    });
   const policy = policyFor(record.state.year);
   const offers = calendarOffers(record.state);
   if (policy.scope) {
@@ -91,10 +96,10 @@ export function contentAssessment(record: ContentRecord) {
         target: { area: 'scope' },
       } as const;
       if (new Set(included.map((offer) => scopeStatus(offer))).size === 1)
-        issue('scope', [], policy.scope.readinessIssue, scope);
+        report('scope', [], policy.scope.readinessIssue, scope);
       else
         for (const offer of pending)
-          issue(
+          report(
             'scope',
             [offer.id],
             `${labelFor(record.state, offer.id)} — ${policy.scope.readinessIssue}`,
@@ -103,7 +108,7 @@ export function contentAssessment(record: ContentRecord) {
     }
   }
   for (const item of observanceIssues(record.institutionalSnapshot, record.state))
-    issue(observanceChecks[item.kind], [item.key], item.message, {
+    report(observanceChecks[item.kind], [item.key], item.message, {
       group: 'dates',
       title: 'Data da base institucional',
       detail: item.message,
@@ -119,7 +124,7 @@ export function contentAssessment(record: ContentRecord) {
           : [1, 2].includes(offer.stages.perTerm)),
     )
   )
-    issue('stages', [], 'Informe a quantidade de etapas de avaliação (2, 3 ou 4).', {
+    report('stages', [], 'Informe a quantidade de etapas de avaliação (2, 3 ou 4).', {
       group: 'structure',
       title: 'Etapas de avaliação',
       detail: 'Informe a quantidade de etapas de avaliação (2, 3 ou 4).',
@@ -138,7 +143,7 @@ export function contentAssessment(record: ContentRecord) {
         target: { area: 'activity', activity: row.requirement.activity },
       }) as const;
     if (row.applicability === 'required' && row.coverage === 'pending')
-      issue(
+      report(
         'coverage-pending',
         [row.offerId, row.requirement.id],
         isVacationActivity(row.requirement.activity)
@@ -148,19 +153,21 @@ export function contentAssessment(record: ContentRecord) {
       );
     if (row.applicability === 'required' || row.events.length)
       for (const item of row.issues)
-        issue(
+        report(
           item.check,
           [row.offerId, row.requirement.id, item.eventId],
           `${prefix}: ${item.detail}`,
           activity(item.detail),
         );
+    // A date under “Vínculo a conferir” is reported once, by its own `link-review`.
     for (const item of [...row.warnings, ...row.reviewNotes])
-      warn(
-        item.check,
-        [row.offerId, row.requirement.id, item.eventId],
-        `${prefix}: ${item.detail}`,
-        activity(item.detail),
-      );
+      if (item.check !== 'link-review-row')
+        report(
+          item.check,
+          [row.offerId, row.requirement.id, item.eventId],
+          `${prefix}: ${item.detail}`,
+          activity(item.detail),
+        );
   }
   for (const offer of offers) {
     for (let n = 1; n <= (assessmentCount(record.state, offer.id) || 0); n++) {
@@ -189,7 +196,7 @@ export function contentAssessment(record: ContentRecord) {
           target: { area: 'organization' },
         }) as const;
       const stageWarning = (check: CheckId, detail: string) =>
-        warn(
+        report(
           check,
           [offer.id, n],
           `${labelFor(record.state, offer.id)} — ${stage}: ${detail}`,
@@ -230,7 +237,7 @@ export function contentAssessment(record: ContentRecord) {
   for (const event of record.state.events) {
     const reason = review.get(event.id);
     if (reason)
-      issue(
+      report(
         'link-review',
         [event.id, reason],
         `Vínculo a conferir — “${event.name}” (${longDate(event.start)}): ${linkIssueLabels[reason]}. ${linkIssueActions[reason]}`,
@@ -247,7 +254,7 @@ export function contentAssessment(record: ContentRecord) {
   for (const event of record.state.events) {
     const message = schoolDayIssue(record.state, event);
     if (message) {
-      issue('school-day', [event.id], message, {
+      report('school-day', [event.id], message, {
         group: 'dates',
         title: `Não constitui dia letivo — ${event.name} (${compactDate(event.start, record.state.year)})`,
         detail: message,
@@ -261,7 +268,7 @@ export function contentAssessment(record: ContentRecord) {
     const message =
       vacationDateIssue(record.state, event) ?? vacationOverlapIssue(record.state.events, event);
     if (message)
-      issue('vacation', [event.id], message, {
+      report('vacation', [event.id], message, {
         group: 'dates',
         title: `Férias a corrigir — ${event.name} (${compactDate(event.start, record.state.year)})`,
         detail: message,
@@ -273,7 +280,7 @@ export function contentAssessment(record: ContentRecord) {
   // A notice destination is diagnosed per offer and never corrected automatically.
   for (const event of record.state.events)
     for (const item of noticeDestinationIssues(record.state, event))
-      warn(
+      report(
         'notice-destination',
         [event.id, item.offerId],
         `${labelFor(record.state, item.offerId)} — “${event.name}” (${longDate(event.start)}): ${item.message}. Revise o destino do edital.`,
@@ -302,7 +309,7 @@ export function contentAssessment(record: ContentRecord) {
         (start < window.start || start > window.latestStart || end > window.end)
       ) {
         const detail = `Datas fora da referência: ${longRange(window)}, início até ${longDate(window.latestStart)}. Confira a justificativa e a deliberação institucional antes de concluir a revisão.`;
-        warn('window', [offer.id], `${labelFor(record.state, offer.id)} — ${detail}`, {
+        report('window', [offer.id], `${labelFor(record.state, offer.id)} — ${detail}`, {
           group: 'structure',
           title: 'Ano letivo',
           detail,
@@ -315,96 +322,126 @@ export function contentAssessment(record: ContentRecord) {
   // Do not add hidden, duplicate keyword requirements when generating the calendar.
   // The release check places the base issue here, before the counting issues.
   const baseIssueAt = issues.length;
-  try {
-    const result = calendarResult(
-      record.state,
-      projectDates(record.institutionalSnapshot, record.state.events),
-    );
-    for (const item of diagnostics.structure) {
-      const organization = { group: 'structure', target: { area: 'organization' } } as const;
-      if (item.code === 'periods-missing')
-        issue('periods-missing', [], 'Cadastre os períodos letivos.', {
+  // The structure is reported on its own, and the count runs only on a complete structure: what
+  // the campus has still to fill is never mistaken for a failure of the count.
+  const organization = { group: 'structure', target: { area: 'organization' } } as const;
+  for (const item of diagnostics.structure)
+    if (item.code === 'week-unconfirmed')
+      report('week-unconfirmed', [], 'Confirme a semana letiva.', {
+        ...organization,
+        title: 'Semana letiva',
+        detail: 'Confirme a semana letiva.',
+      });
+    else if (item.code === 'periods-missing')
+      report('periods-missing', [], 'Cadastre os períodos letivos.', {
+        ...organization,
+        title: 'Períodos letivos',
+        detail: 'Cadastre os períodos letivos.',
+      });
+    // Without any period, “Cadastre os períodos letivos” already says it for every offer.
+    else if (item.code === 'period-count' && record.state.periods.length) {
+      const detail = `Cadastre ${item.expected === 1 ? 'o ciclo anual' : 'os dois semestres letivos'}.`;
+      report(
+        'period-count',
+        [item.offerId],
+        `${labelFor(record.state, item.offerId)} — ${detail}`,
+        {
           ...organization,
           title: 'Períodos letivos',
-          detail: 'Cadastre os períodos letivos.',
-        });
-      else if (item.code === 'period-count') {
-        const detail = `Cadastre ${item.expected === 1 ? 'o ciclo anual' : 'os dois semestres letivos'}.`;
-        issue(
-          'period-count',
-          [item.offerId],
-          `${labelFor(record.state, item.offerId)} — ${detail}`,
-          {
-            ...organization,
-            title: 'Períodos letivos',
-            detail,
-            offerId: item.offerId,
-          },
-        );
-      }
+          detail,
+          offerId: item.offerId,
+        },
+      );
     }
-    for (const check of diagnoseTeachingDays(record.state, result))
-      if (check.status !== 'MET') {
-        const period = record.state.periods.find((p) => p.id === check.scope);
-        // A period split changes its identifier, so the key names the term instead.
-        const scope =
-          check.scope === 'annual' ? 'annual' : (period?.association.term ?? check.scope);
-        issue(
-          'teaching-days',
-          [check.offerId, scope],
-          `${labelFor(record.state, check.offerId)} — ${check.scope === 'annual' ? 'Total anual' : period?.name}: mínimo de dias não atendido ou não configurado.`,
-          {
-            group: 'teaching-days',
-            title: check.scope === 'annual' ? 'Total anual' : (period?.name ?? 'Período'),
-            detail:
-              check.expected === null
-                ? 'Não há mínimo de dias configurado para este escopo.'
-                : `${check.observed} de ${check.expected} dias letivos mínimos.`,
-            offerId: check.offerId,
-            target: { area: 'teaching-days' },
-          },
-        );
-      }
-    const conflicts = [
-      ...new Set(Object.values(result.byOffer).flatMap((r) => r.conflicts.map((c) => c.date))),
-    ].sort();
-    if (conflicts.length)
-      issue('conflicts', [], 'Resolva os conflitos entre dias letivos e exclusões.', {
-        group: 'teaching-days',
-        title: 'Conflitos na contagem',
-        detail: `Há inclusão e exclusão em ${conflicts.map((date) => compactDate(date, record.state.year)).join(', ')}. Esses dias ficam fora da contagem até a resolução.`,
-        target: { area: 'teaching-days' },
-      });
-  } catch {
-    issue(
-      'count-unavailable',
-      [],
-      'Complete e confira a semana letiva, os períodos e os dados da contagem.',
+  // A date that adds teaching days outside every period of an offer is the campus's to correct;
+  // the count refuses it, so it is found here, before the count runs.
+  const outside = diagnostics.structure.length
+    ? []
+    : record.state.events.filter(
+        (event) =>
+          event.effect === 'include' &&
+          // An inverted date is reported as an invalid record; the count never reaches it.
+          event.start <= event.end &&
+          offers.some((offer) => {
+            if (!appliesTo(event, offer)) return false;
+            const periods = periodsForOffer(record.state, offer.id);
+            return datesBetween(event.start, event.end).some(
+              (date) => !periods.some((p) => p.start <= date && date <= p.end),
+            );
+          }),
+      );
+  for (const event of outside) {
+    const detail =
+      'Acrescenta dias letivos fora dos períodos letivos das ofertas. Ajuste a data ou o efeito na contagem.';
+    report(
+      'inclusion-outside-periods',
+      [event.id],
+      `“${event.name}” (${longDate(event.start)}): ${detail}`,
       {
-        group: 'structure',
-        title: 'Contagem de dias',
-        // The structure issues are not reported when the count fails; the detail names them.
-        detail: diagnostics.structure.length
-          ? `Contagem indisponível: ${diagnostics.structure
-              .map((item) =>
-                item.code === 'week-unconfirmed'
-                  ? 'confirme a semana letiva'
-                  : item.code === 'periods-missing'
-                    ? 'cadastre os períodos letivos'
-                    : item.code === 'period-count'
-                      ? `cadastre os períodos de ${labelFor(record.state, item.offerId)}`
-                      : '',
-              )
-              .join('; ')}.`
-          : 'Complete e confira a semana letiva, os períodos e os dados da contagem.',
-        target: { area: 'organization' },
+        group: 'dates',
+        title: `Fora dos períodos — ${event.name} (${compactDate(event.start, record.state.year)})`,
+        detail,
+        target: { area: 'date', eventId: event.id, name: event.name },
       },
     );
+  }
+  if (diagnostics.structure.length === 0 && outside.length === 0) {
+    let result: ReturnType<typeof calendarResult> | undefined;
+    try {
+      result = calendarResult(
+        record.state,
+        projectDates(record.institutionalSnapshot, record.state.events),
+      );
+    } catch (error) {
+      // A complete structure that still cannot be counted is a fault the campus cannot fix.
+      const detail = `Erro do sistema na contagem de dias (${error instanceof Error ? error.message : String(error)}). Avise a administração.`;
+      report('system-error', ['count'], detail, {
+        group: 'teaching-days',
+        title: 'Contagem de dias',
+        detail,
+        target: { area: 'teaching-days' },
+      });
+    }
+    if (result) {
+      for (const check of diagnoseTeachingDays(record.state, result))
+        if (check.status !== 'MET') {
+          const period = record.state.periods.find((p) => p.id === check.scope);
+          // A period split changes its identifier, so the key names the term instead.
+          const scope =
+            check.scope === 'annual' ? 'annual' : (period?.association.term ?? check.scope);
+          const unverifiable = check.expected === null;
+          report(
+            unverifiable ? 'teaching-days-unverifiable' : 'teaching-days',
+            [check.offerId, scope],
+            `${labelFor(record.state, check.offerId)} — ${check.scope === 'annual' ? 'Total anual' : period?.name}: ${unverifiable ? 'sem mínimo de dias configurado.' : 'mínimo de dias não atendido.'}`,
+            {
+              group: 'teaching-days',
+              title: check.scope === 'annual' ? 'Total anual' : (period?.name ?? 'Período'),
+              detail: unverifiable
+                ? 'Não há mínimo de dias configurado para este escopo.'
+                : `${check.observed} de ${check.expected} dias letivos mínimos.`,
+              offerId: check.offerId,
+              target: { area: 'teaching-days' },
+            },
+          );
+        }
+      const conflicts = [
+        ...new Set(Object.values(result.byOffer).flatMap((r) => r.conflicts.map((c) => c.date))),
+      ].sort();
+      if (conflicts.length)
+        report('conflicts', [], 'Resolva os conflitos entre dias letivos e exclusões.', {
+          group: 'teaching-days',
+          title: 'Conflitos na contagem',
+          detail: `Há inclusão e exclusão em ${conflicts.map((date) => compactDate(date, record.state.year)).join(', ')}. Esses dias ficam fora da contagem até a resolução.`,
+          target: { area: 'teaching-days' },
+        });
+    }
   }
   const warnings = notes.map((note) => note.message);
   return { issues, warnings, notes, events, baseIssueAt };
 }
 
+/** What keeps the campus from submitting: every finding the campus or the base must correct. */
 export function contentIssues(
   state: ActivityState,
   institutionalSnapshot: InstitutionalEventSnapshot[],
@@ -412,19 +449,12 @@ export function contentIssues(
   return contentAssessment({ state, institutionalSnapshot }).issues;
 }
 
-/**
- * What stops a submission, unlike the other pendencies, which a person confirms and the review
- * judges: vacations the norm requires, including the exact days of the teacher vacations.
- */
-export function submitBlockers(
-  state: ActivityState,
-  institutionalSnapshot: InstitutionalEventSnapshot[],
-) {
-  return contentIssues(state, institutionalSnapshot).filter(
-    (issue) =>
-      issue.check === 'vacation' ||
-      (issue.target?.area === 'activity' && isVacationActivity(issue.target.activity)),
-  );
+/** Why the campus cannot submit yet, or nothing: every content issue must be corrected first. */
+export function submitRefusal(issues: readonly ContentIssue[]): string | undefined {
+  if (issues.length === 0) return undefined;
+  if (issues.length === 1) return issues[0].message;
+  // The editor counts grouped pendencies; the message names the first instead of a second count.
+  return `Há pendências de conteúdo a corrigir antes do envio, listadas no passo Conferir e enviar. A primeira: ${issues[0].message}`;
 }
 
 export const baseOutdatedIssue = 'Salve o calendário com a base institucional atualizada.';

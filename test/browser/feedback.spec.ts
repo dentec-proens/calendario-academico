@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test';
 import { test, expect } from './test.ts';
-import { configureOffer, fillRequiredVacations, selectEditorSection } from './editor-navigation.ts';
+import { completeForSubmission, selectEditorSection } from './editor-navigation.ts';
 import type {} from '../fixtures/editor-client.ts';
 
 const feedbackCalls = (page: Page) =>
@@ -10,14 +10,8 @@ async function submitCalendar(page: Page) {
   await page.evaluate(() => {
     window.editorTest.feedback.invite = true;
   });
-  // As the guided editor test does: the first step is ready before continuing from it.
-  await expect(page.locator('#weekdays input')).toHaveCount(5);
-  await page
-    .getByRole('button', { name: 'Continuar para organização por oferta', exact: true })
-    .click();
-  await expect(page).toHaveURL(/\/periodos$/);
-  await configureOffer(page, 'integrado', '2027-03-01', '2027-03-26');
-  await fillRequiredVacations(page);
+  await expect(page.locator('#record-title')).toBeVisible();
+  await completeForSubmission(page);
   await selectEditorSection(page, 'issues');
   await page.locator('[data-lifecycle-action="submit"]').click();
   await page.locator('.confirmation-dialog__confirm').click();

@@ -24,7 +24,9 @@ Este guia registra as regras de negócio e as decisões que o código sozinho n�
 | Vigente    | ninguém    | Publicado pela ADMIN com processo SEI (00000.000000/0000-00). |
 | Arquivado  | ninguém    | Substituído ou arquivado pela ADMIN; só consulta.             |
 
-- **Envio bloqueado** quando: faltam os cursos da identificação ou as férias exigidas; as férias docentes não somam exatamente 45 dias (norma de 2027); uma data do campus usa a categoria férias; há campos não aplicados; há atualização da base por incorporar. As demais pendências não bloqueiam, só pedem confirmação.
+- **Envio bloqueado** enquanto houver qualquer pendência de conteúdo (decisão de 12/11/2026), inclusive no reenvio de um devolvido, e quando há campos não aplicados ou a base mudou desde o que a pessoa conferiu. O servidor confere sobre a base vigente, a mesma que o envio grava.
+- Cada verificação declara quem a resolve (`src/domain/calendar/checks.ts`): o **campus** corrige ou declara; a **base** (base institucional ou erro do sistema) pede a administração; a **DENTEC/PROENS** julga no critério do parecer, sem impedir o envio (prazo ajustado ou prorrogado, instrução de revisão, ano letivo fora da referência); o resto só informa. Só o que o campus ou a base resolvem impede o envio; a publicação espera, além disso, todos os critérios avaliados.
+- Sem mínimo de dias a verificar (ano sem norma configurada ou oferta fora da norma), a falta de mínimo é aviso, não pendência.
 - Um único calendário em análise (enviado, em revisão, devolvido ou revisado) por campus, ano e tipo de oferta.
 - Se já existe vigente para algum tipo de oferta, o novo calendário precisa incluir todos os tipos dele; a ADMIN pode confirmar substituição parcial.
 - Publicar arquiva os vigentes que compartilham tipos de oferta.

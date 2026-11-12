@@ -42,10 +42,10 @@ for (const width of [1440, 390]) {
       record.version++;
       await window.publishReviewerCalendar();
     });
-    // Without the periods of an offer the count stops, and its issue names what to fix.
-    await expect(page.locator('#issue-list [data-issue="count-unavailable"]')).toContainText(
-      'cadastre os períodos de Engenharia Elétrica',
-    );
+    // Without the periods of an offer, its own pendency names the offer and what to fix.
+    const periods = page.locator('#issue-list [data-issue="period-count:graduacao-2"]');
+    await expect(periods).toContainText('Cadastre os dois semestres letivos.');
+    await expect(periods.locator('[data-offer-badge]')).toHaveText(['Engenharia Elétrica']);
     await expect(page.locator('#issue-list')).not.toContainText('undefined');
   });
 }

@@ -1,7 +1,9 @@
 import type { Page } from '@playwright/test';
 import { expect } from './test.ts';
 import type { EditorSection } from '../../src/app/routes.ts';
+import type { CalendarState } from '../../web/features/calendar-editor/types.ts';
 import type {} from '../fixtures/editor-client.ts';
+import { submittableState } from '../helpers/required-vacations.ts';
 
 /** Use the same expandable step picker offered to people on smaller screens. */
 export async function selectEditorSection(page: Page, section: EditorSection) {
@@ -107,4 +109,30 @@ export async function fillRequiredVacations(page: Page) {
   await page.locator('#vacation-days').fill('45');
   await page.locator('#vacation-apply').click();
   await expect(page.locator('#vacation-teacher-summary')).toContainText('45 de 45 dias.');
+}
+
+/**
+ * Completes the saved calendar for a test whose subject is not the pendencies: submitting refuses
+ * any of them. The state reaches the open editor as a newer version, as another session's would,
+ * so it is adopted only at rest (saved, nothing in edition).
+ */
+export async function completeForSubmission(page: Page) {
+  await expect(page.locator('#autosave-status')).toHaveAttribute('data-state', /^(idle|saved)$/);
+  await expect(page.locator('#unapplied-status')).toBeHidden();
+  // The record carries civil dates as plain strings, as they travel.
+  const saved = (await page.evaluate(() => window.editorTest.record.state)) as CalendarState;
+  const state = submittableState(saved);
+  await page.evaluate(async (state) => {
+    const { record } = window.editorTest;
+    record.state = state;
+    record.version++;
+    await window.publishReviewerCalendar();
+  }, state);
+  // Adopted once no step keeps a pendency; the review may still list a missing identity.
+  await expect(page.locator('[data-view]:not([data-view="issues"]) .editor-step-note')).toHaveCount(
+    0,
+  );
+  await expect(page.locator('#lifecycle-submit-unavailable', { hasText: 'pendência' })).toHaveCount(
+    0,
+  );
 }

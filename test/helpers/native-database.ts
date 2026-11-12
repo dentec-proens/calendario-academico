@@ -1,7 +1,7 @@
 import { inspectCalendar } from '../../src/domain/calendar/base.ts';
 import { calendarRecordDates } from '../../web/shared/convex/calendar-dates.ts';
 import { convexModules } from './convex-modules.ts';
-import { seedRequiredVacations } from './required-vacations.ts';
+import { seedSubmittable } from './required-vacations.ts';
 import { convexTest } from 'convex-test';
 import rateLimiterTest from '@convex-dev/rate-limiter/test';
 import migrationsTest from '@convex-dev/migrations/test';
@@ -219,7 +219,7 @@ export async function createNativeFixture(overrides: Seed = {}) {
         if (calendar) {
           const id = calendarId(calendar[1]);
           if (calendar[2] === 'transition') {
-            if (body.action === 'submit') await client.run((ctx) => seedRequiredVacations(ctx, id));
+            if (body.action === 'submit') await client.run((ctx) => seedSubmittable(ctx, id));
             const current = await query(api.calendars.calendar, { id });
             return mutation(api.calendars.transitionCalendar, {
               id,

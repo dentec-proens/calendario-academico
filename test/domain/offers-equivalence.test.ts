@@ -272,11 +272,31 @@ const catalogueOf = (projection: Projection) => ({
 });
 
 /**
+ * Decision of 12/11/2026: a minimum of teaching days that no norm configures is a note, not a
+ * pendency, and the two cases have their own wording. The oracle captured both as one pendency,
+ * “mínimo de dias não atendido ou não configurado.”; this maps the current readiness back to it.
+ */
+const teachingDaysAsCaptured = (readiness: Projection['readiness']) => {
+  const captured = (message: string) =>
+    message.replace(
+      /: (sem mínimo de dias configurado|mínimo de dias não atendido)\.$/,
+      ': mínimo de dias não atendido ou não configurado.',
+    );
+  const unverifiable = (message: string) => message.endsWith(': sem mínimo de dias configurado.');
+  return {
+    ...readiness,
+    issues: [...readiness.issues, ...readiness.warnings.filter(unverifiable)].map(captured).sort(),
+    warnings: readiness.warnings.filter((message) => !unverifiable(message)),
+  };
+};
+
+/**
  * The paths the v3 oracle keeps frozen: periods, dates, minimums, counting, base identity, window,
  * the structural and teaching diagnostics, and the readiness that does not cite an activity.
  */
 const frozenOf = (projection: Projection) => {
-  const { requirements: _requirements, diagnostics, readiness, ...rest } = projection;
+  const { requirements: _requirements, diagnostics, ...rest } = projection;
+  const readiness = teachingDaysAsCaptured(projection.readiness);
   return {
     ...rest,
     diagnostics: { structure: diagnostics.structure, teaching: diagnostics.teaching },

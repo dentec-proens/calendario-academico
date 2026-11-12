@@ -27,7 +27,7 @@ import { ActionMenu, ActionMenuItem } from '../../components/ui/ActionMenu.tsx';
 import { Button } from '../../components/ui/Button.tsx';
 import { TextAreaField, TextField } from '../../components/ui/Field.tsx';
 import { Notice } from '../../components/ui/Notice.tsx';
-import { confirmAction, type ConfirmationItem } from '../../components/confirmation.ts';
+import { confirmAction } from '../../components/confirmation.ts';
 import { calendars } from '../../shared/convex/calendars.ts';
 import { functions } from '../../shared/convex/client.ts';
 import { nativeError } from '../../shared/convex/errors.ts';
@@ -82,9 +82,6 @@ const icons: Partial<Record<LifecycleAction, typeof Send>> = {
   reinstate: ArchiveRestore,
 };
 
-const shownIssues = 6;
-const pendencies = (count: number) => `${count} ${count === 1 ? 'pendência' : 'pendências'}`;
-
 /** Order in which the actions appear; the review starts on its own with the first save. */
 const offered: LifecycleAction[] = [
   'submit',
@@ -109,7 +106,6 @@ export default function LifecycleActions({
   submitSummary,
   guard,
   unavailable,
-  submitIssues = [],
   className = '',
   placement = 'header',
   menuActions = [],
@@ -127,8 +123,6 @@ export default function LifecycleActions({
   guard?: () => string | undefined;
   /** Why an offered action cannot run now: the button stays visible, disabled, with the reason. */
   unavailable?: Partial<Record<LifecycleAction, string>>;
-  /** Items still open: submitting stays possible, after confirming them one by one. */
-  submitIssues?: readonly ConfirmationItem[];
   className?: string;
   /** The footer of the review step repeats only the submission, as the step's conclusion. */
   placement?: 'header' | 'footer';
@@ -158,15 +152,6 @@ export default function LifecycleActions({
   );
   if (!actions.length) return null;
   const inMenu = actions.filter((action) => menuActions.includes(action));
-  const issueCount = pendencies(submitIssues.length);
-  // The dialog lists the first issues only; its buttons stay in view and the rest are a step away.
-  const listedIssues =
-    submitIssues.length > shownIssues
-      ? [
-          ...submitIssues.slice(0, shownIssues),
-          `E mais ${pendencies(submitIssues.length - shownIssues)} no passo Conferir e enviar.`,
-        ]
-      : submitIssues;
   const uncovered = [...new Set(preview?.replaced.flatMap((item) => item.uncovered) ?? [])].map(
     (kind) => modalityLabels[kind],
   );
@@ -201,7 +186,6 @@ export default function LifecycleActions({
         description: `Este calendário não inclui ${uncovered.join(', ')}, atendidos pelo calendário vigente que ele substituirá.`,
         consequence: 'Ao publicá-lo, esses tipos de oferta ficarão sem calendário vigente.',
         intent: 'warning',
-        items: listedIssues,
         confirmLabel: 'Confirmar substituição parcial e enviar',
         pendingLabel: 'Registrando…',
         onConfirm: () => perform('submit', { partial: true }),
@@ -213,19 +197,6 @@ export default function LifecycleActions({
       return;
     }
     const confirmation = confirmations[action]!;
-    if (action === 'submit' && submitIssues.length) {
-      void confirmAction({
-        title: `Enviar com ${issueCount}?`,
-        description: `${confirmation.description} Com as pendências abaixo, a PROENS pode devolvê-lo para ajustes.`,
-        items: listedIssues,
-        consequence: [submitSummary, confirmation.consequence].filter(Boolean).join(' '),
-        intent: 'warning',
-        confirmLabel: 'Enviar mesmo assim',
-        pendingLabel: 'Registrando…',
-        onConfirm: () => perform(action),
-      });
-      return;
-    }
     void confirmAction({
       title: `${actionLabels[action]}?`,
       description: confirmation.description,

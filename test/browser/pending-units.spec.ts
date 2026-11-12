@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test';
 import { test, expect } from './test.ts';
-import { configureOffer, fillRequiredVacations, selectEditorSection } from './editor-navigation.ts';
+import { configureOffer, selectEditorSection } from './editor-navigation.ts';
 import { calendarOffersFixture } from '../fixtures/calendar-offers.ts';
 import { normalizeOfferCalendar } from '../../src/domain/calendar/normalization/normalize.ts';
 import type { CalendarState } from '../../web/features/calendar-editor/types.ts';
@@ -71,27 +71,24 @@ for (const width of [1440, 390]) {
         'de estrutura',
       );
 
-      // The submission counts the same items and each row leads to the same correction.
-      await fillRequiredVacations(page);
-      await selectEditorSection(page, 'issues');
-      await page.locator('[data-lifecycle-footer-action="submit"]').click();
-      const dialog = page.locator('dialog.confirmation-dialog--warning[open]');
-      await expect(dialog.locator('h2')).toHaveText(`Enviar com ${total - vacations} pendências?`);
-      await expect(dialog.locator('.confirmation-dialog__items')).toContainText(
-        /E mais \d+ pendências/,
-      );
-      await page.keyboard.press('Escape');
+      // Every pendency keeps the submission unavailable, saying how many; each row leads to its
+      // correction.
+      const reason = `Corrija as ${total} pendências de conteúdo antes de enviar.`;
+      await expect(page.locator('[data-lifecycle-footer-action="submit"]')).toBeDisabled();
+      await expect(page.locator('#footer-lifecycle-submit-unavailable')).toHaveText(reason);
+      await expect(page.locator('[data-lifecycle-action="submit"]')).toBeDisabled();
+      await expect(page.locator('#lifecycle-submit-unavailable')).toHaveText(reason);
       await row.locator('a').click();
       await expect(page).toHaveURL(/atividade=pit%3Asemester%3Afirst|atividade=pit:semester:first/);
     });
 
-    test('a submission row with two offers shows both and leads to the correction', async ({
+    test('a review row with two offers shows both and leads to the correction', async ({
       page,
       fixtureServer,
     }) => {
       await page.goto(await fixtureServer('editor'));
       await expect(page.locator('#record-title')).toBeVisible();
-      // Offers organised alike: the first rows of the submission are activities they share.
+      // Offers organised alike: the first rows of the review are activities they share.
       const state = normalizeOfferCalendar(calendarOffersFixture()) as CalendarState;
       await page.evaluate(async (state) => {
         const { record } = window.editorTest;
@@ -105,17 +102,13 @@ for (const width of [1440, 390]) {
         record.version++;
         await window.publishReviewerCalendar();
       }, state);
-      await fillRequiredVacations(page);
       await selectEditorSection(page, 'issues');
-      await page.locator('[data-lifecycle-footer-action="submit"]').click();
-      const dialog = page.locator('dialog.confirmation-dialog--warning[open]');
-      const shared = dialog
-        .locator('.confirmation-dialog__item')
-        .filter({ has: page.locator('.ui-status:nth-child(2)') })
+      const shared = page
+        .locator('#issue-list .issue-item')
+        .filter({ has: page.locator('[data-offer-badge]:nth-child(2)') })
         .first();
-      expect(await shared.locator('.ui-status').count()).toBeGreaterThanOrEqual(2);
-      await shared.locator('button').click();
-      await expect(dialog).toHaveCount(0);
+      await expect(shared.locator('[data-offer-badge]')).toHaveCount(2);
+      await shared.locator('a').click();
       await expect(page).toHaveURL(/\/atividades\?.*atividade=/);
     });
 

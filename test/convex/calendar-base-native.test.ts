@@ -6,7 +6,7 @@ import { inspectCalendar } from '../../src/domain/calendar/base.ts';
 import { reviewCriteriaFor } from '../../src/domain/reviews/criteria.ts';
 import { createNativeFixture } from '../helpers/native-database.ts';
 import { act, seedCourses } from '../helpers/lifecycle.ts';
-import { withRequiredVacations } from '../helpers/required-vacations.ts';
+import { submittableState } from '../helpers/required-vacations.ts';
 import type { Id } from '../../convex/_generated/dataModel';
 
 async function opened() {
@@ -90,7 +90,7 @@ test('an equivalent base writes nothing and keeps the review evidence', async ()
     version: 1,
     updatedAt: record.updatedAt,
     catalogueRevision: 1,
-    state: withRequiredVacations(record.state),
+    state: submittableState(record.state),
     institutionalSnapshot: record.institutionalSnapshot,
   });
 });

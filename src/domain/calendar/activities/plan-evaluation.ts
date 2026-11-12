@@ -15,6 +15,7 @@ import { deadlineStanding, requirementDeadline } from './deadlines.ts';
 import { exactDaysIssue } from './vacations.ts';
 import type { ActivityRef } from './activity-ref.ts';
 import type { CheckId, RowFinding } from '../checks.ts';
+import { DomainError } from '../../errors.ts';
 import {
   coversDate,
   generatedActivities,
@@ -181,12 +182,16 @@ export function evaluatePlan(
           try {
             validateActivityRecord(state, event);
           } catch (error) {
-            found(
-              issues,
-              'activity-record',
-              error instanceof Error ? error.message : String(error),
-              event.id,
-            );
+            // A rule the campus can correct; anything else is a fault of the system, not theirs.
+            if (error instanceof DomainError)
+              found(issues, 'activity-record', error.message, event.id);
+            else
+              found(
+                issues,
+                'system-error',
+                `Erro do sistema ao conferir a data (${error instanceof Error ? error.message : String(error)}). Avise a administração.`,
+                event.id,
+              );
             return false;
           }
           if (requirement.admissionType) {

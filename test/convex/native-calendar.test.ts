@@ -8,7 +8,7 @@ import type { DomainState } from '../../convex/validators.ts';
 import type { CalendarContent, CalendarOffer } from '../../src/domain/calendar/model.ts';
 import { createNativeFixture } from '../helpers/native-database.ts';
 import { act, preserveSubmission, seedCourses } from '../helpers/lifecycle.ts';
-import { withRequiredVacations } from '../helpers/required-vacations.ts';
+import { submittableState } from '../helpers/required-vacations.ts';
 import { calendarOffersFixture } from '../fixtures/calendar-offers.ts';
 import { reviewCriteria } from '../../src/domain/reviews/criteria.ts';
 import { activityPlan } from '../../src/domain/calendar/activities/plan.ts';
@@ -163,7 +163,7 @@ test('the round-trip preserves independent organization, intake, actual dates an
   });
   expect(loaded.state.offers).toEqual(state.offers);
   expect(loaded.state.periods).toEqual(state.periods);
-  expect((await submitted()).state).toEqual(withRequiredVacations(record.state));
+  expect((await submitted()).state).toEqual(submittableState(record.state));
 });
 
 test('a save cannot silently adopt another ruleset or change history', async () => {

@@ -97,7 +97,7 @@ test.each([
   ['46 dias', teacherEnd('2027-02-15')],
 ])('a teacher total of %s cannot be submitted', async (_name, change) => {
   const f = await fixture(change);
-  await expect(act(f.campus, f.id, 'submit')).rejects.toThrow(/45 dias/);
+  await expect(actAsIs(f.campus, f.id, 'submit')).rejects.toThrow(/45 dias/);
   expect((await calendarStatus(f.campus, f.id)).status).toBe('rascunho');
 });
 

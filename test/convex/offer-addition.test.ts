@@ -74,7 +74,12 @@ test('Convex includes a complete new offer atomically and preserves the earlier 
   expect(previous.state.schemaVersion).toBe(7);
   if (previous.state.schemaVersion !== 7) throw Error('Snapshot esperado.');
   expect(previous.state.offers.map((offer) => offer.id)).toEqual(['posgraduacao']);
-  expect(previous.state.periods).toEqual([]);
+  // Submitting needs periods, so the earlier version has its own; none reaches the new offer.
+  expect(
+    previous.state.periods.flatMap((period) =>
+      period.association.status === 'defined' ? period.association.offers : [],
+    ),
+  ).not.toContain('integrado');
   for (const changed of [
     { ...loaded.state, offers: loaded.state.offers.filter((offer) => offer.id === 'integrado') },
     {

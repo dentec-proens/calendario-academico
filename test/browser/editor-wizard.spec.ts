@@ -1,5 +1,5 @@
 import { test, expect } from './test.ts';
-import { configureOffer, fillRequiredVacations, selectEditorSection } from './editor-navigation.ts';
+import { completeForSubmission, configureOffer, selectEditorSection } from './editor-navigation.ts';
 import type {} from '../fixtures/editor-client.ts';
 
 for (const width of [1440, 390]) {
@@ -80,7 +80,7 @@ for (const width of [1440, 390]) {
     );
     await expect(page.locator('#new-event')).toHaveText('Adicionar data do campus');
     await expect(page.locator('#editor-continue')).toHaveText('Continuar para conferir e enviar');
-    await fillRequiredVacations(page);
+    await completeForSubmission(page);
     await selectEditorSection(page, 'issues');
     await expect(page.locator('#review-progress')).toBeVisible();
     await expect(
@@ -105,7 +105,8 @@ for (const width of [1440, 390]) {
       /Salvando|ainda não salvas/,
     );
     const saves = await page.evaluate(() => window.editorTest.calls.saves);
-    await page.locator('#weekdays input[value="1"]').uncheck();
+    // The completed calendar has the whole week: an empty one is still never saved.
+    for (const checkbox of await weekdays.all()) await checkbox.uncheck();
 
     await expect(page.locator('.editor-save-indicator')).toHaveText(
       'Alterações ainda não incluídas',

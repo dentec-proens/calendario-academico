@@ -5,7 +5,8 @@ import { api } from '../../convex/_generated/api.js';
 import type { Id } from '../../convex/_generated/dataModel.js';
 import { reviewCriteriaFor } from '../../src/domain/reviews/criteria.ts';
 import { createNativeFixture } from '../helpers/native-database.ts';
-import { act, calendarStatus, readyContent, saveReview } from '../helpers/lifecycle.ts';
+import { act, actAsIs, calendarStatus, readyContent, saveReview } from '../helpers/lifecycle.ts';
+import { seedSubmittable } from '../helpers/required-vacations.ts';
 
 const sei = '23411.000001/2027-11';
 
@@ -590,9 +591,28 @@ test('the review of each decision is read from the current or the archived revis
   ).rejects.toThrow(/Envio não encontrado/);
 });
 
+// Decision of 12/11/2026: every content pendency keeps the campus from submitting.
+test('a draft with pendencies is refused, says how many there are and writes nothing', async () => {
+  const f = await fixture();
+  const id = await f.create();
+  await expect(actAsIs(f.campus, id, 'submit')).rejects.toThrow(
+    /Há pendências de conteúdo a corrigir antes do envio/,
+  );
+  expect(await f.submissions(id)).toEqual([]);
+  expect((await calendarStatus(f.campus, id)).status).toBe('rascunho');
+  await f.client.run((ctx) => seedSubmittable(ctx, id));
+  // What the review judges or only informs stays, and does not keep the campus from submitting.
+  const { record } = await calendarStatus(f.campus, id);
+  expect(record.readiness.warnings.length).toBeGreaterThan(0);
+  await actAsIs(f.campus, id, 'submit');
+  expect((await calendarStatus(f.campus, id)).status).toBe('enviado');
+});
+
 test('a submission above 900 KiB is refused with its own message and writes nothing', async () => {
   const f = await fixture();
   const id = await f.create();
+  // Content without pendencies, made large by dates of the campus that change none of them.
+  await f.client.run((ctx) => seedSubmittable(ctx, id));
   await f.client.run(async (ctx) => {
     const content = (await ctx.db
       .query('calendarContents')
@@ -606,9 +626,11 @@ test('a submission above 900 KiB is refused with its own message and writes noth
       effect: 'note' as const,
       offers: ['integrado'],
     }));
-    await ctx.db.patch(content._id, { state: { ...content.state, events } });
+    await ctx.db.patch(content._id, {
+      state: { ...content.state, events: [...content.state.events, ...events] },
+    });
   });
-  await expect(act(f.campus, id, 'submit')).rejects.toThrow(/grande demais para ser enviado/);
+  await expect(actAsIs(f.campus, id, 'submit')).rejects.toThrow(/grande demais para ser enviado/);
   expect(await f.submissions(id)).toEqual([]);
   expect((await calendarStatus(f.campus, id)).status).toBe('rascunho');
 });
