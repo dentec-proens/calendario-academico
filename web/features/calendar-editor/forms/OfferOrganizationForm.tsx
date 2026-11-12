@@ -481,11 +481,14 @@ export default function OfferOrganizationForm({
                 Identificação
               </BlockHeading>
               <div className="offer-metadata">
+                {/* Without a name of its own, the card's title already is the offer type. */}
                 {savedOffer ? (
-                  <p className="offer-readonly-field">
-                    <span>Tipo de oferta</span>
-                    {modalityLabels[savedOffer.kind]}
-                  </p>
+                  savedOffer.label?.trim() && (
+                    <p className="offer-readonly-field">
+                      <span>Tipo de oferta</span>
+                      {modalityLabels[savedOffer.kind]}
+                    </p>
+                  )
                 ) : (
                   <div>
                     <form.Field name="kind">

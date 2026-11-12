@@ -160,6 +160,13 @@ for (const width of [1440, 390]) {
       '1 etapa por semestre (2 no ano)',
     );
     await page.locator('[data-edit-organization="graduacao-2"]').click();
+    // A named offer keeps its type in view; without a name, the card's title already is the type.
+    await expect(page.locator('#offer-graduacao-2-form .offer-readonly-field')).toHaveText(
+      'Tipo de ofertaGraduação',
+    );
+    await page.locator('[data-edit-organization="integrado"]').click();
+    await expect(page.locator('#offer-integrado-form')).toBeVisible();
+    await expect(page.locator('#offer-integrado-form .offer-readonly-field')).toHaveCount(0);
     await page.locator('#offer-graduacao-2-stage-2-start').fill('2027-02-01');
     await page.locator('#offer-graduacao-2-stage-2-end').fill('2027-03-01');
     await expect(page.locator('#offer-graduacao-2-stage-2-error')).toContainText(
