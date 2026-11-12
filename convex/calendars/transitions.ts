@@ -115,7 +115,11 @@ export async function applyTransition(ctx: MutationCtx, user: Member, request: T
     transition(status, request.action, lifecycleRole(user), current?.submittedFrom),
   );
   const now = Date.now();
-  const patch: Partial<Doc<'calendars'>> = { status: next, statusRevision: statusRevision + 1 };
+  const patch: Partial<Doc<'calendars'>> = {
+    status: next,
+    statusRevision: statusRevision + 1,
+    statusAt: now,
+  };
   const reviewMatches = (submissionId: Id<'calendarSubmissions'> | undefined) =>
     !!review && !!submissionId && review.submissionId === submissionId;
   const reviewCurrent = () =>
@@ -263,6 +267,7 @@ export async function applyTransition(ctx: MutationCtx, user: Member, request: T
         await ctx.db.patch(other._id, {
           status: 'arquivado',
           statusRevision: other.statusRevision + 1,
+          statusAt: now,
           archivedAt: now,
           supersededBy: row._id,
         });

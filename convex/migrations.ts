@@ -2,7 +2,7 @@ import { Migrations } from '@convex-dev/migrations';
 import type { MigrationFunctionReference } from '@convex-dev/migrations';
 import { getFunctionName } from 'convex/server';
 import { v } from 'convex/values';
-import { isEditable } from '../src/domain/calendar/lifecycle.ts';
+import { isEditable, type CalendarStatus } from '../src/domain/calendar/lifecycle.ts';
 import {
   mergePedagogicalMeetings,
   mergesPedagogicalMeetings,
@@ -10,6 +10,8 @@ import {
 import { policyFor } from '../src/domain/policies/registry.ts';
 import { components, internal } from './_generated/api';
 import { internalMutation, internalQuery } from './_generated/server';
+import type { Doc } from './_generated/dataModel';
+import { transitionAudit } from './calendars/transitions';
 import schema from './schema';
 
 export const migrations = new Migrations(components.migrations, { schema, internalMutation });
@@ -37,7 +39,70 @@ export const mergePedagogicalMeetingLinks = migrations.define({
   },
 });
 
-const pending: MigrationFunctionReference[] = [internal.migrations.mergePedagogicalMeetingLinks];
+/** The audited actions that put a calendar in each status, including the trash for drafts. */
+const statusEntryActions: Record<CalendarStatus, readonly string[]> = {
+  rascunho: [transitionAudit.withdraw, 'DELETE_CALENDAR', 'RESTORE_CALENDAR'],
+  enviado: [transitionAudit.submit],
+  em_revisao: [transitionAudit.startReview, transitionAudit.reopen],
+  revisado: [transitionAudit.conclude],
+  devolvido: [transitionAudit.return, transitionAudit.withdraw],
+  vigente: [transitionAudit.publish, transitionAudit.reinstate],
+  arquivado: [transitionAudit.archive],
+};
+
+/**
+ * When a calendar saved before `statusAt` entered its current status. Every transition
+ * leaves the status it entered, so the latest audit of an action leading to the current status is
+ * that entry. Without one, the row's own dates stand in: archiving, publication, the current
+ * submission and, for a draft, its creation. A draft deleted or restored as a draft counts from
+ * that moment, which the queue never shows.
+ */
+export function statusEntryTime(
+  row: Pick<Doc<'calendars'>, 'status' | '_creationTime' | 'publishedAt' | 'archivedAt'>,
+  evidence: { audited: (number | undefined)[]; submittedAt: number | undefined },
+) {
+  const audited = evidence.audited.filter((at) => at !== undefined);
+  if (audited.length) return Math.max(...audited);
+  if (row.status === 'arquivado' && row.archivedAt !== undefined) return row.archivedAt;
+  if (row.status === 'vigente' && row.publishedAt !== undefined) return row.publishedAt;
+  if (row.status !== 'rascunho' && evidence.submittedAt !== undefined) return evidence.submittedAt;
+  return row._creationTime;
+}
+
+/**
+ * Level 1: the review queue orders each status by `statusAt`, which every status change
+ * writes from this release on. Rows already filled, including those changed while this runs, keep
+ * their value. Leaves `pending` once concluded in production, with the field made required.
+ */
+export const fillStatusAt = migrations.define({
+  table: 'calendars',
+  migrateOne: async (ctx, row) => {
+    if (row.statusAt !== undefined) return;
+    const [audited, submission] = await Promise.all([
+      Promise.all(
+        statusEntryActions[row.status].map(async (action) => {
+          const latest = await ctx.db
+            .query('audit')
+            .withIndex('by_calendarId_and_action_and_at', (q) =>
+              q.eq('calendarId', row._id).eq('action', action),
+            )
+            .order('desc')
+            .first();
+          return latest?.at;
+        }),
+      ),
+      row.currentSubmissionId ? ctx.db.get('calendarSubmissions', row.currentSubmissionId) : null,
+    ]);
+    return {
+      statusAt: statusEntryTime(row, { audited, submittedAt: submission?.submittedAt }),
+    };
+  },
+});
+
+const pending: MigrationFunctionReference[] = [
+  internal.migrations.mergePedagogicalMeetingLinks,
+  internal.migrations.fillStatusAt,
+];
 
 export const start = internalMutation({
   args: {},

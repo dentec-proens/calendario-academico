@@ -43,8 +43,8 @@ function reviewForSubmission(
 }
 
 /**
- * One situation of the queue, newest first. Only a holder filter reads the longer index, whose
- * order would otherwise group the calendars by holder.
+ * One situation of the queue, in the order the calendars entered it. The holder filter reads the
+ * longer index, which still ends in that time because the holder is fixed by equality.
  */
 function queueRows(
   ctx: QueryCtx,
@@ -54,24 +54,34 @@ function queueRows(
 ) {
   const calendars = ctx.db.query('calendars');
   if (campusId && holder)
-    return calendars.withIndex('by_campusId_and_status_and_deletedAt_and_assigneeId', (q) =>
-      q
-        .eq('campusId', campusId)
-        .eq('status', status)
-        .eq('deletedAt', undefined)
-        .eq('assignee.id', holder.id),
+    return calendars.withIndex(
+      'by_campusId_and_status_and_deletedAt_and_assigneeId_and_statusAt',
+      (q) =>
+        q
+          .eq('campusId', campusId)
+          .eq('status', status)
+          .eq('deletedAt', undefined)
+          .eq('assignee.id', holder.id),
     );
   if (campusId)
-    return calendars.withIndex('by_campusId_and_status_and_deletedAt', (q) =>
+    return calendars.withIndex('by_campusId_and_status_and_deletedAt_and_statusAt', (q) =>
       q.eq('campusId', campusId).eq('status', status).eq('deletedAt', undefined),
     );
   if (holder)
-    return calendars.withIndex('by_status_and_deletedAt_and_assigneeId', (q) =>
+    return calendars.withIndex('by_status_and_deletedAt_and_assigneeId_and_statusAt', (q) =>
       q.eq('status', status).eq('deletedAt', undefined).eq('assignee.id', holder.id),
     );
-  return calendars.withIndex('by_status_and_deletedAt', (q) =>
+  return calendars.withIndex('by_status_and_deletedAt_and_statusAt', (q) =>
     q.eq('status', status).eq('deletedAt', undefined),
   );
+}
+
+/**
+ * A submission still waiting is served first come, first served, so the oldest leads the tab.
+ * In the other tabs the reviewer looks for what just moved, so the newest leads.
+ */
+function queueOrder(status: Infer<typeof queueStatus>) {
+  return status === 'enviado' ? 'asc' : 'desc';
 }
 
 /** The reviewer works by status; drafts never reach the queue. */
@@ -94,7 +104,7 @@ export const reviewQueue = query({
       campusId,
       holder && { id: holder === 'mine' ? user.id : undefined },
     )
-      .order('desc')
+      .order(queueOrder(status))
       .paginate(paginationOpts);
     const page = await Promise.all(
       result.page.map(async (row) => {

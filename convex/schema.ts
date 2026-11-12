@@ -57,6 +57,12 @@ export default defineSchema({
     offerKinds: v.array(modality),
     status: calendarStatus,
     statusRevision: v.number(),
+    /**
+     * When the calendar entered its current status; orders the review queue. The short name keeps
+     * the longest queue index within Convex's 64 characters. Optional only until
+     * `fillStatusAt` concludes in production: contract it to `v.number()` after that.
+     */
+    statusAt: v.optional(v.number()),
     label: v.optional(v.string()),
     currentSubmissionId: v.optional(v.id('calendarSubmissions')),
     /** Who is responsible for the parecer now; `reviews.reviewer` records who saved each revision. */
@@ -77,14 +83,26 @@ export default defineSchema({
     deletedBy: v.optional(v.id('users')),
   })
     .index('by_campusId_and_year_and_status', ['campusId', 'year', 'status'])
-    .index('by_status_and_deletedAt', ['status', 'deletedAt'])
-    .index('by_status_and_deletedAt_and_assigneeId', ['status', 'deletedAt', 'assignee.id'])
-    .index('by_campusId_and_status_and_deletedAt', ['campusId', 'status', 'deletedAt'])
-    .index('by_campusId_and_status_and_deletedAt_and_assigneeId', [
+    // The review queue: each tab lists one status in the order the calendars entered it.
+    .index('by_status_and_deletedAt_and_statusAt', ['status', 'deletedAt', 'statusAt'])
+    .index('by_status_and_deletedAt_and_assigneeId_and_statusAt', [
+      'status',
+      'deletedAt',
+      'assignee.id',
+      'statusAt',
+    ])
+    .index('by_campusId_and_status_and_deletedAt_and_statusAt', [
+      'campusId',
+      'status',
+      'deletedAt',
+      'statusAt',
+    ])
+    .index('by_campusId_and_status_and_deletedAt_and_assigneeId_and_statusAt', [
       'campusId',
       'status',
       'deletedAt',
       'assignee.id',
+      'statusAt',
     ])
     // Live lists follow the "Última alteração" column; `updatedAt` needs no backfill.
     .index('by_campusId_and_deletedAt_and_updatedAt', ['campusId', 'deletedAt', 'updatedAt'])

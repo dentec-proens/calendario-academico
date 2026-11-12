@@ -186,12 +186,12 @@ test('the holder filter continues across pages', async () => {
     holder: 'none',
     paginationOpts: { numItems: 1, cursor: null },
   });
-  expect(page.page.map((item) => item.id)).toEqual([second]);
+  expect(page.page.map((item) => item.id)).toEqual([first]);
   const next = await f.ana.query(api.reviews.reviewQueue, {
     holder: 'none',
     paginationOpts: { numItems: 1, cursor: page.continueCursor },
   });
-  expect(next.page.map((item) => item.id)).toEqual([first]);
+  expect(next.page.map((item) => item.id)).toEqual([second]);
 });
 
 test('the queue filters by holder, alone and within a campus', async () => {
@@ -211,13 +211,13 @@ test('the queue filters by holder, alone and within a campus', async () => {
         ...(campusId ? { campusId } : {}),
       })
     ).page.map((item) => item.id);
-  expect(await ids()).toEqual([free, theirs, mine]);
+  expect(await ids()).toEqual([mine, theirs, free]);
   expect(await ids('mine')).toEqual([mine]);
   expect(await ids('none')).toEqual([free]);
   expect(await ids('mine', f.ids.campuses.a)).toEqual([mine]);
   expect(await ids('none', f.ids.campuses.b)).toEqual([]);
   const { page } = await f.ana.query(api.reviews.reviewQueue, { paginationOpts });
-  expect(page.map((item) => item.assignee?.name ?? null)).toEqual([null, 'Bruno', 'Ana']);
+  expect(page.map((item) => item.assignee?.name ?? null)).toEqual(['Ana', 'Bruno', null]);
 });
 
 test('the tab counts follow the same filters as the list', async () => {

@@ -43,9 +43,10 @@ async function draftWithMeetings() {
 async function migrate(fixture: Fixture) {
   await fixture.client.mutation(internal.migrations.start, {});
   await fixture.client.finishAllScheduledFunctions(vi.runAllTimers);
-  expect(await fixture.client.query(internal.migrations.status, {})).toMatchObject([
-    { name: 'migrations:mergePedagogicalMeetingLinks', state: 'success', error: null },
-  ]);
+  const statuses = await fixture.client.query(internal.migrations.status, {});
+  expect(
+    statuses.find(({ name }) => name === 'migrations:mergePedagogicalMeetingLinks'),
+  ).toMatchObject({ state: 'success', error: null });
 }
 
 test('a draft moves its meeting dates to the council of the stage, with no new version', async () => {

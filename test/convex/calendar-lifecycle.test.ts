@@ -197,15 +197,21 @@ test('the review queue filters by campus across pages and keeps each tab apart',
   const first = await f.create(['integrado'], { label: 'Primeiro' });
   const second = await f.create(['integrado'], { label: 'Segundo' });
   const reviewing = await f.create(['integrado'], { label: 'Em análise' });
-  // The submission rules refuse overlapping calendars; this test is only about listing them.
+  const concluded = await f.create(['integrado'], { label: 'Concluído antes' });
+  const latest = await f.create(['integrado'], { label: 'Concluído depois' });
+  // The submission rules refuse overlapping calendars; this test is only about listing them. The
+  // times run against creation, so the order cannot come from it.
   await f.client.run(async (ctx) => {
-    await ctx.db.patch(first, { status: 'enviado' });
-    await ctx.db.patch(second, { status: 'enviado' });
-    await ctx.db.patch(reviewing, { status: 'em_revisao' });
+    await ctx.db.patch(first, { status: 'enviado', statusAt: 2_000 });
+    await ctx.db.patch(second, { status: 'enviado', statusAt: 1_000 });
+    await ctx.db.patch(reviewing, { status: 'em_revisao', statusAt: 3_000 });
+    await ctx.db.patch(concluded, { status: 'revisado', statusAt: 4_000 });
+    await ctx.db.patch(latest, { status: 'revisado', statusAt: 5_000 });
   });
   const queue = async (args: {
     campusId: Id<'campuses'>;
-    status?: 'enviado' | 'em_revisao';
+    status?: 'enviado' | 'em_revisao' | 'revisado';
+    holder?: 'none';
     cursor?: string | null;
   }) => {
     const { cursor = null, ...filters } = args;
@@ -215,12 +221,23 @@ test('the review queue filters by campus across pages and keeps each tab apart',
     });
   };
   const campusId = f.ids.campuses.a;
-  const page = await queue({ campusId });
-  expect(page.page.map((item) => item.id)).toEqual([second]);
-  const next = await queue({ campusId, cursor: page.continueCursor });
-  expect(next.page.map((item) => item.id)).toEqual([first]);
+  // Waiting submissions are served in arrival order, with or without the holder filter.
+  for (const holder of [undefined, 'none'] as const) {
+    const page = await queue({ campusId, holder });
+    expect(
+      page.page.map((item) => item.id),
+      'submitted longest ago',
+    ).toEqual([second]);
+    const next = await queue({ campusId, holder, cursor: page.continueCursor });
+    expect(next.page.map((item) => item.id)).toEqual([first]);
+  }
   const inReview = await queue({ campusId, status: 'em_revisao' });
   expect(inReview.page.map((item) => item.id)).toEqual([reviewing]);
+  // Past the wait, the tab leads with what moved last.
+  const done = await queue({ campusId, status: 'revisado' });
+  expect(done.page.map((item) => item.id)).toEqual([latest]);
+  const earlier = await queue({ campusId, status: 'revisado', cursor: done.continueCursor });
+  expect(earlier.page.map((item) => item.id)).toEqual([concluded]);
   expect((await queue({ campusId: f.ids.campuses.b })).page).toEqual([]);
   await expect(
     f.campus.query(api.reviews.reviewQueue, {
@@ -229,6 +246,31 @@ test('the review queue filters by campus across pages and keeps each tab apart',
     }),
     'the campus profile has no access to the queue, even for its own campus',
   ).rejects.toThrow(/exclusivo/);
+});
+
+test('every status change records when the calendar entered its status', async () => {
+  const f = await fixture();
+  const id = await f.create(['integrado'], { ready: true });
+  // Each time is written in the same mutation as the fact it accompanies.
+  const row = () => f.client.run(async (ctx) => (await ctx.db.get(id))!);
+  const created = await row();
+  expect(created.statusAt).toBe(created.updatedAt);
+  await act(f.campus, id, 'submit');
+  const submitted = (await row()).statusAt!;
+  expect(submitted).toBe((await f.submissions(id))[0].submittedAt);
+  // Saving the first parecer starts the review.
+  await saveReview(f.reviewer, id);
+  expect((await row()).status).toBe('em_revisao');
+  expect((await row()).statusAt).toBeGreaterThanOrEqual(submitted);
+  await act(f.reviewer, id, 'return', { note: 'Ajuste o recesso.' });
+  const [returned] = (await f.submissions(id))[0].decisions;
+  expect((await row()).statusAt).toBe(returned.at);
+  const { record } = await calendarStatus(f.campus, id);
+  await f.campus.mutation(api.calendars.deleteCalendar, { id, version: record.version });
+  const deleted = await row();
+  expect(deleted.statusAt, 'a returned calendar in the trash is a draft').toBe(deleted.deletedAt);
+  await f.campus.mutation(api.calendars.restoreCalendar, { id, version: record.version });
+  expect((await row()).statusAt, 'a draft restored stays a draft').toBe(deleted.deletedAt);
 });
 
 test('a calendar keeps naming its campus after the campus is archived', async () => {

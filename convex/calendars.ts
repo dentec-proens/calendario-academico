@@ -150,6 +150,7 @@ export const createCalendar = mutation({
   args: { body: contracts.createInput },
   returns: contracts.calendarDto,
   handler: async (ctx, { body }) => {
+    const now = Date.now();
     await assertWritesOpen(ctx);
     const { user } = await requireNativeUser(ctx);
     calendarEditor(user);
@@ -186,7 +187,8 @@ export const createCalendar = mutation({
       classes: '',
       shifts: '',
       version: 1,
-      updatedAt: Date.now(),
+      updatedAt: now,
+      statusAt: now,
     });
     const base = await catalogue(ctx, body.year);
     await ctx.db.insert('calendarContents', {
@@ -374,6 +376,7 @@ export const deleteCalendar = mutation({
   args: { ...idArgs, version: v.number() },
   returns: ok,
   handler: async (ctx, { id, version }) => {
+    const now = Date.now();
     await assertWritesOpen(ctx);
     const { user } = await requireNativeUser(ctx);
     calendarEditor(user);
@@ -388,13 +391,14 @@ export const deleteCalendar = mutation({
       );
     // A deleted returned calendar becomes a draft and frees its in-flow place; submissions stay.
     await ctx.db.patch(id, {
-      deletedAt: Date.now(),
+      deletedAt: now,
       deletedBy: user.id,
       offerKinds: row.offerKinds,
       ...(status === 'devolvido'
         ? {
             status: 'rascunho' as const,
             statusRevision: row.statusRevision + 1,
+            statusAt: now,
             currentSubmissionId: undefined,
           }
         : {}),
@@ -414,6 +418,7 @@ export const restoreCalendar = mutation({
   args: { ...idArgs, version: v.number() },
   returns: ok,
   handler: async (ctx, { id, version }) => {
+    const now = Date.now();
     await assertWritesOpen(ctx);
     const { user } = await requireNativeUser(ctx);
     calendarEditor(user);
@@ -431,6 +436,7 @@ export const restoreCalendar = mutation({
         : {
             status: 'rascunho' as const,
             statusRevision: row.statusRevision + 1,
+            statusAt: now,
             currentSubmissionId: undefined,
           }),
     });
@@ -474,6 +480,7 @@ export const createCalendarVersion = mutation({
   args: idArgs,
   returns: contracts.calendarDto,
   handler: async (ctx, { id }) => {
+    const now = Date.now();
     await assertWritesOpen(ctx);
     const { user } = await requireNativeUser(ctx);
     calendarEditor(user);
@@ -493,7 +500,8 @@ export const createCalendarVersion = mutation({
       classes: row.classes,
       shifts: row.shifts,
       version: 1,
-      updatedAt: Date.now(),
+      updatedAt: now,
+      statusAt: now,
     });
     // The review belongs to the published calendar and is not copied.
     await ctx.db.insert('calendarContents', {
