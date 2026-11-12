@@ -1,6 +1,6 @@
 # Arquitetura
 
-A aplicação é uma SPA React e Vite com TanStack Router. Convex concentra identidade, sessões, consultas reativas, transações, arquivos e processamento. `server.ts` serve o build estático para preview e recusa `/api/*`.
+A aplicação é uma SPA React e Vite com TanStack Router. Convex concentra identidade, sessões, consultas reativas, transações e processamento. `server.ts` serve o build estático para preview e recusa `/api/*`.
 
 Este guia registra decisões, garantias e limites que o código não explica sozinho. A organização dos arquivos e as regras detalhadas devem ser lidas nos próprios módulos e testes.
 
@@ -49,7 +49,7 @@ A proteção consulta de forma síncrona os proprietários reais de formulários
 
 Um clique explícito para outra seção do workspace só vira navegação completa quando a aba está limpa e há observação diferente com até trinta segundos. A decisão ocorre no próprio evento, sem esperar rede ou salvamento; cliques modificados, filtros, histórico e navegação programática mantêm sua semântica. A autorização é por aba.
 
-A transição trava novas edições antes da navegação e oferece cancelamento após dez segundos. Timeout sozinho não libera a interface: a resposta tardia precisa ser interrompida ou a restauração por BFCache confirmada. Falha de carregamento repete o URL original do módulo, mantendo os mesmos proprietários de sessão e rascunho. Não há persistência durável contra encerramento do processo, descarte da aba ou falta de energia. Os builds herdam os arquivos públicos das publicações anteriores para que abas abertas continuem carregando seus módulos; a confirmação no domínio canônico fica pendente até a próxima publicação, conforme [Implantação e operação](implantacao-convex-vercel.md#continuidade-dos-arquivos-entre-publicações).
+A transição trava novas edições antes da navegação e oferece cancelamento após dez segundos. Timeout sozinho não libera a interface: a resposta tardia precisa ser interrompida ou a restauração por BFCache confirmada. Falha de carregamento repete o URL original do módulo, mantendo os mesmos proprietários de sessão e rascunho. Não há persistência durável contra encerramento do processo, descarte da aba ou falta de energia. Os builds herdam os arquivos públicos das publicações anteriores para que abas abertas continuem carregando seus módulos, conforme [Implantação e operação](implantacao-convex-vercel.md#continuidade-dos-arquivos-entre-publicações).
 
 ## Estado do editor e concorrência
 
@@ -71,9 +71,9 @@ O calendário tem um ciclo de vida explícito (`calendars.status`): rascunho, en
 
 Há um calendário em análise (enviado, em revisão, devolvido ou revisado) e um vigente por campus, ano e tipo de oferta. `offerKinds` é um array, que um índice não filtra por elemento: a mutation lê `by_campusId_and_year_and_status` para cada status, sem truncar, descarta a lixeira e compara em memória. A transação serializável do Convex protege a regra contra envios simultâneos. Um devolvido que acrescenta oferta passa pela mesma conferência no salvamento.
 
-Cada envio grava um registro em `calendarSubmissions` com a cópia do conteúdo enviado (estado, bases, ofertas e nome do campus), uma impressão digital do conteúdo e uma lista de decisões só de acréscimos (recolhido, devolvido, concluído, reaberto, publicado). A sequência nunca é reaproveitada. `currentSubmissionId` aponta o envio aberto, ou o devolvido em um calendário devolvido. O parecer guarda `submissionId` e só vale para o envio atual; a publicação confere ainda a versão e a impressão digital do conteúdo. O salvamento não arquiva mais um snapshot completo: o envio é a evidência do que cada parecer avaliou. A comparação entre envios (`src/domain/calendar/diff.ts`) é pura e calculada no navegador, a partir das cópias, que não mudam; nenhuma query reativa a recalcula a cada salvamento automático.
+Cada envio grava um registro em `calendarSubmissions` com a cópia do conteúdo enviado (estado, bases, ofertas e nome do campus), uma impressão digital do conteúdo e uma lista de decisões só de acréscimos (recolhido, devolvido, concluído, reaberto, publicado). A sequência nunca é reaproveitada. `currentSubmissionId` aponta o envio aberto, ou o devolvido em um calendário devolvido. O parecer guarda `submissionId` e só vale para o envio atual; a publicação confere ainda a versão e a impressão digital do conteúdo. O salvamento não arquiva snapshots: o envio é a evidência do que cada parecer avaliou. A comparação entre envios (`src/domain/calendar/diff.ts`) é pura e calculada no navegador, a partir das cópias, que não mudam; nenhuma query reativa a recalcula a cada salvamento automático.
 
-A decisão de devolução guarda em `returnedCriteria` (opcional; devoluções antigas não têm, e a adição é de nível 0, sem migração) os critérios **Não atendido** avaliados no parecer deste envio sob regras equivalentes, com nome e observação, porque o campus não lê o parecer. A mutation deriva a lista do parecer salvo, sem aceitá-la do cliente, e `maximumReturnedCriteriaBytes` (64 KiB) a mantém na margem acima de `maximumSubmissionBytes`, junto de um teto para o documento inteiro; o que não couber recusa a devolução, sem cortar observações. O destino de correção não é gravado: é calculado na leitura pelo identificador do critério.
+A decisão de devolução guarda em `returnedCriteria` (opcional; devoluções antigas não têm) os critérios **Não atendido** avaliados no parecer deste envio sob regras equivalentes, com nome e observação, porque o campus não lê o parecer. A mutation deriva a lista do parecer salvo, sem aceitá-la do cliente, e `maximumReturnedCriteriaBytes` (64 KiB) a mantém na margem acima de `maximumSubmissionBytes`, junto de um teto para o documento inteiro; o que não couber recusa a devolução, sem cortar observações. O destino de correção não é gravado: é calculado na leitura pelo identificador do critério.
 
 Nos estados publicados, a avaliação e a impressão usam só a base congelada no conteúdo. Em enviado, em revisão e revisado, uma mudança da base aparece como aviso e impede a publicação; a saída é devolver o calendário ao campus.
 
@@ -87,7 +87,7 @@ Salvar confere versão, status e base e preserva atributos protegidos; uma grava
 
 O sistema não guarda arquivos. A norma de cada ano é citada pela política, com link para a publicação oficial.
 
-O PDF é a impressão da prévia pelo navegador, com `@page` A4 definido em `assets/printing/calendar.css`; não há gerador no servidor. O título da página sugere o nome do arquivo. Produção não carrega Devtools nem a depuração de formulários sensíveis.
+O PDF é a impressão da prévia pelo navegador, com `@page` A4 definido em `assets/printing/calendar.css`. O título da página sugere o nome do arquivo. Produção não carrega Devtools nem a depuração de formulários sensíveis.
 
 A admissão de actions e a pausa de manutenção são transacionais; mutations de domínio e criação de sessões verificam a manutenção. A presença mantém o ciclo próprio do componente, sem alterar o domínio acadêmico. Actions registram o lease no log e o removem em `finally`; um lease sem conclusão permanece visível e bloqueia publicação, pois idade não prova término. A recuperação está em [Implantação e operação](implantacao-convex-vercel.md), e a validação em [Verificação](verificacao.md).
 
@@ -113,7 +113,7 @@ O conjunto de regras apresentado é gravado com o conteúdo. O servidor resolve 
 
 A confirmação do escopo é humana e individual por oferta, sem alterar seu tipo. A extensão de prazos de referência pelo art. 3º, § 2º, exige causa municipal explícita e fonte. Um ajuste de cronograma declarado não representa autorização da Proens: cobertura objetiva e conferência humana atual são verificações separadas.
 
-O upload e a extração de PDFs de calendários anteriores foram retirados; referências digitadas pelo usuário continuam possíveis, com datas reais e fontes textuais. Os PDFs anteriores e suas análises foram excluídos em 27/10/2026.
+Referências a calendários anteriores são digitadas pelo usuário, com datas reais e fontes textuais.
 
 A atualização da fonte institucional de 2027 foi apenas ensaiada: a prévia pura e idempotente propõe trocar a fonte antiga quando conteúdo, escopo e datas coincidem com a base inicial, e diferenças locais aparecem como conflitos. Nenhuma instalação é atualizada na inicialização; uma operação futura deve apresentar a prévia, usar controle de concorrência e incorporar o impacto explicitamente.
 
@@ -149,7 +149,7 @@ A revisão numérica da base é um marcador técnico; a equivalência considera 
 - O envio informa a `identity` da base que a pessoa viu, lida depois do flush. Se o servidor tiver outra, recusa com 409 sem escrever, e o editor já mostra a base nova; uma base que só chegou com o último salvamento também pede nova conferência. Se coincidir, grava a base vigente e só então copia para o envio, cujo hash a publicação compara. Sem a identidade, a aba antiga é orientada a atualizar.
 - Enviado, em revisão e revisado ficam como enviados; se a base ou as regras mudarem, cabe ao parecerista devolver. Vigente não muda, e a nova versão nasce com o que está vigente.
 
-Como o clique do campus era a única barreira a um erro de digitação no catálogo, `catalogueImpact` mostra ao ADMIN quantos calendários em edição são alcançados e quantos ganham pendência antes de salvar, e o audit registra o que mudou. Não há rascunho de catálogo. A consulta examina no máximo 100 conteúdos e, passando disso, diz "ao menos".
+Como nenhum campus confirma a base antes de ela valer, um erro de digitação no catálogo alcança direto os calendários em edição. Por isso `catalogueImpact` mostra ao ADMIN quantos calendários em edição são alcançados e quantos ganham pendência antes de salvar, e o audit registra o que mudou. Não há rascunho de catálogo. A consulta examina no máximo 100 conteúdos e, passando disso, diz "ao menos".
 
 Uma mudança de regras nunca pede ação manual ao campus. Se muda o sentido de uma data, a migração de formato resolve, ou a própria data vira pendência, como em "Vínculo a conferir".
 
@@ -174,7 +174,7 @@ Quando uma regra restringe ou amplia o que o inciso diz, `decision` registra a d
 
 A autorização compara a geração da sessão com a do usuário, inclusive ao emitir e renovar JWT. A revogação é imediata; exclusões físicas são limitadas por lote. Ações de acesso sensíveis exigem ADMIN e login nos últimos 15 minutos. Convites e resets válidos consomem quota persistente antes do hash; tentativas inválidas não abrem leases.
 
-Sessões e credenciais expiradas têm limpeza limitada, interrompida durante manutenção. O [guia de segurança operacional](seguranca.md) detalha dependências, patches versionados e requisitos da futura publicação.
+Sessões e credenciais expiradas têm limpeza limitada, interrompida durante manutenção. O [guia de segurança operacional](seguranca.md) detalha dependências, patches versionados e riscos residuais.
 
 ## Falhas vistas no navegador
 

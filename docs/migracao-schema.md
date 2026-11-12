@@ -9,7 +9,7 @@ Este guia vale para as operações de **nível 2** descritas em [Implantação e
 - Ensaio num deployment descartável restaurado do backup antes de qualquer aplicação em ambiente compartilhado.
 - Conferência das exportações antes e depois: IDs, referências, versões, pareceres, componentes e arquivos.
 
-Exportações podem conter credenciais e dados pessoais. Não publicar seus conteúdos em logs ou artefatos de CI.
+Exportações podem conter credenciais e dados pessoais. Não publicar seus conteúdos em logs, issues ou Git.
 
 ## Ferramentas
 
@@ -43,7 +43,7 @@ Recibos, contagens e backups de uma operação concluída ficam na pasta privada
 
 O schema, os contratos e o código aceitam somente o formato 7 de calendário (`schemaVersion: 7`), inclusive nos envios. As férias são datas vinculadas às atividades de férias, sem campo próprio. Uma data local tem o efeito na contagem em `effect`, os dados de edital em `notice` e as ofertas listadas em `offers`; o vínculo com a atividade fica em `activity` (`ActivityRef`), com uma forma por base de repetição: atividade única, ciclo da oferta (`term`), semestre de referência (`semester`) ou etapa (`offerId` e `position`, com ciclo e número). Toda oferta tem organização, e as etapas por ciclo ficam em `stages`. A marcação `internal` indica data interna (art. 18). `saveCalendar` recusa estado fora do formato 7 e `saveReview` exige o marcador `schemaVersion: 7`; a importação de uma cópia JSON dos formatos 4, 5 ou 6 é recusada com mensagem própria, sem conversão.
 
-Os dados passaram por três migrações de nível 2, publicadas e conferidas sem divergências: do formato 6 para o 7 em 06/11/2026 (até a contração que retira o formato 6, com recibos na mensagem desse commit), do formato 4 para o 5 em 03/11/2026 (plano e operação no histórico do Git até `a679d25`) e do 5 para o 6 em 04/11/2026 (até a contração `1d67a2e`). A do formato 5 para o 6 teve perda declarada: a organização das ofertas a classificar foi inferida pelos períodos do calendário, períodos sem oferta que os recebesse foram removidos, inclusões letivas fora dos períodos viraram registro sem efeito, e datas com abrangência não confirmada passaram a contar para todas as ofertas listadas. A garantia de que a evidência preserva o significado foi revogada para essa migração: o backup prévio é o registro do que havia. Os pareceres existentes seriam apagados por ela; não havia nenhum.
+A migração do formato 5 para o 6 teve perda declarada: a organização das ofertas a classificar foi inferida pelos períodos do calendário, períodos sem oferta que os recebesse foram removidos, inclusões letivas fora dos períodos viraram registro sem efeito, e datas com abrangência não confirmada passaram a contar para todas as ofertas listadas. Para ela, a evidência não preserva o significado: o backup prévio é o registro do que havia.
 
 Alguns valores antigos continuam válidos no formato atual:
 

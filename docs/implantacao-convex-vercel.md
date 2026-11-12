@@ -17,7 +17,7 @@ Vite gera `dist/app/index.html` e chunks. Vite, preview e Vercel encaminham some
 
 ## Publicação
 
-`pnpm deploy:production` é o único fluxo de release, deploy ou publicação em produção. Ele constrói um candidato Production sem domínio público, exporta os dados quando o backend mudou, publica o Convex, conclui as migrações pendentes e só então promove o candidato. Não executa `pnpm check`, testes ou smoke: essa validação pertence ao desenvolvimento, antes do commit. Não entra em manutenção, não encerra sessões e não restaura dados automaticamente.
+`pnpm deploy:production` é o único fluxo de release, deploy ou publicação em produção. Ele constrói um candidato Production sem domínio público, exporta os dados quando o backend mudou, publica o Convex, conclui as migrações pendentes e só então promove o candidato. Não executa `pnpm check` nem testes: essa validação pertence ao desenvolvimento, antes do commit. Não entra em manutenção, não encerra sessões e não restaura dados automaticamente.
 
 Pré-requisitos:
 
@@ -93,7 +93,7 @@ Uma migração de nível 1 ou 2 é publicada em duas etapas, porque o deploy do 
 
 2. **Estreitar.** Em qualquer release posterior, inclusive junto com outra entrega, o schema deixa de aceitar o formato antigo e a definição sai de `pending` e de `convex/migrations.ts`. Não é preciso publicar logo em seguida nem dentro de uma janela. Se algum documento ainda violar o schema, o próprio Convex recusa o deploy antes da promoção. Enquanto a contração estiver pendente, deixe um comentário junto ao campo alargado no schema.
 
-Como os validadores de argumentos já recusam o formato antigo, uma aba aberta com o frontend anterior não reintroduz dados antigos. Ela pode, porém, regravar um documento sem conhecer o campo novo e descartar o valor convertido (ver [continuidade dos arquivos](#continuidade-dos-arquivos-entre-publicações)). Quando essa perda importar, a migração arquiva o estado anterior e avança a versão do registro, como fez `initializePresencialAndPurgeTrash20261030` (commit `250b303`), e a gravação da aba antiga é recusada por conflito.
+Como os validadores de argumentos já recusam o formato antigo, uma aba aberta com o frontend anterior não reintroduz dados antigos. Ela pode, porém, regravar um documento sem conhecer o campo novo e descartar o valor convertido (ver [continuidade dos arquivos](#continuidade-dos-arquivos-entre-publicações)). Quando essa perda importar, a migração arquiva o estado anterior e avança a versão do registro, e a gravação da aba antiga é recusada por conflito.
 
 ### Comandos
 
@@ -114,7 +114,7 @@ A manutenção é confirmada no backend. `operationalControl` identifica o commi
 
 Os controles de manutenção permanecem disponíveis para intervenção planejada e recuperação de janelas anteriores. A release não os aciona e, por padrão, recusa publicar enquanto houver manutenção ativa.
 
-Quando uma operação de nível 2 precisar bloquear gravações durante as duas releases, pause antes com `operations:pause`, usando o SHA completo do commit responsável pela janela, e confira `operations:status`. Publique por `pnpm deploy:production --maintenance SHA_DA_JANELA`, tanto na expansão quanto na contração. A opção exige o mesmo proprietário, manutenção ativa, ausência de bloqueio emergencial e nenhuma action em andamento; essas condições são reconferidas antes do backend e da promoção. O comando mantém a manutenção ativa após concluir. O SHA da janela permanece o mesmo nas duas publicações, mesmo quando o commit publicado muda. Depois de conferir dados, contratos e domínio, reabra com `operations:resume` e o SHA original. Não usar essa opção para assumir uma manutenção de outro proprietário. Uma falha após uma pausa explícita mantém o bloqueio. Uma resposta perdida da CLI pode ocorrer após o commit da pausa; conferir o estado também nesse caso. Conferir o estado pelo destino explícito, por exemplo:
+Quando uma operação de nível 2 precisar bloquear gravações durante as duas releases, pause antes com `operations:pause`, usando o SHA completo do commit responsável pela janela, e confira `operations:status`. Publique por `pnpm deploy:production --maintenance SHA_DA_JANELA`, tanto ao alargar quanto ao estreitar. A opção exige o mesmo proprietário, manutenção ativa, ausência de bloqueio emergencial e nenhuma action em andamento; essas condições são reconferidas antes do backend e da promoção. O comando mantém a manutenção ativa após concluir. O SHA da janela permanece o mesmo nas duas publicações, mesmo quando o commit publicado muda. Depois de conferir dados, contratos e domínio, reabra com `operations:resume` e o SHA original. Não usar essa opção para assumir uma manutenção de outro proprietário. Uma falha após uma pausa explícita mantém o bloqueio. Uma resposta perdida da CLI pode ocorrer após o commit da pausa; conferir o estado também nesse caso. Conferir o estado pelo destino explícito, por exemplo:
 
 ```sh
 pnpm exec convex run operations:status '{}' --deployment exuberant-cheetah-138 --codegen disable
@@ -132,7 +132,7 @@ A recuperação confere as revisões efetivamente instaladas de backend e fronte
 
 ## Backup e arquivos
 
-Exportar Convex completo com `--include-file-storage` quando houver PDFs. Manter ZIP, recibos e credenciais em local privado, fora do Git. Em operações de nível 2, ensaiar a restauração integral num deployment descartável antes de operar sobre dados compartilhados; importação isolada de tabelas pode quebrar referências.
+Exportar Convex completo com `--include-file-storage`. Manter ZIP, recibos e credenciais em local privado, fora do Git. Em operações de nível 2, ensaiar a restauração integral num deployment descartável antes de operar sobre dados compartilhados; importação isolada de tabelas pode quebrar referências.
 
 Operações sobre exportações seguem [Operações administrativas de dados](migracao-schema.md).
 
@@ -150,18 +150,12 @@ A consulta é um sinal de disponibilidade, não uma prova de compatibilidade de 
 
 ### Continuidade dos arquivos entre publicações
 
-A investigação de 28/10/2026 confirmou 404 no domínio canônico para `IssuesSection-B9uAbh8l.js` e o CSS do editor da publicação anterior, enquanto os equivalentes atuais responderam 200. Isso interrompe abas abertas antes de uma publicação quando elas navegam para uma seção ainda não carregada. O aviso preserva o editor, mas repetir um endereço removido não recupera o arquivo.
+Cada build gera nomes de arquivos com hash. Sem herança, uma publicação deixaria de servir os chunks e o CSS da anterior, e abas abertas antes dela receberiam 404 ao navegar para uma seção ainda não carregada. O aviso preserva o editor, mas repetir um endereço removido não recupera o arquivo.
 
 O plugin `scripts/frontend-assets.ts`, usado também por builds diretos do Vite, gera `/asset-history.json` com caminho, tamanho e SHA-256 de todos os arquivos públicos de `/assets/`. No build Production da Vercel, lê o inventário do domínio canônico e incorpora os arquivos anteriores ao novo candidato. O inventário resultante inclui o histórico herdado; publicações sucessivas conservam também versões mais antigas. Arquivos com o mesmo nome precisam ter os mesmos bytes. JavaScript, CSS, fontes, imagens e demais assets já publicados são preservados; HTML, `/version.json`, dados autenticados e formulários não são copiados. Os dois manifestos permanecem sem cache de navegador/CDN, e o HTML continua revalidado.
 
 Na primeira adoção, o portal anterior ainda não tem inventário: o build percorre a entrada HTML, os imports e as referências com hash geradas pelo Vite, incluindo dependências transitivas, CSS e worker. Uma marca no HTML novo impede que a ausência posterior do inventário seja tratada como primeira adoção. Falhas HTTP, redirecionamentos, caminhos inválidos, colisões ou hashes/tamanhos divergentes interrompem o build. Há limites de 16 MiB por arquivo, 10 mil arquivos e 256 MiB no histórico completo; alcançar esses limites bloqueia a publicação, sem apagar versões automaticamente.
 
-A herança ocorre durante o build remoto de toda release. As verificações de concorrência e identidade do domínio antes da promoção continuam obrigatórias. Novas abas recebem o HTML e a identidade atuais; abas existentes continuam carregando seus arquivos originais, mantendo a sessão e os preenchimentos em memória. Nenhuma atualização forçada foi adicionada. Essa continuidade depende também da compatibilidade do backend com clientes anteriores: alargue o schema antes de estreitá-lo, conforme as migrações acima.
+A herança ocorre durante o build remoto de toda release. As verificações de concorrência e identidade do domínio antes da promoção continuam obrigatórias. Novas abas recebem o HTML e a identidade atuais; abas existentes continuam carregando seus arquivos originais, mantendo a sessão e os preenchimentos em memória. Não há atualização forçada. Essa continuidade depende também da compatibilidade do backend com clientes anteriores: alargue o schema antes de estreitá-lo, conforme as migrações acima.
 
-Não promover diretamente um deployment antigo que não contenha o histórico acumulado: isso voltaria a remover arquivos usados por abas mais recentes. Uma recuperação de frontend deve produzir um candidato compatível que herde o inventário do domínio atual antes de ser validado e promovido. Remover arquivos antigos, inclusive em uma resposta a incidente, exige uma operação explícita e avaliação das abas afetadas.
-
-A adoção foi ensaiada por leitura pública contra o portal atual, sem criar ou promover deployments. A validação local cobre A → B → C, integridade, indisponibilidade e navegação real após a troca de diretório servido em desktop/mobile: a revisão abre com 200, o evento ainda não aplicado permanece, os proprietários do editor/formulários conservam identidade e uma aba nova recebe B. A primeira publicação preservará os arquivos ainda disponíveis no momento do build; não recupera arquivos que publicações anteriores já removeram. A prova remota foi feita na release de 28/10/2026 (`7d025ee`): os 246 arquivos de `/asset-history.json`, inclusive os da versão anterior, responderam 200 no domínio canônico após a promoção.
-
-## Correções de autenticação de outubro de 2026
-
-A implementação descrita em [Segurança: operação e validação](seguranca.md) altera auth, schema, componentes e dependências. Ela exige janela administrativa específica e ensaio remoto autorizado antes de publicar. `pnpm deploy:production` não recusa automaticamente essa classe de alteração: não publicá-la por esse comando antes de preparar a janela. O guia lista validação de hash no runtime, ingresso de 8 MB, uploads legados, funções agendadas estáveis e contingência da conta operacional. O login Google está intencionalmente desabilitado até segundo aviso e deve permanecer assim durante a publicação; a validação dessa integração pertence a uma futura reativação explicitamente autorizada.
+Não promover diretamente um deployment antigo que não contenha o histórico acumulado: isso voltaria a remover arquivos usados por abas mais recentes. Uma recuperação de frontend deve produzir um candidato compatível que herde o inventário do domínio atual antes de ser validado e promovido. Remover arquivos antigos, inclusive em uma resposta a incidente, exige uma operação explícita e avaliação das abas afetadas. A cobertura local está em [Verificação](verificacao.md#continuidade-dos-arquivos-publicados).

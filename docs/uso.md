@@ -125,6 +125,6 @@ Este guia registra as regras de negócio e as decisões que o código sozinho n�
 ## Histórico e registros
 
 - Cada calendário tem seu histórico de operações; uma nova versão começa um histórico próprio. Campos não gravados não aparecem.
-- **Criado por** e **Última alteração por** vêm desse histórico; uploads, pareceres e lixeira não contam como autoria de conteúdo. Sem evidência: **Autoria não registrada**.
+- **Criado por** e **Última alteração por** vêm desse histórico; pareceres e lixeira não contam como autoria de conteúdo. Sem evidência: **Autoria não registrada**.
 - Falhas vistas no navegador ficam registradas por 90 dias, sem o conteúdo do calendário.
 - **Usuários online** (só ADMIN): cada pessoa conta uma vez; sai ao fechar a última aba ou após cerca de 90 s sem conexão. Sessão de login válida sozinha não torna a pessoa online.

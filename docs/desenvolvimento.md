@@ -67,7 +67,7 @@ Novas ofertas entram apenas com organização completa. O comando monta um únic
 
 Use dados de teste no desenvolvimento individual. As contas da aplicação são distintas das contas administrativas Convex/GitHub. Antes de integrar mudanças, execute os comandos obrigatórios de [verificação](verificacao.md) e confira os [componentes compartilhados](componentes-interface.md).
 
-A publicação usa o [procedimento operacional](implantacao-convex-vercel.md), com commit conferido, expansões compatíveis do backend, migrações aditivas com checkpoint e validação dos dois frontends antes da promoção pública.
+A publicação usa `pnpm deploy:production`, conforme o [procedimento operacional](implantacao-convex-vercel.md).
 
 ## Integração no desenvolvimento atual
 
