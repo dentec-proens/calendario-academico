@@ -14,8 +14,8 @@ const withOffers = (change: (offer: CalendarOffer) => CalendarOffer) => {
   return { ...state, offers: state.offers.map(change) };
 };
 const scopeIssues = (state: ReturnType<typeof calendarOffersFixture>) =>
-  contentAssessment({ state, institutionalSnapshot: [] }).issues.filter((issue) =>
-    issue.code.startsWith('scope'),
+  contentAssessment({ state, institutionalSnapshot: [] }).issues.filter(
+    (issue) => issue.check === 'scope',
   );
 
 test('the delivery mode decides the norm until the campus answers', () => {

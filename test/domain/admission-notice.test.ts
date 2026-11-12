@@ -57,7 +57,13 @@ test('each offer is diagnosed against its own destination', () => {
   expect(coverage('integrado').coverage).toBe('complete');
   expect(coverage('graduacao')).toMatchObject({
     coverage: 'partial',
-    issues: ['Vincule o período de ingresso correspondente à oferta.'],
+    issues: [
+      {
+        check: 'admission-destination',
+        detail: 'Vincule o período de ingresso correspondente à oferta.',
+        eventId: expect.any(String),
+      },
+    ],
   });
   const { warnings, issues } = contentAssessment({ state, institutionalSnapshot: [] });
   expect(warnings.filter((warning) => warning.includes('Revise o destino do edital'))).toEqual([

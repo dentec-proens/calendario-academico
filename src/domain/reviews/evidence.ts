@@ -306,8 +306,8 @@ const coverageRow = (state: TeachingState, row: ActivityEvaluation) => ({
       : row.requirement.admissionType
         ? row.execution
         : null,
-  issues: row.issues,
-  warnings: row.warnings,
+  issues: row.issues.map((item) => item.detail),
+  warnings: row.warnings.map((item) => item.detail),
 });
 
 /**
@@ -317,7 +317,7 @@ const coverageRow = (state: TeachingState, row: ActivityEvaluation) => ({
 function reviewNotesOf(state: TeachingState, linked: readonly ActivityEvaluation[]) {
   const offersOf = new Map<string, Set<string>>();
   for (const row of linked)
-    for (const note of row.reviewNotes)
+    for (const { detail: note } of row.reviewNotes)
       offersOf.set(note, (offersOf.get(note) ?? new Set()).add(row.offerId));
   const all = new Set(linked.map((row) => row.offerId));
   return [...offersOf].map(([note, offers]) =>

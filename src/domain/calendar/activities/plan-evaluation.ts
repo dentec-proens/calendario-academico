@@ -14,6 +14,7 @@ import { periodsForOffer } from '../organization/periods.ts';
 import { deadlineStanding, requirementDeadline } from './deadlines.ts';
 import { exactDaysIssue } from './vacations.ts';
 import type { ActivityRef } from './activity-ref.ts';
+import type { CheckId, RowFinding } from '../checks.ts';
 import {
   coversDate,
   generatedActivities,
@@ -148,29 +149,44 @@ export function evaluatePlan(
         const linked = local.filter(
           (event) => linkedTo(event, requirement) && appliesTo(event, offer),
         );
-        const issues: string[] = [],
-          warnings: string[] = [],
-          reviewNotes: string[] = [];
+        const issues: RowFinding[] = [],
+          warnings: RowFinding[] = [],
+          reviewNotes: RowFinding[] = [];
+        const found = (list: RowFinding[], check: CheckId, detail: string, eventId?: string) =>
+          list.push({ check, detail, ...(eventId ? { eventId } : {}) });
         const valid = linked.filter((event) => {
           const reason = links.issues.get(event.id);
           // The date blocks the conclusion once, by its own readiness issue (`readiness.ts`); the
           // row only warns, so the same date is not counted again for each of its offers.
           if (reason) {
-            warnings.push(`${linkIssueLabels[reason]}: ${linkIssueActions[reason]}`);
+            found(
+              warnings,
+              'link-review-row',
+              `${linkIssueLabels[reason]}: ${linkIssueActions[reason]}`,
+              event.id,
+            );
             return false;
           }
           // A date whose generated activity does not reach this offer is pending for it: it never
           // counts as fulfilment here, even when it fits another offer of the date.
           if (links.forOffer(event.id, offer.id) !== 'compatible') {
-            warnings.push(
+            found(
+              warnings,
+              'link-not-generated',
               `${linkIssueLabels['not-generated']}: ${linkIssueActions['not-generated']}`,
+              event.id,
             );
             return false;
           }
           try {
             validateActivityRecord(state, event);
           } catch (error) {
-            issues.push(error instanceof Error ? error.message : String(error));
+            found(
+              issues,
+              'activity-record',
+              error instanceof Error ? error.message : String(error),
+              event.id,
+            );
             return false;
           }
           if (requirement.admissionType) {
@@ -180,7 +196,12 @@ export function evaluatePlan(
               admission.type !== requirement.admissionType ||
               !event.notice?.publication
             ) {
-              issues.push('Classificação de ingresso a conferir.');
+              found(
+                issues,
+                'admission-classification',
+                'Classificação de ingresso a conferir.',
+                event.id,
+              );
               return false;
             }
             const expectedYear =
@@ -189,7 +210,12 @@ export function evaluatePlan(
               admission.year !== expectedYear ||
               (requirement.term && admission.term !== requirement.term)
             ) {
-              issues.push('Finalidade de ingresso incompatível com o requisito.');
+              found(
+                issues,
+                'admission-purpose',
+                'Finalidade de ingresso incompatível com o requisito.',
+                event.id,
+              );
               return false;
             }
             if (admission.type === 'transfer') {
@@ -199,37 +225,56 @@ export function evaluatePlan(
                 ? periodsForOffer(state, modality).find((p) => p.id === periodId)
                 : undefined;
               if (!period || period.association.term !== admission.term) {
-                issues.push('Vincule o período de ingresso correspondente à oferta.');
+                found(
+                  issues,
+                  'admission-destination',
+                  'Vincule o período de ingresso correspondente à oferta.',
+                  event.id,
+                );
                 return false;
               }
               if (event.end >= period.start) {
-                issues.push('Publique antes do início do período letivo de destino.');
+                found(
+                  issues,
+                  'admission-before-period',
+                  'Publique antes do início do período letivo de destino.',
+                  event.id,
+                );
                 return false;
               }
             }
           }
           const deadline = requirementDeadline(state, requirement, events, modality);
           if (deadline?.source === 'municipal-extension')
-            reviewNotes.push(
+            found(
+              reviewNotes,
+              'deadline-extended',
               `Prazo de ${longDate(deadline.original)} prorrogado para ${deadline.date ? longDate(deadline.date) : 'conferência do primeiro dia letivo subsequente'} por feriado municipal ou recesso decorrente.${deadline.evidence.length ? ` Fontes institucionais: ${deadline.evidence.join('; ')}.` : ''}`,
+              event.id,
             );
           const standing = deadlineStanding(requirement, deadline, event);
           if (standing === 'late') {
-            issues.push(
+            found(
+              issues,
+              'deadline-late',
               `Data posterior ao prazo de ${longDate(requirement.deadline!)}; confira eventual cronograma ajustado pela Proens.`,
+              event.id,
             );
             return false;
           }
           if (standing === 'adjusted')
-            reviewNotes.push(
+            found(
+              reviewNotes,
+              'deadline-adjusted',
               'Prazo ajustado informado pelo campus; confira a autorização e o escopo na revisão.',
+              event.id,
             );
           if (
             requirement.month &&
             (Number(event.start.slice(5, 7)) !== requirement.month ||
               Number(event.end.slice(5, 7)) !== requirement.month)
           ) {
-            issues.push('Confira o mês exigido.');
+            found(issues, 'month', 'Confira o mês exigido.', event.id);
             return false;
           }
           return true;
@@ -239,15 +284,17 @@ export function evaluatePlan(
             .filter((e) => temporalPosition(state, e) === 'current')
             .reduce((sum, e) => sum + (e.hours ?? 0), 0);
           if (hours < requirement.minHours)
-            issues.push(`Registre pelo menos ${requirement.minHours} horas.`);
+            found(issues, 'min-hours', `Registre pelo menos ${requirement.minHours} horas.`);
         }
         // A row outside the norm's requirement stays a record: nothing to add up to.
         const exactDays = applicability === 'required' && exactDaysIssue(requirement, valid);
-        if (exactDays) issues.push(exactDays);
+        if (exactDays) found(issues, 'exact-days', exactDays);
         if (requirement.reviewInstruction && valid.length)
-          reviewNotes.push(requirement.reviewInstruction);
+          found(reviewNotes, 'review-instruction', requirement.reviewInstruction);
         if (applicability === 'unconfigured')
-          warnings.push(
+          found(
+            warnings,
+            'applicability-unconfigured',
             requirement.intake
               ? 'Defina a configuração de ingresso por oferta e período.'
               : 'Escopo depende de norma própria ou classificação.',
@@ -311,8 +358,8 @@ export const situationLabels: Record<ActivitySituation, string> = {
 interface OfferEvaluation {
   applicability: Applicability;
   coverage: Coverage;
-  issues: readonly string[];
-  warnings: readonly string[];
+  issues: readonly RowFinding[];
+  warnings: readonly RowFinding[];
 }
 
 /**

@@ -256,11 +256,11 @@ function teachingDays(side: DiffSide) {
 
 function matchIssues(before: ContentIssue[] | null, after: ContentIssue[] | null) {
   if (!before || !after) return { added: [], resolved: [] };
-  const old = new Set(before.map((issue) => issue.code));
-  const next = new Set(after.map((issue) => issue.code));
+  const old = new Set(before.map((issue) => issue.key));
+  const next = new Set(after.map((issue) => issue.key));
   return {
-    added: after.filter((issue) => !old.has(issue.code)),
-    resolved: before.filter((issue) => !next.has(issue.code)),
+    added: after.filter((issue) => !old.has(issue.key)),
+    resolved: before.filter((issue) => !next.has(issue.key)),
   };
 }
 

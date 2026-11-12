@@ -14,6 +14,7 @@ import { longRange } from '#src/domain/date-labels.ts';
 import { Button } from '../../../components/ui/Button.tsx';
 import { PanelFooter } from '../../../components/ui/Panel.tsx';
 import IntakeRequirementForm from '../forms/IntakeRequirementForm.tsx';
+import { findingKey } from '#src/domain/calendar/checks.ts';
 import { destinationIssueLines, destinationText, publicationLabels } from './notice-details.ts';
 
 const formatHours = (hours: number) => `${hours.toLocaleString('pt-BR')} h`;
@@ -125,14 +126,8 @@ export default function ActivityDetails({
                   </small>
                 )}
                 {noteFor(row.offerId) && <small>{noteFor(row.offerId)}</small>}
-                {row.issues.map((issue) => (
-                  <small key={issue}>{issue}</small>
-                ))}
-                {row.warnings.map((warning) => (
-                  <small key={warning}>{warning}</small>
-                ))}
-                {row.reviewNotes.map((note) => (
-                  <small key={note}>{note}</small>
+                {[...row.issues, ...row.warnings, ...row.reviewNotes].map((item) => (
+                  <small key={findingKey(item.check, item.eventId)}>{item.detail}</small>
                 ))}
               </li>
             ))}

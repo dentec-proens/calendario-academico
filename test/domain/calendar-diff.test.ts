@@ -273,13 +273,13 @@ test('the effect aggregates teaching days by offer and term, and a side without 
   expect(partial.effect.teachingDays.every((row) => row.before === null)).toBe(true);
 });
 
-test('content issues have stable codes and the effect lists the new and resolved ones', () => {
+test('content issues have stable keys and the effect lists the new and resolved ones', () => {
   const before = side();
   const after = side((value) => {
     value.state.offers[0] = { ...value.state.offers[0], stages: undefined };
   });
   const issues = contentIssues(after.state, after.institutionalSnapshot);
-  expect(issues.some((issue) => issue.code === 'stages')).toBe(true);
+  expect(issues.some((issue) => issue.key === 'stages')).toBe(true);
   expect(
     issues.every(
       (issue) =>
@@ -289,10 +289,10 @@ test('content issues have stable codes and the effect lists the new and resolved
     ),
   ).toBe(true);
   const diff = compareContents(before, after);
-  expect(diff.effect.issues.added.map((issue) => issue.code)).toContain('stages');
-  expect(
-    compareContents(after, before).effect.issues.resolved.map((issue) => issue.code),
-  ).toContain('stages');
+  expect(diff.effect.issues.added.map((issue) => issue.key)).toContain('stages');
+  expect(compareContents(after, before).effect.issues.resolved.map((issue) => issue.key)).toContain(
+    'stages',
+  );
 });
 
 test('every field of the stored validators is labeled or explicitly ignored', () => {

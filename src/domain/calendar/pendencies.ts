@@ -19,10 +19,10 @@ export interface PendencyDetail {
  * What the editor counts and lists as one pending item: an activity, however many offers it is
  * missing from, a date, an adjustable date or a structure or teaching-day item. It only presents
  * the diagnostics: readiness, comparisons, publication and the review opinion keep reading each
- * `ContentIssue`, by offer, with its `code` and `message`.
+ * `ContentIssue`, by offer, with its `check`, `key` and `message`.
  */
 export interface Pendency {
-  /** Address of the item, stable while it stays pending; an item alone keeps its issue's code. */
+  /** Address of the item, stable while it stays pending; an item alone keeps its issue's key. */
   key: string;
   group: ContentIssueGroup;
   title: string;
@@ -83,7 +83,7 @@ function placement(issue: ContentIssue, state: PendencyState) {
   // The same pending norm, whichever offers are still to confirm it.
   if (target?.area === 'scope')
     return { key: 'scope', group: issue.group, title: issue.title, target, offerIds: [] };
-  return { key: issue.code, group: issue.group, title: issue.title, target, offerIds: [] };
+  return { key: issue.key, group: issue.group, title: issue.title, target, offerIds: [] };
 }
 
 /** Groups diagnostics into the items the editor shows, in the order the review step lists them. */

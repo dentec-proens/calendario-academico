@@ -517,7 +517,7 @@ export function DiffView({ diff }: { diff: CalendarDiff }) {
             <p>Pendências novas:</p>
             <ul className="diff-fields">
               {effect.issues.added.map((issue) => (
-                <li key={issue.code}>{issue.message}</li>
+                <li key={issue.key}>{issue.message}</li>
               ))}
             </ul>
           </>
@@ -527,7 +527,7 @@ export function DiffView({ diff }: { diff: CalendarDiff }) {
             <p>Pendências resolvidas:</p>
             <ul className="diff-fields">
               {effect.issues.resolved.map((issue) => (
-                <li key={issue.code}>{issue.message}</li>
+                <li key={issue.key}>{issue.message}</li>
               ))}
             </ul>
           </>

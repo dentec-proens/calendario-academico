@@ -239,7 +239,13 @@ test('planned regular publication remains planned and December requires an expli
     coverage: 'complete',
     execution: 'planned',
     warnings: [],
-    reviewNotes: [expect.stringContaining('Prazo ajustado informado pelo campus')],
+    reviewNotes: [
+      {
+        check: 'deadline-adjusted',
+        detail: expect.stringContaining('Prazo ajustado informado pelo campus'),
+        eventId: expect.any(String),
+      },
+    ],
   });
   expect(state.events[0].start).toBe('2027-12-01');
   expect(state.events[0].notice?.publication).toBe('planned');
@@ -484,6 +490,12 @@ test('a deadline extended by a municipal cause is a review note, not a pending i
   ).toMatchObject({
     coverage: 'complete',
     warnings: [],
-    reviewNotes: [expect.stringContaining('por feriado municipal ou recesso decorrente')],
+    reviewNotes: [
+      {
+        check: 'deadline-extended',
+        detail: expect.stringContaining('por feriado municipal ou recesso decorrente'),
+        eventId: expect.any(String),
+      },
+    ],
   });
 });

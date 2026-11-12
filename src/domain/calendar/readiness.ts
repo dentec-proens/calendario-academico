@@ -26,6 +26,13 @@ import { periodsForOffer } from './organization/periods.ts';
 import { policyFor } from '../policies/registry.ts';
 import { observanceIssues } from './observances.ts';
 import { isInternalDate } from './internal-dates.ts';
+import { findingKey, type CheckId, type FindingSubject } from './checks.ts';
+
+const observanceChecks = {
+  orphan: 'observance-orphan',
+  base: 'observance-base',
+  choice: 'observance-choice',
+} as const satisfies Record<string, CheckId>;
 
 const plain = (value: string) =>
   String(value)
@@ -44,12 +51,14 @@ export type ContentIssueTarget =
 export type ContentIssueGroup = 'structure' | 'activities' | 'dates' | 'teaching-days';
 
 /**
- * A content issue with a code that does not depend on its wording, for comparisons. `message`
- * is the full sentence kept in readiness and submissions; `title` and `detail` split it for the
- * review step, which also uses `group`, `offerId` and `target`.
+ * A content issue: the check that found it and a key built from the check and the subject, which
+ * never depends on the wording, for comparisons. `message` is the full sentence kept in readiness;
+ * `title` and `detail` split it for the review step, which also uses `group`, `offerId` and
+ * `target`.
  */
 export interface ContentIssue {
-  code: string;
+  check: CheckId;
+  key: string;
   message: string;
   group: ContentIssueGroup;
   title: string;
@@ -57,18 +66,18 @@ export interface ContentIssue {
   offerId?: string;
   target?: ContentIssueTarget;
 }
-type IssueInfo = Omit<ContentIssue, 'code' | 'message'>;
+type IssueInfo = Omit<ContentIssue, 'check' | 'key' | 'message'>;
 type ContentRecord = { institutionalSnapshot: InstitutionalEventSnapshot[]; state: ActivityState };
 
 /** Content checks only: no institutional-base or human-review issues. */
 export function contentAssessment(record: ContentRecord) {
   const issues: ContentIssue[] = [],
     notes: ContentIssue[] = [];
-  const issue = (code: string, message: string, info: IssueInfo) =>
-    issues.push({ code, message, ...info });
+  const issue = (check: CheckId, subject: FindingSubject, message: string, info: IssueInfo) =>
+    issues.push({ check, key: findingKey(check, ...subject), message, ...info });
   // Warnings never block; they keep the same shape so the review step lists them alike.
-  const warn = (code: string, message: string, info: IssueInfo) =>
-    notes.push({ code, message, ...info });
+  const warn = (check: CheckId, subject: FindingSubject, message: string, info: IssueInfo) =>
+    notes.push({ check, key: findingKey(check, ...subject), message, ...info });
   const policy = policyFor(record.state.year);
   const offers = calendarOffers(record.state);
   if (policy.scope) {
@@ -82,18 +91,19 @@ export function contentAssessment(record: ContentRecord) {
         target: { area: 'scope' },
       } as const;
       if (new Set(included.map((offer) => scopeStatus(offer))).size === 1)
-        issue('scope', policy.scope.readinessIssue, scope);
+        issue('scope', [], policy.scope.readinessIssue, scope);
       else
         for (const offer of pending)
           issue(
-            `scope:${offer.id}`,
+            'scope',
+            [offer.id],
             `${labelFor(record.state, offer.id)} — ${policy.scope.readinessIssue}`,
             { ...scope, offerId: offer.id },
           );
     }
   }
   for (const item of observanceIssues(record.institutionalSnapshot, record.state))
-    issue(`observance:${item.key}:${item.message}`, item.message, {
+    issue(observanceChecks[item.kind], [item.key], item.message, {
       group: 'dates',
       title: 'Data da base institucional',
       detail: item.message,
@@ -109,7 +119,7 @@ export function contentAssessment(record: ContentRecord) {
           : [1, 2].includes(offer.stages.perTerm)),
     )
   )
-    issue('stages', 'Informe a quantidade de etapas de avaliação (2, 3 ou 4).', {
+    issue('stages', [], 'Informe a quantidade de etapas de avaliação (2, 3 ou 4).', {
       group: 'structure',
       title: 'Etapas de avaliação',
       detail: 'Informe a quantidade de etapas de avaliação (2, 3 ou 4).',
@@ -119,7 +129,6 @@ export function contentAssessment(record: ContentRecord) {
   const coverage = diagnostics.plan.rows;
   for (const row of coverage) {
     const prefix = `${labelFor(record.state, row.offerId)} — ${row.requirement.name}`;
-    const code = `coverage:${row.offerId}:${row.requirement.id}`;
     const activity = (detail: string) =>
       ({
         group: 'activities',
@@ -130,16 +139,28 @@ export function contentAssessment(record: ContentRecord) {
       }) as const;
     if (row.applicability === 'required' && row.coverage === 'pending')
       issue(
-        `${code}:pending`,
+        'coverage-pending',
+        [row.offerId, row.requirement.id],
         isVacationActivity(row.requirement.activity)
           ? `${prefix}: registre os períodos no passo Férias.`
           : `${prefix}: vincule um evento com datas no roteiro de atividades.`,
         activity('Sem datas registradas.'),
       );
     if (row.applicability === 'required' || row.events.length)
-      for (const item of row.issues) issue(`${code}:${item}`, `${prefix}: ${item}`, activity(item));
-    for (const warning of [...row.warnings, ...row.reviewNotes])
-      warn(`${code}:${warning}`, `${prefix}: ${warning}`, activity(warning));
+      for (const item of row.issues)
+        issue(
+          item.check,
+          [row.offerId, row.requirement.id, item.eventId],
+          `${prefix}: ${item.detail}`,
+          activity(item.detail),
+        );
+    for (const item of [...row.warnings, ...row.reviewNotes])
+      warn(
+        item.check,
+        [row.offerId, row.requirement.id, item.eventId],
+        `${prefix}: ${item.detail}`,
+        activity(item.detail),
+      );
   }
   for (const offer of offers) {
     for (let n = 1; n <= (assessmentCount(record.state, offer.id) || 0); n++) {
@@ -148,8 +169,8 @@ export function contentAssessment(record: ContentRecord) {
         record.state.events.find(
           (e) => e.activity && sameActivity(e.activity, link(id)) && appliesTo(e, offer),
         );
-      const start = eventFor('stage'),
-        end = eventFor('stage'),
+      // The stage is one date: its start and its end come from the same record.
+      const stageDate = eventFor('stage'),
         results = eventFor('results'),
         council = eventFor('council');
       const position =
@@ -167,23 +188,18 @@ export function contentAssessment(record: ContentRecord) {
           offerId: offer.id,
           target: { area: 'organization' },
         }) as const;
-      const stageWarning = (code: string, detail: string) =>
+      const stageWarning = (check: CheckId, detail: string) =>
         warn(
-          `${code}:${offer.id}:${n}`,
+          check,
+          [offer.id, n],
           `${labelFor(record.state, offer.id)} — ${stage}: ${detail}`,
           stageInfo(detail.charAt(0).toUpperCase() + detail.slice(1)),
         );
-      if (start && end && start.start > end.end)
-        issue(
-          `stage-order:${offer.id}:${n}`,
-          `${stage}: término anterior ao início.`,
-          stageInfo('Término anterior ao início.'),
-        );
-      if (start) {
-        const cycleIssue = assessmentCycleIssue(record.state, start);
+      if (stageDate) {
+        const cycleIssue = assessmentCycleIssue(record.state, stageDate);
         if (cycleIssue) stageWarning('stage-cycle', cycleIssue);
       }
-      if (end && results && results.end < end.end)
+      if (stageDate && results && results.end < stageDate.end)
         stageWarning(
           'stage-results',
           'o prazo de lançamento de resultados antecede o término da etapa. Confira a organização definida pelo campus.',
@@ -215,7 +231,8 @@ export function contentAssessment(record: ContentRecord) {
     const reason = review.get(event.id);
     if (reason)
       issue(
-        `link-review:${event.id}:${reason}`,
+        'link-review',
+        [event.id, reason],
         `Vínculo a conferir — “${event.name}” (${longDate(event.start)}): ${linkIssueLabels[reason]}. ${linkIssueActions[reason]}`,
         {
           group: 'dates',
@@ -230,7 +247,7 @@ export function contentAssessment(record: ContentRecord) {
   for (const event of record.state.events) {
     const message = schoolDayIssue(record.state, event);
     if (message) {
-      issue(`school-day:${event.id}`, message, {
+      issue('school-day', [event.id], message, {
         group: 'dates',
         title: `Não constitui dia letivo — ${event.name} (${compactDate(event.start, record.state.year)})`,
         detail: message,
@@ -244,7 +261,7 @@ export function contentAssessment(record: ContentRecord) {
     const message =
       vacationDateIssue(record.state, event) ?? vacationOverlapIssue(record.state.events, event);
     if (message)
-      issue(`vacation:${event.id}`, message, {
+      issue('vacation', [event.id], message, {
         group: 'dates',
         title: `Férias a corrigir — ${event.name} (${compactDate(event.start, record.state.year)})`,
         detail: message,
@@ -257,7 +274,8 @@ export function contentAssessment(record: ContentRecord) {
   for (const event of record.state.events)
     for (const item of noticeDestinationIssues(record.state, event))
       warn(
-        `notice-destination:${event.id}:${item.offerId}`,
+        'notice-destination',
+        [event.id, item.offerId],
         `${labelFor(record.state, item.offerId)} — “${event.name}” (${longDate(event.start)}): ${item.message}. Revise o destino do edital.`,
         {
           group: 'dates',
@@ -284,7 +302,7 @@ export function contentAssessment(record: ContentRecord) {
         (start < window.start || start > window.latestStart || end > window.end)
       ) {
         const detail = `Datas fora da referência: ${longRange(window)}, início até ${longDate(window.latestStart)}. Confira a justificativa e a deliberação institucional antes de concluir a revisão.`;
-        warn(`window:${offer.id}`, `${labelFor(record.state, offer.id)} — ${detail}`, {
+        warn('window', [offer.id], `${labelFor(record.state, offer.id)} — ${detail}`, {
           group: 'structure',
           title: 'Ano letivo',
           detail,
@@ -305,7 +323,7 @@ export function contentAssessment(record: ContentRecord) {
     for (const item of diagnostics.structure) {
       const organization = { group: 'structure', target: { area: 'organization' } } as const;
       if (item.code === 'periods-missing')
-        issue('periods-missing', 'Cadastre os períodos letivos.', {
+        issue('periods-missing', [], 'Cadastre os períodos letivos.', {
           ...organization,
           title: 'Períodos letivos',
           detail: 'Cadastre os períodos letivos.',
@@ -313,7 +331,8 @@ export function contentAssessment(record: ContentRecord) {
       else if (item.code === 'period-count') {
         const detail = `Cadastre ${item.expected === 1 ? 'o ciclo anual' : 'os dois semestres letivos'}.`;
         issue(
-          `period-count:${item.offerId}`,
+          'period-count',
+          [item.offerId],
           `${labelFor(record.state, item.offerId)} — ${detail}`,
           {
             ...organization,
@@ -327,11 +346,12 @@ export function contentAssessment(record: ContentRecord) {
     for (const check of diagnoseTeachingDays(record.state, result))
       if (check.status !== 'MET') {
         const period = record.state.periods.find((p) => p.id === check.scope);
-        // A period split changes its identifier, so the code names the term instead.
+        // A period split changes its identifier, so the key names the term instead.
         const scope =
           check.scope === 'annual' ? 'annual' : (period?.association.term ?? check.scope);
         issue(
-          `teaching-days:${check.offerId}:${scope}`,
+          'teaching-days',
+          [check.offerId, scope],
           `${labelFor(record.state, check.offerId)} — ${check.scope === 'annual' ? 'Total anual' : period?.name}: mínimo de dias não atendido ou não configurado.`,
           {
             group: 'teaching-days',
@@ -349,7 +369,7 @@ export function contentAssessment(record: ContentRecord) {
       ...new Set(Object.values(result.byOffer).flatMap((r) => r.conflicts.map((c) => c.date))),
     ].sort();
     if (conflicts.length)
-      issue('conflicts', 'Resolva os conflitos entre dias letivos e exclusões.', {
+      issue('conflicts', [], 'Resolva os conflitos entre dias letivos e exclusões.', {
         group: 'teaching-days',
         title: 'Conflitos na contagem',
         detail: `Há inclusão e exclusão em ${conflicts.map((date) => compactDate(date, record.state.year)).join(', ')}. Esses dias ficam fora da contagem até a resolução.`,
@@ -358,6 +378,7 @@ export function contentAssessment(record: ContentRecord) {
   } catch {
     issue(
       'count-unavailable',
+      [],
       'Complete e confira a semana letiva, os períodos e os dados da contagem.',
       {
         group: 'structure',
@@ -401,7 +422,7 @@ export function submitBlockers(
 ) {
   return contentIssues(state, institutionalSnapshot).filter(
     (issue) =>
-      issue.code.startsWith('vacation:') ||
+      issue.check === 'vacation' ||
       (issue.target?.area === 'activity' && isVacationActivity(issue.target.activity)),
   );
 }

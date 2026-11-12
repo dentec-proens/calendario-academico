@@ -139,7 +139,12 @@ test('a link is pending for an offer its generated activity does not reach', () 
     expect(row.coverage).not.toBe('complete');
     expect(row.classification).toBe('pending');
     expect(row.evidence.map((e) => e.id)).not.toContain('cascavel-final-1');
-    expect(row.warnings.join(' ')).toContain('Atividade não gerada');
+    expect(row.warnings).toContainEqual(
+      expect.objectContaining({
+        check: 'link-not-generated',
+        detail: expect.stringContaining('Atividade não gerada'),
+      }),
+    );
   }
   // The integrated offer, which the generated activity reaches, still counts the same date.
   const forIntegrado = rows.find(
@@ -221,7 +226,7 @@ test('a review instruction is a note of the review, kept apart from what is pend
       coverage: 'complete',
       issues: [],
       warnings: [],
-      reviewNotes: [instruction],
+      reviewNotes: [{ check: 'review-instruction', detail: instruction }],
     });
   expect(activitySituation(rows)).toMatchObject({ status: 'complete', problems: false });
   // The readiness notices and what the reviewer checks by hand still carry it.

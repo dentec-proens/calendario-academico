@@ -98,9 +98,7 @@ export const catalogueImpact = query({
         reached++;
         const issues = (events: typeof before) =>
           new Set(
-            contentIssues(state, events.map(readActivityDates) as never).map(
-              (issue) => issue.message,
-            ),
+            contentIssues(state, events.map(readActivityDates) as never).map((issue) => issue.key),
           );
         const known = issues(before);
         if ([...issues(after)].some((issue) => !known.has(issue))) withNewIssues++;

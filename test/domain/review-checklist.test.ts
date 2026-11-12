@@ -19,7 +19,7 @@ test('every content issue says where it belongs and where it is resolved', () =>
     expect(issue.title.trim()).not.toBe('');
     expect(issue.detail.trim()).not.toBe('');
   }
-  const activity = issues.find((issue) => issue.code.startsWith('coverage:'))!;
+  const activity = issues.find((issue) => issue.check === 'coverage-pending')!;
   expect(activity).toMatchObject({
     group: 'activities',
     offerId: expect.any(String),
@@ -67,7 +67,7 @@ test('when the count is unavailable, its issue names the structure to fix', () =
   const state = calendarOffersFixture();
   state.periods = [];
   const issue = contentAssessment({ state, institutionalSnapshot: [] }).issues.find(
-    (item) => item.code === 'count-unavailable' || item.code === 'periods-missing',
+    (item) => item.check === 'count-unavailable' || item.check === 'periods-missing',
   )!;
   expect(issue.group).toBe('structure');
   expect(issue.detail).toMatch(/períodos letivos/);

@@ -91,7 +91,7 @@ describe('one unit for the pendencies of the calendar', () => {
     ]);
     // Each diagnostic stays as readiness reads it, by offer.
     expect(meeting[0].issues.map((issue) => issue.offerId)).toEqual(['integrado', 'graduacao']);
-    expect(new Set(meeting[0].issues.map((issue) => issue.code)).size).toBe(2);
+    expect(new Set(meeting[0].issues.map((issue) => issue.key)).size).toBe(2);
     // The list has the same activity once, also counted once.
     const line = step(mixed()).activities.filter((row) => row.key === 'pit:semester:first');
     expect(line).toHaveLength(1);
@@ -115,7 +115,7 @@ describe('one unit for the pendencies of the calendar', () => {
     ] as unknown as CalendarState['events'];
     const issues = contentIssues(state, []);
     const flagged = issues.filter((issue) => issue.target?.area === 'date');
-    expect(flagged.map((issue) => issue.code)).toEqual(['school-day:meeting']);
+    expect(flagged.map((issue) => issue.key)).toEqual(['school-day:meeting']);
     const items = groupPendencies(issues, state);
     expect(items.find((item) => item.issues.includes(flagged[0]))?.key).toBe(
       'activity:family-meeting',

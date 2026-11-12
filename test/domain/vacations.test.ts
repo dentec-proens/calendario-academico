@@ -34,6 +34,7 @@ import type {
 import { normalizeOfferCalendar } from '../../src/domain/calendar/normalization/normalize.ts';
 import { groupPendencies } from '../../src/domain/calendar/pendencies.ts';
 import { contentIssues } from '../../src/domain/calendar/readiness.ts';
+import { compareContents } from '../../src/domain/calendar/diff.ts';
 import { reviewSupport } from '../../src/domain/reviews/technical-support.ts';
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { proensLayout } from '../../src/printing/calendar-layout.ts';
@@ -210,7 +211,7 @@ describe('the rules of a vacation period', () => {
       activity: vacationRef('school'),
     });
     expect(() => normalizeOfferCalendar({ ...state, weekdays: [1, 2, 3, 4] }, state)).not.toThrow();
-    expect(contentIssues(state, []).map((issue) => issue.code)).toContain('vacation:v');
+    expect(contentIssues(state, []).map((issue) => issue.key)).toContain('vacation:v');
   });
 
   test('a date of the campus cannot be a vacation; a saved one stays and is a pendency', () => {
@@ -227,7 +228,7 @@ describe('the rules of a vacation period', () => {
     const state = withEvent(calendar(), date);
     expect(() => normalizeOfferCalendar(state)).toThrow(/passo Férias/);
     expect(() => normalizeOfferCalendar({ ...state, weekdays: [1, 2, 3, 4] }, state)).not.toThrow();
-    expect(contentIssues(state, []).find((issue) => issue.code === 'vacation:c')?.target).toEqual({
+    expect(contentIssues(state, []).find((issue) => issue.key === 'vacation:c')?.target).toEqual({
       area: 'date',
       eventId: 'c',
       name: 'Férias',
@@ -306,12 +307,32 @@ describe('what the norm of 2027 asks for', () => {
       const state = teachers(end);
       expect(rows(state, 'teacher')[0]).toMatchObject({
         coverage: 'partial',
-        issues: [`Registre exatamente 45 dias no ano do calendário; há ${days}.`],
+        issues: [
+          {
+            check: 'exact-days',
+            detail: `Registre exatamente 45 dias no ano do calendário; há ${days}.`,
+          },
+        ],
       });
       expect(
         contentIssues(state, []).some((issue) => issue.detail.includes('Registre exatamente')),
       ).toBe(true);
     }
+  });
+
+  test('44 and 46 days are the same pendency, worded with each total', () => {
+    const side = (end: string) => ({ state: teachers(end), institutionalSnapshot: [] });
+    const exact = (end: string) =>
+      contentIssues(side(end).state, []).filter((issue) => issue.check === 'exact-days');
+    const [short] = exact('2027-02-13'),
+      [long] = exact('2027-02-15');
+    expect(short.message).not.toBe(long.message);
+    expect(short.key).toBe(long.key);
+    const { added, resolved } = compareContents(
+      side('2027-02-13') as never,
+      side('2027-02-15') as never,
+    ).effect.issues;
+    expect([...added, ...resolved].some((issue) => issue.check === 'exact-days')).toBe(false);
   });
 
   test('the days add up across the periods, each day once', () => {
@@ -356,7 +377,7 @@ describe('what the norm of 2027 asks for', () => {
   test('a post-graduate calendar, outside the norm, has neither a pendency nor a total to meet', () => {
     const state = period(calendar(['posgraduacao']), 'teacher', '2027-01-01', '2027-01-10');
     expect(
-      contentIssues(state, []).filter((issue) => /vacation|Férias/.test(issue.code + issue.detail)),
+      contentIssues(state, []).filter((issue) => /vacation|Férias/.test(issue.key + issue.detail)),
     ).toEqual([]);
     expect(rows(state, 'teacher')[0]).toMatchObject({ applicability: 'unconfigured', issues: [] });
   });

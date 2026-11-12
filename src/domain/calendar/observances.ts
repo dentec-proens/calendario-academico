@@ -43,7 +43,12 @@ export function calendarObservances(events: ObservanceEvent[], state: Observance
 }
 
 export function observanceIssues(events: ObservanceEvent[], state: ObservanceState) {
-  const issues: { key: string; message: string }[] = [];
+  const issues: {
+    key: string;
+    /** Orphan choice, reference outside the allowed dates, or a choice outside them. */
+    kind: 'orphan' | 'base' | 'choice';
+    message: string;
+  }[] = [];
   for (const entry of calendarObservances(events, state)) {
     const { rule, event, key, label } = entry;
     const selected = state.observanceDates?.[key];
@@ -51,6 +56,7 @@ export function observanceIssues(events: ObservanceEvent[], state: ObservanceSta
       if (selected !== undefined)
         issues.push({
           key,
+          kind: 'orphan',
           message: `${label}: a escolha não está disponível na base deste calendário. Restaure a data institucional para limpar a escolha.`,
         });
       continue;
@@ -60,11 +66,13 @@ export function observanceIssues(events: ObservanceEvent[], state: ObservanceSta
     if (originalStart !== originalEnd || !rule.allowedDates.includes(originalStart))
       issues.push({
         key,
+        kind: 'base',
         message: `${label}: a referência institucional não corresponde às datas permitidas. Confira a base institucional.`,
       });
     if (selected !== undefined && !rule.allowedDates.includes(selected))
       issues.push({
         key,
+        kind: 'choice',
         message: `${label}: escolha uma das datas permitidas: ${rule.allowedDates.map((date) => compactDate(date)).join(', ')}.`,
       });
   }

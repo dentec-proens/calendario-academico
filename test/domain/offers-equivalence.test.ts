@@ -156,6 +156,8 @@ function semanticProjection(
             ...row
           }) => ({
             ...row,
+            issues: row.issues.map((item) => item.detail),
+            warnings: row.warnings.map((item) => item.detail),
             modality: offerId,
             requirementId: requirement.id,
             eventIds: linked.map((event) => event.id),

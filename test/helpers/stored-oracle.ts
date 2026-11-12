@@ -87,8 +87,8 @@ export function oracleValues(item: StoredCase) {
       humanReview: row.humanReview,
       execution: row.execution,
       events: row.events.map((event) => event.id),
-      issues: row.issues,
-      warnings: row.warnings,
+      issues: row.issues.map((item) => item.detail),
+      warnings: row.warnings.map((item) => item.detail),
     })),
     status: Object.fromEntries(
       [...new Set(coverage.map((row) => row.requirement.id))].map((id) => [

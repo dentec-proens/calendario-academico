@@ -231,7 +231,10 @@ test('a preexisting duplicated stage saves, is reviewed and never counts as fulf
   )!;
   expect(coverage.events.map((event) => event.id)).toEqual(['stage-twice-a', 'stage-twice-b']);
   expect(coverage.coverage).toBe('partial');
-  expect(coverage.warnings[0]).toMatch(/^Etapa duplicada/);
+  expect(coverage.warnings[0]).toMatchObject({
+    check: 'link-review-row',
+    detail: expect.stringMatching(/^Etapa duplicada/),
+  });
   const first = evaluatePlan(state).rows.find((row) => row.requirement.id === 'stage-1:integrado')!;
   expect(first.coverage).toBe('complete');
   // Creating another duplicate is refused.

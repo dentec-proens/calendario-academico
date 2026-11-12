@@ -204,16 +204,18 @@ type Applicability =
 Cada etapa é um ou mais commits na `main`. Os commits rodam typecheck, lint e os testes afetados
 (unitários, `convex-test` e navegador das áreas tocadas). A suíte completa só roda com autorização.
 
-### 1. Verificações com identidade (sem mudança de comportamento)
+### 1. Verificações com identidade (concluída)
 
-- `checks.ts` com `id` e `group` de cada verificação de `readiness.ts` e `plan-evaluation.ts`.
-  `plan-evaluation.ts` passa a devolver achados estruturados em vez de `string[]`.
-- `Finding` com `check` e `subject`; `findingKey` no lugar de `code`. `subject` leva `eventId` sempre
-  que o achado é de uma data, para que duas datas da mesma linha não colidam.
-- `diff.ts`, `convex/catalogue.ts` e `groupPendencies` comparam por chave.
-- Remover a verificação vestigial `stage-order`.
-- Testes: `test/domain/pendencies.test.ts` e a comparação de envios, com um caso em que a frase muda e a
-  chave não.
+- `checks.ts` registra cada verificação com seu rótulo; o grupo continua vindo do ponto que relata o
+  achado e entra no registro com `resolver`, na etapa 2.
+- `ContentIssue` leva `check` e `key`; a chave vem de `findingKey(check, ...assunto)`, nunca do texto.
+  As linhas de `plan-evaluation.ts` levam achados `{ check, detail, eventId? }`.
+- `diff.ts`, `convex/catalogue.ts` e `groupPendencies` comparam por chave. Mudar só a frase de um
+  achado (por exemplo, o total de dias de férias docentes) deixa de aparecer como achado novo e
+  resolvido.
+- O aviso de “Vínculo a conferir” repetido em cada linha usa `link-review-row`, separado da pendência
+  por data (`link-review`), para que a etapa 2 possa tratá-los de forma diferente.
+- Removida a verificação vestigial `stage-order`.
 
 ### 2. Quem resolve e bloqueio do envio
 

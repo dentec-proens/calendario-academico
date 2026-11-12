@@ -5,7 +5,12 @@ const row = (
   applicability: 'required' | 'optional' | 'unconfigured',
   coverage: 'pending' | 'partial' | 'complete',
   issues: string[] = [],
-) => ({ applicability, coverage, issues, warnings: [] });
+) => ({
+  applicability,
+  coverage,
+  issues: issues.map((detail) => ({ check: 'month' as const, detail })),
+  warnings: [],
+});
 
 test('required offers decide the activity status', () => {
   expect(activitySituation([row('required', 'complete')]).status).toBe('complete');

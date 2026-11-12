@@ -210,7 +210,7 @@ describe('organization confirmation', () => {
     const saved = save(state, configured).state;
     expect(saved.events.find((event) => event.id === 'results-one')?.effect).toBe('include');
     const { issues } = contentAssessment({ state: saved, institutionalSnapshot: [] });
-    expect(issues.map((issue) => issue.code)).toContain('school-day:results-one');
+    expect(issues.map((issue) => issue.key)).toContain('school-day:results-one');
   });
 });
 
@@ -219,7 +219,7 @@ describe('readiness and coverage', () => {
     const base = ivaiporaAnnual();
     const state = stored(base, legacyMeeting(base));
     const { issues } = contentAssessment({ state, institutionalSnapshot: [] });
-    expect(issues.find((issue) => issue.code === 'school-day:family')).toMatchObject({
+    expect(issues.find((issue) => issue.key === 'school-day:family')).toMatchObject({
       group: 'dates',
       target: { area: 'date', eventId: 'family' },
     });

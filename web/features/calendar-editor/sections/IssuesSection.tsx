@@ -152,7 +152,8 @@ export default function IssuesSection() {
     [state, baseEvents],
   );
   const identity: ContentIssue = {
-    code: identityKey,
+    check: 'identity',
+    key: identityKey,
     message: missingCoursesIssue,
     group: 'structure',
     title: 'Identificação',
