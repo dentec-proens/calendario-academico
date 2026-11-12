@@ -5,7 +5,8 @@ import {
   eventFromValues,
   emptyEvent,
   eventValues,
-  keptDestinations,
+  activityDraft,
+  destinationsByOffer,
   noticeAnswered,
   publicationDeadlineView,
   type EventValues,
@@ -103,17 +104,30 @@ test('the form edits one destination common to every offer of the date', () => {
   ).toHaveLength(3);
 });
 
-test('distinct destinations by offer are kept until a common destination is chosen', () => {
+test('each offer may have its own destination, edited one by one', () => {
   const base = transfer([
     { offerId: 'integrado', periodId: 'year' },
     { offerId: 'graduacao', periodId: 'removed' },
   ]);
-  expect(eventValues(base).admissionPeriodId).toBe(keptDestinations);
+  expect(eventValues(base).admissionPeriodId).toBe(destinationsByOffer);
+  expect(eventValues(base).admissionPeriods).toEqual({ integrado: 'year', graduacao: 'removed' });
   expect(edit(base).notice).toEqual(base.notice);
-  // Removing an offer from the date drops only its destination.
+  // One notice admits to offers whose cycles have their own periods.
+  expect(
+    edit(base, { admissionPeriods: { integrado: 'year', graduacao: 'first' } }).notice?.admission
+      ?.destinations,
+  ).toEqual([
+    { offerId: 'integrado', periodId: 'year' },
+    { offerId: 'graduacao', periodId: 'first' },
+  ]);
+  // Removing an offer from the date drops only its destination; an offer left blank has none.
   expect(edit(base, { offers: ['graduacao'] }).notice?.admission?.destinations).toEqual([
     { offerId: 'graduacao', periodId: 'removed' },
   ]);
+  expect(
+    edit(base, { admissionPeriods: { integrado: '', graduacao: 'first' } }).notice?.admission
+      ?.destinations,
+  ).toEqual([{ offerId: 'graduacao', periodId: 'first' }]);
   expect(edit(base, { admissionPeriodId: 'year' }).notice?.admission?.destinations).toEqual([
     { offerId: 'integrado', periodId: 'year' },
     { offerId: 'graduacao', periodId: 'year' },
@@ -121,7 +135,7 @@ test('distinct destinations by offer are kept until a common destination is chos
   // An offer left without destination is not a common destination either.
   expect(
     eventValues(transfer([{ offerId: 'integrado', periodId: 'year' }])).admissionPeriodId,
-  ).toBe(keptDestinations);
+  ).toBe(destinationsByOffer);
 });
 
 test('saving the date form saves the offers chosen in it, as listed', () => {
@@ -270,4 +284,46 @@ test('only the answers the activity already gives are stated instead of asked', 
     { admissionPeriodId: 'annual-2027' },
   ] as const)
     expect(noticeAnswered({ ...answered, ...change }, {}, 2027)).toBe(false);
+});
+
+test('a new transfer notice starts with each offer in its own period of the cycle', () => {
+  const offer = (id: 'integrado' | 'graduacao') =>
+    ({
+      id,
+      kind: id,
+      delivery: 'presencial',
+      organization: 'anual',
+      scope: { status: 'covered' },
+      stages: { status: 'defined', perTerm: 4 },
+    }) as const;
+  const period = (id: string, offerId: string) => ({
+    id,
+    name: `Ano — ${offerId}`,
+    start: civilDate('2027-02-01'),
+    end: civilDate('2027-12-10'),
+    association: { status: 'defined' as const, offers: [offerId], term: 'annual' as const },
+  });
+  const state = {
+    year: 2027,
+    weekdays: [1, 2, 3, 4, 5],
+    weekConfirmed: true,
+    offers: [offer('integrado'), offer('graduacao')],
+    periods: [period('year-integrado', 'integrado'), period('year-graduacao', 'graduacao')],
+    events: [],
+  } as never;
+  const requirement = {
+    id: 'admission-notice-0',
+    name: 'Edital de transferência',
+    activity: { kind: 'cycle', id: 'admission-notice', cycle: 'annual' },
+    admissionType: 'transfer',
+    term: 'annual',
+    variant: 'admission-notice',
+  } as never;
+  const values = activityDraft(state, requirement);
+  // No period is shared by both offers, so each one starts with its own.
+  expect(values.admissionPeriodId).toBe(destinationsByOffer);
+  expect(values.admissionPeriods).toEqual({
+    integrado: 'year-integrado',
+    graduacao: 'year-graduacao',
+  });
 });

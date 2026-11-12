@@ -73,9 +73,11 @@ export interface EventValues {
   admissionTerm: 'annual' | 'first' | 'second';
   /**
    * Common destination of every offer of the date: a period ID, '' for not informed, or
-   * `keptDestinations` to keep the distinct destinations already saved by offer.
+   * `destinationsByOffer` to choose one period for each offer in `admissionPeriods`.
    */
   admissionPeriodId: string;
+  /** Destination of each offer when `admissionPeriodId` is `destinationsByOffer`; '' for none. */
+  admissionPeriods: Record<string, string>;
   adjustedDeadline: string;
   deadlineExtensionCause: '' | 'municipal-holiday' | 'municipal-recess';
   category: string;
@@ -86,12 +88,15 @@ export interface EventValues {
   /** **Data interna (art. 18)**: only offered while effect and category allow it. */
   internal: boolean;
 }
-/** Destination answer that keeps the saved destinations by offer. */
-export const keptDestinations = 'por-oferta';
+/**
+ * Destination answer that chooses one period for each offer: one notice may admit to offers
+ * whose cycles have their own periods, and no single period would fit them all.
+ */
+export const destinationsByOffer = 'por-oferta';
 
 /**
  * The single destination shared by every offer of a saved date, '' when none is informed, or
- * `keptDestinations` when offers have distinct destinations or some offer has none.
+ * `destinationsByOffer` when offers have distinct destinations or some offer has none.
  */
 export function commonDestination(
   destinations: readonly AdmissionDestination[],
@@ -104,21 +109,21 @@ export function commonDestination(
     destinations.length === offers.length &&
     offers.every((offerId) => destinations.some((destination) => destination.offerId === offerId))
     ? periodId
-    : keptDestinations;
+    : destinationsByOffer;
 }
 
 /**
- * Destinations written by the form: the common destination for each chosen offer, or the saved
- * destinations of the offers still chosen.
+ * Destinations written by the form: the common destination for each chosen offer, or the period
+ * chosen for each offer still chosen.
  */
 export function draftDestinations(
-  value: Pick<EventValues, 'admissionPeriodId' | 'offers'>,
-  base?: CalendarEvent,
+  value: Pick<EventValues, 'admissionPeriodId' | 'admissionPeriods' | 'offers'>,
 ): AdmissionDestination[] {
-  if (value.admissionPeriodId === keptDestinations)
-    return (base?.notice?.admission?.destinations ?? []).filter((destination) =>
-      value.offers.includes(destination.offerId),
-    );
+  if (value.admissionPeriodId === destinationsByOffer)
+    return value.offers.flatMap((offerId) => {
+      const periodId = value.admissionPeriods[offerId];
+      return periodId ? [{ offerId, periodId }] : [];
+    });
   return value.admissionPeriodId
     ? value.offers.map((offerId) => ({ offerId, periodId: value.admissionPeriodId }))
     : [];
@@ -134,6 +139,7 @@ export const emptyEvent = (offers: OfferId[]): EventValues => ({
   admissionYear: '',
   admissionTerm: 'annual',
   admissionPeriodId: '',
+  admissionPeriods: {},
   adjustedDeadline: '',
   deadlineExtensionCause: '',
   category: 'recesso',
@@ -155,6 +161,12 @@ export function eventValues(event: CalendarEvent): EventValues {
     admissionYear: admission ? String(admission.year) : '',
     admissionTerm: admission?.term ?? 'annual',
     admissionPeriodId: commonDestination(admission?.destinations ?? [], dateOffers),
+    admissionPeriods: Object.fromEntries(
+      (admission?.destinations ?? []).map((destination) => [
+        destination.offerId,
+        destination.periodId,
+      ]),
+    ),
     adjustedDeadline: event.deadlineAdjustment?.date ?? '',
     deadlineExtensionCause: event.deadlineExtensionCause ?? '',
     category: eventCategory(event),
@@ -198,7 +210,7 @@ export function eventFromValues(
           type: value.admissionType,
           year: Number(value.admissionYear),
           term: value.admissionTerm,
-          destinations: draftDestinations(value, target.base),
+          destinations: draftDestinations(value),
         }
       : undefined;
   return {
@@ -251,11 +263,29 @@ export function activityDraft(
           requirement.modalities?.includes(offerFor(state, modality)!.kind),
         )
       : valid;
+  const ofTerm = (period: CalendarPeriod) => period.association.term === requirement.term;
   const destinationPeriod = state.periods.find(
     (period) =>
-      period.association.term === requirement.term &&
+      ofTerm(period) &&
       modalities.every((modality) => associationOffers(period.association).includes(modality)),
   );
+  // Without a period shared by every offer, each offer's own period of the cycle, when all have one.
+  const byOffer = modalities.map(
+    (modality) =>
+      [
+        modality,
+        state.periods.find(
+          (period) => ofTerm(period) && associationOffers(period.association).includes(modality),
+        )?.id,
+      ] as const,
+  );
+  const ownPeriods =
+    !destinationPeriod &&
+    requirement.admissionType === 'transfer' &&
+    requirement.term &&
+    byOffer.every(([, id]) => id)
+      ? Object.fromEntries(byOffer as (readonly [string, string])[])
+      : undefined;
   const notice = requirement.variant === 'admission-notice';
   return {
     ...emptyEvent(modalities),
@@ -266,7 +296,8 @@ export function activityDraft(
       ? String(requirement.admissionType === 'regular' ? state.year + 1 : state.year)
       : '',
     admissionTerm: requirement.term ?? 'annual',
-    admissionPeriodId: destinationPeriod?.id ?? '',
+    admissionPeriodId: destinationPeriod?.id ?? (ownPeriods ? destinationsByOffer : ''),
+    admissionPeriods: ownPeriods ?? {},
     publicationStatus: notice ? 'planned' : '',
     category: requirement.defaultCategory ?? 'prazo',
   };

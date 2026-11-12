@@ -792,11 +792,14 @@ test('a notice edits one common destination and shows the diagnosis of each offe
   await page.locator('[data-edit-event="transfer-notice"]').click();
   const period = page.locator('#event-admission-period');
   const issues = page.locator('#event-destination-issues');
-  // Distinct destinations are kept as they are, and the orphan one is diagnosed for its offer.
+  // Each offer has its own destination, and the orphan one is diagnosed for its offer.
   await expect(period).toHaveValue('por-oferta');
-  await expect(page.locator('#event-admission-destinations')).toContainText('Ano letivo integrado');
+  await expect(page.locator('#event-admission-period-integrado')).toHaveValue('integrado-year');
   await expect(issues).toContainText('período de destino removido do calendário (removed-period)');
   await expect(issues.locator('li')).toHaveCount(1);
+  // The campus corrects one offer and keeps the other: no period serves both.
+  await page.locator('#event-admission-period-subsequente').selectOption('subsequente-year');
+  await expect(issues).toBeHidden();
   // One common destination for every offer: the other offer now has a period of another offer.
   await period.selectOption('integrado-year');
   await expect(issues).toContainText('não está associado à oferta');

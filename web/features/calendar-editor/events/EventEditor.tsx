@@ -13,17 +13,17 @@ import ActivityRuleNote from './ActivityRuleNote.tsx';
 import EventDateCalendar from './EventDateCalendar.tsx';
 import { useEventEditor } from './EventEditorProvider.tsx';
 import {
-  commonDestination,
   draftDestinations,
   eventTypes,
   eventValues,
-  keptDestinations,
+  destinationsByOffer,
   noticeActive,
   noticeAnswered,
   publicationDeadlineView,
   recordOffers,
 } from './event-draft.ts';
-import { destinationIssueLines, destinationText } from './notice-details.ts';
+import { destinationIssueLines } from './notice-details.ts';
+import { periodsForOffer } from '#src/domain/calendar/organization/periods.ts';
 import {
   canBeInternal,
   internalDateIssue,
@@ -79,17 +79,12 @@ export default function EventEditor() {
     (Boolean(values.admissionType) && noticeActive(values)) ||
     requirement?.variant === 'admission-notice';
   const realDate = values.publicationStatus === 'published';
-  // The form edits one destination common to every offer; distinct destinations saved by offer
-  // can only be kept, and each offer is diagnosed on its own.
+  // One destination common to every offer, or one period for each offer; each offer is
+  // diagnosed on its own.
   const saved = editor.eventId
     ? state.events.find((event) => event.id === editor.eventId)
     : undefined;
-  const distinctSaved =
-    commonDestination(
-      saved?.notice?.admission?.destinations ?? [],
-      saved ? saved.offers : offerIds(state),
-    ) === keptDestinations;
-  const destinations = publication ? draftDestinations(values, saved) : [];
+  const destinations = publication ? draftDestinations(values) : [];
   const destinationIssues = destinationIssueLines(state, {
     offers: values.offers,
     notice: {
@@ -375,10 +370,8 @@ export default function EventEditor() {
                   label="Vínculo ao período cadastrado"
                 >
                   <option value="">Ingresso futuro / período ainda não cadastrado</option>
-                  {(field.state.value === keptDestinations || distinctSaved) && (
-                    <option value={keptDestinations}>
-                      Manter os destinos distintos por oferta
-                    </option>
+                  {(field.state.value === destinationsByOffer || values.offers.length > 1) && (
+                    <option value={destinationsByOffer}>Um período para cada oferta</option>
                   )}
                   {state.periods.map((period) => (
                     <option key={period.id} value={period.id}>
@@ -389,10 +382,27 @@ export default function EventEditor() {
               )}
             </form.Field>
           </div>
-          {values.admissionPeriodId === keptDestinations && (
-            <p className="help" id="event-admission-destinations">
-              {destinationText(state, destinations)}
-            </p>
+          {values.admissionPeriodId === destinationsByOffer && (
+            <div className="row-form" id="event-admission-destinations">
+              {values.offers.map((offerId) => (
+                <form.Field key={offerId} name={`admissionPeriods.${offerId}`}>
+                  {(field) => (
+                    <Select
+                      field={field}
+                      id={`event-admission-period-${offerId}`}
+                      label={`Período de destino — ${labelFor(state, offerId)}`}
+                    >
+                      <option value="">Ingresso futuro / período ainda não cadastrado</option>
+                      {periodsForOffer(state, offerId).map((period) => (
+                        <option key={period.id} value={period.id}>
+                          {period.name} — {compactDate(period.start, state.year)}
+                        </option>
+                      ))}
+                    </Select>
+                  )}
+                </form.Field>
+              ))}
+            </div>
           )}
           {destinationIssues.length > 0 && (
             <Notice
