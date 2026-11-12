@@ -76,8 +76,11 @@ for (const width of [1440, 390]) {
       const reason = `Corrija as ${total} pendências de conteúdo antes de enviar.`;
       await expect(page.locator('[data-lifecycle-footer-action="submit"]')).toBeDisabled();
       await expect(page.locator('#footer-lifecycle-submit-unavailable')).toHaveText(reason);
-      await expect(page.locator('[data-lifecycle-action="submit"]')).toBeDisabled();
-      await expect(page.locator('#lifecycle-submit-unavailable')).toHaveText(reason);
+      // The header keeps the reason only as the button's description, without the line of text.
+      const submit = page.locator('[data-lifecycle-action="submit"]');
+      await expect(submit).toBeDisabled();
+      await expect(submit).toHaveAccessibleDescription(reason);
+      await expect(page.locator('#lifecycle-submit-unavailable')).toHaveClass('visually-hidden');
       await row.locator('a').click();
       await expect(page).toHaveURL(/atividade=pit%3Asemester%3Afirst|atividade=pit:semester:first/);
     });

@@ -117,7 +117,7 @@ atividade é interpretação versionada como as demais.
    antigos corrigir um falharia pelo outro. Rejeitar com `DomainError` só quando a data é nova ou
    `effect`, `activity` ou `category` mudaram em relação a `old`, no mesmo espírito de
    `stageInterval`. Como passa pela normalização, a regra vale no salvamento Convex
-   (`convex/calendars.ts`) e na importação.
+   (`convex/calendars.ts`).
 5. **Prorrogação municipal.** O editor oferece `deadlineExtensionCause` em qualquer `exclude`
    (`EventEditor.tsx`), e a causa estende prazos de verdade (`deadlines.ts`). Um conselho com aulas
    suspensas não é feriado nem recesso: esconder o seletor e rejeitar a causa em data com atividade,

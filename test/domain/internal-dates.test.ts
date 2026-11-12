@@ -146,7 +146,7 @@ describe('date commands', () => {
   });
 });
 
-describe('save boundary and JSON copy', () => {
+describe('save boundary', () => {
   test('the save keeps the mark and refuses an ineligible one', () => {
     const previous = ivaiporaDraft();
     const proposed = createCampusDate(previous, internal());
@@ -170,22 +170,22 @@ describe('save boundary and JSON copy', () => {
     ).toThrow(/vinculada a atividade/);
   });
 
-  test('a note without category is accepted as `institucional` after exporting and importing JSON', () => {
+  test('a note without category is read as `institucional` and a forged visibility is refused', () => {
     const state = createCampusDate(ivaiporaDraft(), internal({ category: undefined }));
-    const exported = JSON.parse(
+    const sent = JSON.parse(
       JSON.stringify({ ...offerCalendarContent(state), year: 2027, campus: 'Ivaiporã' }, null, 2),
     ) as unknown;
-    const read = readCalendarOfferInput(exported);
+    const read = readCalendarOfferInput(sent);
     expect(read.events.find((event) => event.id === 'campus-rehearsal')).toMatchObject({
       internal: true,
       effect: 'note',
     });
-    const imported = normalizeOfferCalendar(exported, state);
-    expect(dateOf(imported as State)).toMatchObject({
+    const normalized = normalizeOfferCalendar(sent, state);
+    expect(dateOf(normalized as State)).toMatchObject({
       internal: true,
       category: 'institucional',
     });
-    const forged = JSON.parse(JSON.stringify(exported)) as { events: Record<string, unknown>[] };
+    const forged = JSON.parse(JSON.stringify(sent)) as { events: Record<string, unknown>[] };
     forged.events.find((event) => event.id === 'campus-rehearsal')!.internal = 'sim';
     expect(() => readCalendarOfferInput(forged)).toThrow('Visibilidade da data inválida.');
   });

@@ -12,23 +12,19 @@ const recordTransitions = (page: Page) =>
     (window as unknown as { transitions: string[] }).transitions = seen;
     document.addEventListener('transitionrun', (event) => {
       const target = event.target as Element;
-      if (target.matches('dialog.ui-panel-dialog, .editor-more-content'))
-        seen.push(`${target.tagName === 'DIALOG' ? 'panel' : 'menu'}:${event.propertyName}`);
+      if (target.matches('dialog.ui-panel-dialog')) seen.push(`panel:${event.propertyName}`);
     });
   });
 const transitions = (page: Page) =>
   page.evaluate(() => (window as unknown as { transitions: string[] }).transitions);
 
-test('the side panel and the menu arrive with motion', async ({ page, fixtureServer }) => {
+test('the side panel arrives with motion', async ({ page, fixtureServer }) => {
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.goto(await fixtureServer('editor'));
   await page.locator('[data-view="events"]').click();
   await recordTransitions(page);
   await page.locator('#new-event').click();
   await expect.poll(() => transitions(page)).toContain('panel:translate');
-  await page.locator('#close-event-panel').click();
-  await page.getByRole('button', { name: 'Mais ações' }).click();
-  await expect.poll(() => transitions(page)).toContain('menu:scale');
 });
 
 test('with reduced motion the panel simply appears', async ({ page, fixtureServer }) => {

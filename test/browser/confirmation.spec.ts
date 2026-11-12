@@ -1,8 +1,5 @@
 import { test, expect } from './test.ts';
-import { mkdtemp, writeFile, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { completeForSubmission, selectEditorSection } from './editor-navigation.ts';
+import { completeForSubmission, configureOffer, selectEditorSection } from './editor-navigation.ts';
 import type {} from '../fixtures/confirmation.ts';
 import type {} from '../fixtures/editor-client.ts';
 
@@ -107,14 +104,11 @@ test('React confirmation handles focus, keyboard, backdrop, async failure and du
   expect(errors).toEqual([]);
 });
 
-test('TypeScript editor preserves cancelled imports and saves before submitting for analysis', async ({
+test('TypeScript editor keeps unapplied fields across steps and saves before submitting for analysis', async ({
   page,
   fixtureServer,
-  cleanup,
 }) => {
   const fixtureUrl = await fixtureServer('editor-confirmation');
-  const directory = await mkdtemp(join(tmpdir(), 'editor-confirmation-'));
-  cleanup(() => rm(directory, { recursive: true, force: true }));
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(String(error)));
   page.on('dialog', (dialog) => {
@@ -170,62 +164,15 @@ test('TypeScript editor preserves cancelled imports and saves before submitting 
     if (section === 'periods')
       await expect(page.locator('input#offer-integrado-period-0-start')).toHaveValue('2027-02-16');
   }
-  const file = join(directory, 'rascunho.json');
-  const draft = await page.evaluate(() => ({
-    ...window.editorTest.record.state,
-    periods: [
-      {
-        id: 'imported',
-        name: 'Período importado',
-        start: '2027-02-01',
-        end: '2027-03-01',
-        association: { status: 'defined', offers: ['integrado'], term: 'annual' },
-      },
-    ],
-  }));
-  await writeFile(file, JSON.stringify(draft));
-
-  // Opening the picker is still a direct user gesture. The decision follows validation.
-  const chooserPromise = page.waitForEvent('filechooser');
-  await page.locator('.editor-more-trigger').click();
-  await page.locator('#load').click();
-  await (await chooserPromise).setFiles([file]);
-  await expect(page.locator('dialog[open]')).toBeVisible();
-  expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(0);
-  await page.locator('.confirmation-dialog__cancel').click();
-  await expect(page.locator('dialog')).toBeHidden();
-  await expect(page.locator('input#offer-integrado-period-0-start')).toHaveValue('2027-02-16');
-  expect(await page.evaluate(() => window.editorTest.record.state.periods.length)).toBe(0);
-
-  const picker = page.locator('input#file');
-  await picker.setInputFiles(file);
-  await expect(page.locator('dialog[open]')).toBeVisible();
-  await page.locator('.confirmation-dialog__confirm').click();
-  await expect(page.locator('#periods'))
-    .toContainText('Anual: 1 fev a 1 mar')
-    .catch(async (error: unknown) => {
-      throw new Error(
-        JSON.stringify({
-          errors,
-          message: await page.locator('#message').evaluate((element) => element.textContent),
-        }),
-        { cause: error },
-      );
-    });
+  // Applying the form is what saves.
+  await configureOffer(page, 'integrado', '2027-02-01', '2027-03-01');
+  await expect(page.locator('#periods')).toContainText('Anual: 1 fev a 1 mar');
   await page.waitForFunction(() => window.editorTest.calls.saves === 1);
   // Submitting refuses any pendency, and they are not the subject here.
   await completeForSubmission(page);
   await page.locator('[data-edit-organization="integrado"]').click();
   await expect(page.locator('input#offer-integrado-period-0-start')).toHaveValue('2027-02-01');
-
-  // Invalid JSON never discards a field or asks to confirm an unusable file.
   await page.locator('#offer-integrado-period-0-start').fill('2027-02-17');
-  await writeFile(file, JSON.stringify({ schemaVersion: 99 }));
-  await picker.setInputFiles(file);
-  await expect(page.locator('#message')).toContainText('Não foi possível abrir');
-  await expect(page.locator('#message .ui-notice')).toHaveAttribute('data-tone', 'danger');
-  await expect(page.locator('dialog[open]')).toHaveCount(0);
-  await expect(page.locator('input#offer-integrado-period-0-start')).toHaveValue('2027-02-17');
 
   await page.locator('[data-view="issues"]').click();
   const submit = page.locator('[data-lifecycle-action="submit"]');

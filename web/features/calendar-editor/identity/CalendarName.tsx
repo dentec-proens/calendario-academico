@@ -32,7 +32,7 @@ export function CalendarTitle() {
         <button
           id="calendar-rename"
           type="button"
-          className="editor-identity-edit"
+          className="editor-inline-action"
           aria-label="Renomear calendário"
           onClick={() => setOpen(true)}
         >

@@ -1,7 +1,7 @@
 import { LoadingIndicator } from '../../components/ui/LoadingIndicator.tsx';
 import { EditorErrorBoundary } from './EditorErrorBoundary.tsx';
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, ArrowRight, Check, Eye, Copy } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Eye, Copy, History } from 'lucide-react';
 import LifecycleActions, {
   CalendarStatusBadge,
   ReturnNote,
@@ -21,7 +21,7 @@ import EditorNotices from './EditorNotices.tsx';
 import EventPanel from './events/EventPanel.tsx';
 import NewEventButton from './events/NewEventButton.tsx';
 import { SectionActionsProvider } from './section-actions.tsx';
-import { CalendarExportProvider, useCalendarExport } from './export/CalendarExportProvider.tsx';
+import { CalendarExportProvider } from './export/CalendarExportProvider.tsx';
 import { confirmAction } from '../../components/confirmation.ts';
 import { editorSections } from '#src/app/routes.ts';
 import {
@@ -43,7 +43,6 @@ import { useCalendarSummaryTool } from '../../shared/integrations/webmcp.ts';
 import './calendar-editor.css';
 import { useAppSession, useSessionState } from '../../app/session.tsx';
 import { scrollIntoView, trackScrollInset } from '../../scroll.ts';
-import EditorMoreMenu from './EditorMoreMenu.tsx';
 import { useFormDrafts } from '../../shared/forms/drafts.tsx';
 import { Notice } from '../../components/ui/Notice.tsx';
 import { IdentityPanelProvider, IdentitySummary } from './identity/CalendarIdentity.tsx';
@@ -74,7 +73,6 @@ function EditorFrame() {
   const { context, resume, open: eventEditorOpen } = useEventEditor();
   const { message } = useSessionState();
   const { permissions } = useAppSession();
-  const exporting = useCalendarExport();
   const currentContent = useMemo<DiffSide>(
     () => ({
       state,
@@ -252,6 +250,17 @@ function EditorFrame() {
                 <li key={item}>{labelFor(state, item)}</li>
               ))}
             </ul>
+            {/* Rarely needed, so it sits with the record's data; it needs only read access. */}
+            <Link
+              className="editor-inline-action"
+              to={editorPages.operations.path}
+              params={{ calendarId: record.id }}
+              search={(previous) => previous}
+              aria-label="Histórico do calendário"
+              title="Consulte as operações registradas neste calendário e quem as fez."
+            >
+              <History aria-hidden="true" size={14} /> Histórico
+            </Link>
           </div>
           <IdentitySummary />
         </div>
@@ -266,10 +275,9 @@ function EditorFrame() {
           >
             <Eye aria-hidden="true" /> <span>Visualizar</span>
           </Link>
-          <EditorMoreMenu calendarId={record.id} readOnly={readOnly} onCopy={exporting.copy} />
         </div>
         {permissions.editCalendars ? (
-          <LifecycleActions className="editor-lifecycle" {...lifecycle} />
+          <LifecycleActions className="editor-lifecycle" visibleReasons={false} {...lifecycle} />
         ) : null}
       </div>
       {locked && permissions.editCalendars ? (
@@ -351,7 +359,7 @@ function EditorFrame() {
                   void confirmAction({
                     title: 'Sair sem salvar as alterações locais?',
                     description:
-                      'Baixe uma cópia dos dados aplicados antes de sair, se desejar preservá-los.',
+                      'As alterações aplicadas nesta aba ainda não foram salvas no servidor.',
                     consequence:
                       'Os campos não aplicados e as alterações ainda não confirmadas serão descartados. Uma gravação já enviada pode concluir no servidor.',
                     confirmLabel: 'Sair sem salvar',
@@ -398,8 +406,7 @@ function EditorFrame() {
               onClick={() => {
                 void confirmAction({
                   title: 'Reabrir calendário atualizado?',
-                  description:
-                    'Confira ou baixe uma cópia das alterações aplicadas antes de continuar.',
+                  description: 'Confira as alterações aplicadas antes de continuar.',
                   consequence: 'Os campos não aplicados e as alterações locais serão descartados.',
                   confirmLabel: 'Reabrir calendário',
                   intent: 'warning',

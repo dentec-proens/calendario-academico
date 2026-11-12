@@ -114,15 +114,14 @@ Este guia registra as regras de negócio e as decisões que o código sozinho n�
 - Ofertas entre colchetes só quando há mais de uma oferta e a data não abrange todas; datas iguais de ofertas diferentes saem numa linha só. A legenda lista só as categorias presentes na grade.
 - Cursos, turmas e turnos não aparecem na impressão.
 
-## Salvamento, sessão e cópias
+## Salvamento e sessão
 
 - Só a confirmação do servidor representa gravação concluída; aplicar altera apenas o estado local.
 - Na Semana letiva, alterações válidas são aplicadas sozinhas e salvas após 1,5 s sem novas alterações; valores inválidos não substituem o último estado válido. Nos demais formulários, aplicar inicia o salvamento.
 - Atualizações de outra sessão não substituem campos não aplicados. Conflito de versão e sessão expirada mantêm as alterações na tela.
-- Não há armazenamento offline durável: recarregar ou fechar a aba perde o que não foi salvo. Trocar de conta, perfil ou campus limpa os dados locais da identidade anterior. Arquivos selecionados não são preservados.
+- Não há armazenamento offline durável: recarregar ou fechar a aba perde o que não foi salvo. Trocar de conta, perfil ou campus limpa os dados locais da identidade anterior.
 - **Sair** aguarda o salvamento das alterações aplicadas.
-- A atualização do portal para nova versão nunca acontece com trabalho pendente (campos, pareceres, arquivos, operações em andamento, recuperação de acesso); filtros não impedem.
-- Cópia JSON: gerada do estado aplicado, no formato 7. Cópias dos formatos 4, 5 ou 6 são recusadas, sem conversão. Importar substitui o rascunho após confirmação.
+- A atualização do portal para nova versão nunca acontece com trabalho pendente (campos, pareceres, operações em andamento, recuperação de acesso); filtros não impedem.
 
 ## Histórico e registros
 

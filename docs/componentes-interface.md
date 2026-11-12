@@ -30,7 +30,6 @@ O ícone acompanha o verbo da ação, não a tela. Um verbo tem sempre o mesmo �
 | Remover, Excluir                            | `Trash2`                      |
 | Visualizar, Consultar                       | `Eye`                         |
 | Baixar                                      | `Download`                    |
-| Enviar arquivo, Importar                    | `Upload`                      |
 | Imprimir                                    | `Printer`                     |
 | Copiar                                      | `Copy`                        |
 | Avançar passo                               | `ArrowRight`, depois do texto |
@@ -43,13 +42,13 @@ O ícone acompanha o verbo da ação, não a tela. Um verbo tem sempre o mesmo �
 
 Ações de ciclo de vida usam os ícones definidos em `LifecycleActions.tsx`. Um verbo novo entra nesta tabela antes de ganhar ícone.
 
-Botões que concluem ou abandonam um formulário ou diálogo (**Aplicar**, **Salvar**, **Criar**, **Cadastrar**, **Confirmar**, **Cancelar**, **Descartar alterações**, **Fechar**) ficam sem ícone: a posição e a variante já indicam a ação. A exceção é o envio de arquivo, que mantém `Upload`. Botão só com ícone fica restrito a fechar (`X`), menu (`Ellipsis`) e ações de linha de tabela, sempre com `aria-label`.
+Botões que concluem ou abandonam um formulário ou diálogo (**Aplicar**, **Salvar**, **Criar**, **Cadastrar**, **Confirmar**, **Cancelar**, **Descartar alterações**, **Fechar**) ficam sem ícone: a posição e a variante já indicam a ação. Botão só com ícone fica restrito a fechar (`X`), menu (`Ellipsis`) e ações de linha de tabela, sempre com `aria-label`.
 
 Cada área tem no máximo um botão `primary`: a ação que conclui o passo ou o formulário. As ações de topo das páginas (`.page-action`, como **Novo calendário**), as ações repetidas em linhas de tabela e a criação de itens dentro de um passo do editor são `secondary`, para não competir com a conclusão. No editor, a criação de itens de um passo (**Adicionar data do campus**, **Adicionar oferta**) fica à direita do título do passo; o passo a coloca ali com `SectionActions` (`web/features/calendar-editor/section-actions.tsx`), mantendo o estado no próprio componente. Em `FormActions`, a ação `danger` fica na ponta oposta às demais; em largura estreita, os botões empilham na ordem do código.
 
 O rótulo não repete o objeto quando o contexto já o identifica: dentro do cartão de uma oferta, **Editar** e **Aplicar organização**, não “Editar organização” ou “Aplicar organização de Técnico integrado”; no detalhe de uma data, **Editar**. Dentro do calendário, criar é **Adicionar…**; **Novo…** fica para entidades de primeiro nível, como o calendário. No editor, **Aplicar** grava no rascunho e **Salvar** fica para o que é gravado diretamente. Abandonar um preenchimento é sempre **Descartar alterações**; **Remover** retira um item do calendário e **Excluir** apaga um registro.
 
-**Mais ações**, no editor, é um `Menu` da Base UI (`EditorMoreMenu`), com setas, Esc e fechamento ao clicar fora. O formulário de importação fica fora do menu, porque precisa continuar montado depois que ele fecha para receber o arquivo.
+O cabeçalho do editor guarda o espaço vertical para o que se usa sempre: **Visualizar** e as ações do ciclo de vida. **Histórico**, de uso raro, é um link discreto na linha do status e das ofertas, no estilo de **Renomear** e **Editar**. O motivo de uma ação indisponível fica só como descrição do botão (`visibleReasons={false}`): as pendências aparecem nos passos (no celular, dentro do seletor de passos) e em **Conferir e enviar**, cujo rodapé mantém o motivo visível; conexão, outra sessão e salvamento têm aviso próprio, e a falta de cursos aparece na identificação.
 
 `tokens.css` centraliza cores semânticas, espaçamentos, raios e duração das transições. Texto, bordas e superfícies são neutros (cinza levemente frio); o verde (`--ui-action`) fica para ações, foco, seleção do passo e conclusão. O azul de informação (`--ui-info`) marca links (`--ui-link`), filtros e visões selecionadas e avisos informativos; âmbar e vermelho ficam para pendência e perigo. Cor nova da tela entra como token em `tokens.css`, não como hexadecimal na folha da funcionalidade; as cores de categoria do calendário seguem a legenda da impressão: `categories.ts` é a fonte, usada pela impressão e por `CategoryMark`, e não ganham tokens próprios. `ui.css` define os componentes e os estados de interação, sendo importado pelo CSS compartilhado do site. As regras de interação ficam restritas à tela; o modelo de impressão em `assets/printing/calendar.css` permanece separado.
 
@@ -86,7 +85,7 @@ Na dúvida, o aviso fica sem prazo.
 
 ## Remover, desfazer e confirmar
 
-Remover uma data, um sábado ou férias altera só o rascunho e é imediato: `removeDate`, do editor, oferece **Desfazer** no `#message`. A oferta não tem prazo (ver “Tempo de exibição de avisos”); ela some ao fechar o aviso ou na mudança seguinte do calendário, e nunca desfaz o que veio depois. O contador `edits` da sessão separa mudança de confirmação: o salvamento automático não encerra a oferta. O preenchimento em andamento na data removida não volta. A confirmação fica para o que tem efeito fora do rascunho, como enviar, devolver ou importar uma cópia.
+Remover uma data, um sábado ou férias altera só o rascunho e é imediato: `removeDate`, do editor, oferece **Desfazer** no `#message`. A oferta não tem prazo (ver “Tempo de exibição de avisos”); ela some ao fechar o aviso ou na mudança seguinte do calendário, e nunca desfaz o que veio depois. O contador `edits` da sessão separa mudança de confirmação: o salvamento automático não encerra a oferta. O preenchimento em andamento na data removida não volta. A confirmação fica para o que tem efeito fora do rascunho, como enviar ou devolver.
 
 ## Listagens de calendários
 
@@ -122,7 +121,7 @@ TanStack Form controla preenchimento, validação e submissão, integrado aos ca
 
 `useDraftForm` conserva os valores e sua referência de comparação em memória, por identidade e entidade. Voltar ao valor original limpa o estado de alteração; preferências de consulta, como o mês de sábados, não representam dados pendentes de aplicação. Campos de senha, tokens e arquivos não entram no registro de rascunhos. Submissões pendentes permanecem vinculadas ao formulário de origem, mesmo ao navegar e voltar.
 
-No editor, os formulários, o estado aplicado e a versão confirmada no Convex são distintos. A exportação tem um controlador compartilhado por calendário; os botões refletem a mesma operação em andamento. Conflitos preservam os dados locais e permitem baixar uma cópia, tentar novamente ou confirmar a saída sem salvar.
+No editor, os formulários, o estado aplicado e a versão confirmada no Convex são distintos. A exportação tem um controlador compartilhado por calendário; os botões refletem a mesma operação em andamento. Conflitos preservam os dados locais e permitem tentar novamente ou confirmar a saída sem salvar.
 
 TanStack Router controla caminhos e filtros efetivos da URL. Usar links tipados para navegação interna e âncoras próprias para downloads e destinos externos. Mudança de rota deve manter foco visível e anunciar a tela; cancelamento de saída conserva rota e preenchimento.
 

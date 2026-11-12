@@ -7,7 +7,6 @@ import {
   type PropsWithChildren,
 } from 'react';
 import { useFormDrafts } from '../../../shared/forms/drafts.tsx';
-import { saveBlob } from '../../../shared/convex/files.ts';
 import { fileNamePrefix } from '#src/domain/calendar/lifecycle.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import type { PrintVersion } from '#src/printing/calendar-layout.ts';
@@ -55,16 +54,7 @@ function useExportController() {
       window.addEventListener('afterprint', () => (document.title = title), { once: true });
       window.print();
     });
-  const copy = () => {
-    if (!active.current || protection?.locked) return;
-    const applied = session.getSnapshot().state;
-    saveBlob(
-      new Blob([JSON.stringify(applied, null, 2)], { type: 'application/json' }),
-      `rascunho-calendario-${applied.year}.json`,
-    );
-    notify('Download solicitado. Somente dados aplicados foram incluídos.');
-  };
-  return { pending, print, copy, status: record.status };
+  return { pending, print, status: record.status };
 }
 
 const ExportContext = createContext<ReturnType<typeof useExportController> | null>(null);

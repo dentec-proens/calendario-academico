@@ -162,26 +162,15 @@ const activity = (value: unknown): CalendarEvent => {
       : {}),
   };
 };
-/**
- * Message for a copy exported before format 7. It is refused, never converted: a conversion
- * belongs only to the migration of its format.
- */
-export const earlierFormatCopyMessage = (format: number) =>
-  `Esta cópia está no formato ${format}, anterior à versão atual do calendário. Exporte uma nova cópia do calendário.`;
-
 /** The boundary never infers offer identity or organization from a legacy summary. */
 export function readCalendarOfferInput(
   value: unknown,
 ): CalendarContent & { year: number; campus: string } {
   const row = calendarObject(value);
-  if (row.schemaVersion === 4 || row.schemaVersion === 5 || row.schemaVersion === 6)
-    return fail(earlierFormatCopyMessage(row.schemaVersion));
   if (row.schemaVersion !== calendarSchemaVersion)
     return fail(
-      `Formato de calendário incompatível. Use uma cópia de formato ${calendarSchemaVersion}.`,
+      `Formato de calendário incompatível: somente o formato ${calendarSchemaVersion} é aceito.`,
     );
-  if ('teacherDayDate' in row)
-    return fail('Esta cópia usa o campo antigo do Dia do Professor e não pode mais ser importada.');
   return {
     schemaVersion: calendarSchemaVersion,
     year: number(row.year),

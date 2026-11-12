@@ -173,21 +173,6 @@ export function createEditorSession(
       });
       saver.schedule();
     },
-    replace(state: CalendarState) {
-      assertEditing();
-      if (current.status === 'blocked')
-        throw new Error(current.error || 'Resolva o conflito antes de importar.');
-      forms.clear();
-      publish({
-        state: structuredClone(state),
-        dirty: !equalValues(state, current.record.state),
-        unapplied: false,
-        unappliedForms: [],
-        formEpoch: current.formEpoch + 1,
-        edits: current.edits + 1,
-      });
-      saver.schedule();
-    },
     setFormDirty(key: string, dirty: boolean) {
       if (dirty) forms.add(key);
       else forms.delete(key);

@@ -38,7 +38,7 @@ export const editorPages = {
   history: defineEditorPage('history', {
     title: 'Atividades',
   }),
-  // Not a filling step: the record's operations, reached from the "Mais ações" menu.
+  // Not a filling step: the record's operations, reached from the editor header.
   operations: defineEditorPage('operations', {
     title: 'Histórico do calendário',
   }),

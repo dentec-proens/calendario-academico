@@ -15,7 +15,7 @@ import { equalValues } from '#src/shared/equal.ts';
 
 interface DraftFormOptions<T extends object> {
   defaultValues: T;
-  /** Only non-sensitive values; credentials, tokens and File must stay ephemeral. */
+  /** Only non-sensitive values; credentials and tokens must stay ephemeral. */
   draftKey?: string;
   /** Fields remain in the live Form only; their values and metadata are not cached. */
   excludeFromDraft?: ReadonlyArray<keyof T>;

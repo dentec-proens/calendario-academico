@@ -119,33 +119,13 @@ for (const width of [1440, 390]) {
   });
 }
 
-test('secondary actions support the keyboard and the mobile step picker follows the URL', async ({
-  page,
-  fixtureServer,
-}) => {
+test('the mobile step picker follows the URL', async ({ page, fixtureServer }) => {
   await page.goto(await fixtureServer('editor'));
-  const toggle = page.locator('.editor-more-trigger');
-  await toggle.focus();
-  await page.keyboard.press('Enter');
-  const importCopy = page.getByRole('menuitem', { name: 'Importar cópia', exact: true });
-  await expect(importCopy).toBeVisible();
-  await expect(importCopy).toHaveAccessibleDescription('Restaurar uma cópia editável (.json)');
-  await expect(importCopy).toHaveAttribute('title', /substituídos após sua confirmação/);
-  await expect(importCopy.locator('svg')).toBeVisible();
-  await page.keyboard.press('Escape');
-  await expect(toggle).toBeFocused();
-  await expect(page.locator('.editor-more-content')).toBeHidden();
-  // The stacked header puts the menu on the left; it must still open inside the viewport.
-  for (const width of [850, 390]) {
-    await page.setViewportSize({ width, height: 844 });
-    await toggle.click();
-    const box = (await page.locator('.editor-more-content').boundingBox())!;
-    expect(box.x, `${width}px`).toBeGreaterThanOrEqual(0);
-    expect(box.x + box.width, `${width}px`).toBeLessThanOrEqual(width);
-    await page.keyboard.press('Escape');
-    await expect(page.locator('.editor-more-content')).toBeHidden();
-  }
   await page.setViewportSize({ width: 390, height: 844 });
+  // The history link stays reachable on a narrow screen.
+  await expect(
+    page.getByRole('link', { name: 'Histórico do calendário', exact: true }),
+  ).toBeVisible();
   const steps = page.locator('.editor-step-menu');
   await expect(steps).not.toHaveAttribute('open');
   await steps.locator('summary').focus();

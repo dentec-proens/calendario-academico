@@ -36,9 +36,6 @@
 .calendar-editor-content .row-form > fieldset {
   display: contents;
 }
-.calendar-editor-content input[type='file'] {
-  max-width: 100%;
-}
 .calendar-editor-content .editor-sidebar {
   align-self: start;
 }
@@ -124,7 +121,7 @@
   color: var(--ui-warning);
   font-weight: 600;
 }
-#root .editor-identity-edit {
+#root .editor-inline-action {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -139,7 +136,11 @@
   text-underline-offset: 3px;
   cursor: pointer;
 }
-#root .editor-identity-edit:hover {
+/* Beside the status and the offers, the link follows their smaller text. */
+#root .editor-meta > .editor-inline-action {
+  font-size: inherit;
+}
+#root .editor-inline-action:hover {
   color: var(--ui-action-hover);
   background: var(--ui-action-soft);
 }
@@ -168,14 +169,6 @@
 .editor-lifecycle > :not(.actions) {
   grid-column: 1 / -1;
 }
-.editor-lifecycle > .lifecycle-unavailable {
-  justify-self: end;
-  max-width: 48ch;
-  margin: 0;
-  color: var(--ui-muted);
-  font-size: 0.8125rem;
-  text-align: right;
-}
 .calendar-editor-content .editor-action,
 .editor-step-footer button,
 #issues .actions button {
@@ -185,100 +178,13 @@
   justify-content: center;
   font-size: 0.875rem;
 }
-.editor-more-trigger {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-width: 44px;
-  min-height: 44px;
-  padding: 10px;
-  border-radius: 7px;
-  border: 1px solid var(--line);
-  background: var(--ui-surface);
-  color: var(--green);
-  cursor: pointer;
-}
 .editor-step-menu > summary::-webkit-details-marker {
   display: none;
 }
-.editor-more-trigger:enabled:hover {
-  filter: none;
-}
-.editor-more-trigger:focus-visible,
 .editor-step-menu > summary:focus-visible,
 .editor-sidebar a:focus-visible {
   outline: 3px solid var(--ui-focus);
   outline-offset: 3px;
-}
-.editor-more-positioner {
-  z-index: 40;
-}
-.editor-more-content {
-  width: 320px;
-  max-width: calc(100vw - 32px);
-  padding: 7px;
-  background: var(--ui-surface);
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  box-shadow: var(--ui-shadow-floating);
-  transform-origin: var(--transform-origin);
-}
-@media (prefers-reduced-motion: no-preference) {
-  .editor-more-content {
-    transition:
-      scale var(--ui-motion-surface) var(--ui-ease-surface),
-      opacity var(--ui-motion) ease-out;
-  }
-  .editor-more-content:is([data-starting-style], [data-ending-style]) {
-    scale: 0.98;
-    opacity: 0;
-  }
-}
-.editor-more-content:focus {
-  outline: none;
-}
-.editor-more-content [role='menuitem'] {
-  display: grid;
-  grid-template-columns: 18px minmax(0, 1fr);
-  align-items: start;
-  justify-content: start;
-  gap: 9px;
-  width: 100%;
-  min-height: 44px;
-  padding: 10px;
-  border: 0;
-  background: var(--ui-surface);
-  color: var(--ui-text);
-  font-size: 0.875rem;
-  text-align: left;
-  text-decoration: none;
-  font-weight: 500;
-  cursor: pointer;
-  border-radius: var(--ui-radius);
-}
-.editor-more-content [role='menuitem'] > svg {
-  margin-top: 2px;
-}
-.editor-menu-copy {
-  display: block;
-  min-width: 0;
-}
-.editor-menu-copy > span {
-  display: block;
-  font-weight: 600;
-}
-.editor-menu-copy > small {
-  display: block;
-  margin-top: 4px;
-  color: var(--ui-muted);
-  font-size: 0.75rem;
-  font-weight: 400;
-  line-height: 1.5;
-}
-.editor-more-content [role='menuitem'][data-highlighted] {
-  outline: 2px solid var(--ui-focus);
-  outline-offset: -2px;
-  background: var(--ui-action-soft);
 }
 .calendar-editor .editor-feedback {
   box-shadow: none;
@@ -590,10 +496,6 @@
   .editor-lifecycle > .actions {
     grid-column: 2;
     grid-row: 2;
-  }
-  /* The menu now sits on the left: it opens from the header's left edge, within its width. */
-  .editor-intro {
-    position: relative;
   }
   .calendar-editor-content .editor-sections-layout {
     grid-template-columns: minmax(0, 1fr);

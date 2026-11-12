@@ -106,6 +106,7 @@ export default function LifecycleActions({
   submitSummary,
   guard,
   unavailable,
+  visibleReasons = true,
   className = '',
   placement = 'header',
   menuActions = [],
@@ -123,6 +124,8 @@ export default function LifecycleActions({
   guard?: () => string | undefined;
   /** Why an offered action cannot run now: the button stays visible, disabled, with the reason. */
   unavailable?: Partial<Record<LifecycleAction, string>>;
+  /** False keeps each reason only as the button's description, for a header short on space. */
+  visibleReasons?: boolean;
   className?: string;
   /** The footer of the review step repeats only the submission, as the step's conclusion. */
   placement?: 'header' | 'footer';
@@ -282,7 +285,7 @@ export default function LifecycleActions({
           <p
             key={action}
             id={`${idPrefix}lifecycle-${action}-unavailable`}
-            className="lifecycle-unavailable"
+            className={visibleReasons ? 'lifecycle-unavailable' : 'visually-hidden'}
           >
             {unavailable[action]}
           </p>

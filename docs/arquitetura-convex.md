@@ -61,7 +61,7 @@ Renderização apenas deriva apresentação. Autosave agrupa alterações próxi
 
 Uma atualização reativa pode renovar uma sessão limpa; com alterações locais, a sessão preserva os dados e sinaliza a resolução necessária. Falha recuperável admite nova tentativa; conflito ou sessão expirada bloqueia gravações até resolução. Trocar de calendário encerra a sessão, e resultados tardios não alteram outra entidade.
 
-Exportações que exigem persistência aguardam as alterações aplicadas relevantes e usam a versão confirmada. A cópia local representa o estado aplicado, sem campos ainda não aplicados. Não há persistência offline nem promessa de salvar ao fechar o navegador.
+Exportações que exigem persistência aguardam as alterações aplicadas relevantes e usam a versão confirmada. Não há persistência offline nem promessa de salvar ao fechar o navegador.
 
 ## Persistência e autorização
 
@@ -101,7 +101,7 @@ Uma data local com atividade guarda o vínculo em `activity` (`ActivityRef`), co
 
 A organização é anual ou semestral. Etapas são configuradas por ciclo: duas, três ou quatro no ano letivo, ou uma ou duas por semestre. Os vínculos por etapa (`activity` com `offerId` e `position`) guardam o ciclo e o número na etapa; a apresentação reinicia a numeração em cada semestre. Mudar a organização nunca reinterpreta uma posição: a que deixa de existir, ou ainda não existe numa oferta sem etapas informadas, fica em “Vínculo a conferir” (`not-generated`). Períodos são disjuntos por oferta e podem coincidir entre ofertas. Escopo e ingresso pertencem a cada oferta/ciclo. Modo e base da organização são informativos e não alteram obrigações ou mínimos.
 
-O código aceita somente o formato 7, inclusive nos envios e na lixeira, e importações de cópias de outro formato são recusadas, as dos formatos 4, 5 e 6 com mensagem própria. A migração concluída do formato 4 e os valores antigos que continuam válidos estão em [Operações administrativas de dados](migracao-schema.md#formatos-antigos-que-permanecem-nos-dados).
+O código aceita somente o formato 7, inclusive nos envios e na lixeira. A migração concluída do formato 4 e os valores antigos que continuam válidos estão em [Operações administrativas de dados](migracao-schema.md#formatos-antigos-que-permanecem-nos-dados).
 
 Conversões ambíguas preservam IDs e datas e mantêm a configuração pendente. Uma inconsistência migrada de ciclo gera aviso e permite salvar outra parte; uma etapa nova ou alterada precisa caber inteiramente no período do seu ciclo. A preparação preserva identidade e tipo de ofertas já salvas, cuja remoção permanece proibida.
 

@@ -76,7 +76,7 @@ export function IdentitySummary() {
         <button
           id="calendar-identity-edit"
           type="button"
-          className="editor-identity-edit"
+          className="editor-inline-action"
           aria-label={record.courses ? 'Editar identificação do calendário' : undefined}
           onClick={open}
         >

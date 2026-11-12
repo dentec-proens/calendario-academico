@@ -12,7 +12,7 @@ O backend deriva identidade da sessão e confere usuário ativo, associação en
 
 Convites e resets usam tokens aleatórios de 256 bits, guardados somente como SHA-256. Expiram em 48 e 24 horas, respectivamente; emissão nova invalida o link anterior e o consumo é único/transacional. Esses tokens de alta entropia não precisam do derivador de senha humana. A entrega do link ao destinatário continua sob responsabilidade administrativa; conhecer o link e redigitar um e-mail não comprova posse da caixa postal. Não há envio automático de recuperação por e-mail.
 
-O fragmento secreto do link é removido antes da criação do Router e permanece no fluxo efêmero. Senhas, códigos, tokens e arquivos não entram nos drafts persistidos pelo hook compartilhado nem na instrumentação. Formulários mistos excluem campos privados; Devtools não entram em produção. Valores textuais dos geradores examinados são escapados, e importação JSON passa por normalização e confirmação sem executar o conteúdo como código.
+O fragmento secreto do link é removido antes da criação do Router e permanece no fluxo efêmero. Senhas, códigos e tokens não entram nos drafts persistidos pelo hook compartilhado nem na instrumentação. Formulários mistos excluem campos privados; Devtools não entram em produção. Valores textuais dos geradores examinados são escapados.
 
 Segredos pertencem ao ambiente Convex, sem prefixo `VITE_`, e arquivos privados de ambiente/chaves são ignorados pelo Git. Módulos Node não entram no bundle do navegador. O cadastro inicial exige código privado e e-mail autorizado; depois de instalar, retirar esse código reduz a superfície. Controles dos dashboards e proteção dos backups precisam de conferência administrativa própria.
 
