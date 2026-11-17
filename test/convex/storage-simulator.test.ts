@@ -75,7 +75,7 @@ function fixture() {
 test('SDK mutation store/get/delete preserves bytes, metadata and digest verification', async () => {
   const t = fixture();
   const id = await t.mutation(primitive, {});
-  await assert.rejects(t.mutation(primitive, { badDigest: true }), /digest/);
+  await assert.rejects(t.mutation(primitive, { badDigest: true }), /Sha256 mismatch/);
   await assert.rejects(t.mutation(primitive, { id, rollbackDelete: true }), /delete rollback/);
   await t.mutation(primitive, { id });
   await t.run(async (ctx) => {
