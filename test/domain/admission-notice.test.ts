@@ -3,6 +3,7 @@ import { cycleLink } from '../helpers/activity-links.ts';
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { evaluatePlan } from '../../src/domain/calendar/activities/plan-evaluation.ts';
 import {
+  noticeAfterStartIssues,
   noticeDestinationIssues,
   validateActivityRecord,
 } from '../../src/domain/calendar/activities/validation.ts';
@@ -93,6 +94,26 @@ test('a destination of another offer or cycle, or an offer left without one, is 
     ['graduacao', 'missing'],
     ['graduacao-2', 'other-term'],
   ]);
+});
+
+test('a transfer notice dated after its destination starts is said where it is typed, as the review refuses it', () => {
+  const late = notice([{ offerId: 'integrado', periodId: 'integrado-annual' }], {
+    offers: ['integrado'],
+    start: civilDate('2027-05-03'),
+    end: civilDate('2027-05-03'),
+  });
+  const state = withNotice(late);
+  expect(noticeAfterStartIssues(state, late)).toEqual([
+    expect.objectContaining({ offerId: 'integrado', problem: 'after-start' }),
+  ]);
+  const row = evaluatePlan(state).rows.find(
+    (item) => item.offerId === 'integrado' && item.requirement.id === 'admission-notice-0',
+  )!;
+  expect(row.issues.map((issue) => issue.check)).toContain('admission-before-period');
+  const early = notice([{ offerId: 'integrado', periodId: 'integrado-annual' }], {
+    offers: ['integrado'],
+  });
+  expect(noticeAfterStartIssues(withNotice(early), early)).toEqual([]);
 });
 
 test('a notice without destination is not informed and has nothing to diagnose', () => {

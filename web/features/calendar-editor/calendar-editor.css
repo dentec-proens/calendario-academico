@@ -1751,3 +1751,7 @@ button.review-row:enabled:hover {
 .editor-footer-lifecycle .actions {
   margin: 0;
 }
+.offer-kind {
+  color: var(--ui-muted);
+  font-weight: 400;
+}

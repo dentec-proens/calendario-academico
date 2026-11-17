@@ -1,9 +1,13 @@
+import { KindNote } from '../OfferName.tsx';
+
 export interface SaturdayOfferChoiceItem {
   id: string;
   label: string;
   checked: boolean;
   /** An offer that cannot be chosen stays listed, so the reason is in view. */
   disabled: boolean;
+  /** The offer kind, when the offer name alone does not say it. */
+  kind?: string;
   /** What the choice leaves out, part of the checkbox name so it is read with it. */
   note?: string;
 }
@@ -38,6 +42,7 @@ export default function SaturdayOfferChoice({
           />
           <span>
             {item.label}
+            <KindNote kind={item.kind} />
             {item.note && <small>{item.note}</small>}
           </span>
         </label>

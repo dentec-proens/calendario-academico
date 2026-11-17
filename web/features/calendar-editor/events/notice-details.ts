@@ -1,6 +1,7 @@
 import type { ActivityState, AdmissionDestination } from '#src/domain/calendar/model.ts';
 import { labelFor } from '#src/domain/calendar/offers.ts';
 import {
+  noticeAfterStartIssues,
   noticeDestinationIssues,
   type NoticeDestinationIssue,
 } from '#src/domain/calendar/activities/validation.ts';
@@ -36,10 +37,12 @@ export function destinationText(
 /** Destination problems of a date, one line per offer. */
 export function destinationIssueLines(
   state: Parameters<typeof noticeDestinationIssues>[0],
-  event: Pick<CalendarEvent, 'notice' | 'offers'>,
+  event: Pick<CalendarEvent, 'notice' | 'offers' | 'end'>,
 ): (NoticeDestinationIssue & { text: string })[] {
-  return noticeDestinationIssues(state, event).map((issue) => ({
-    ...issue,
-    text: `${labelFor(state, issue.offerId)}: ${issue.message}.`,
-  }));
+  return [...noticeDestinationIssues(state, event), ...noticeAfterStartIssues(state, event)].map(
+    (issue) => ({
+      ...issue,
+      text: `${labelFor(state, issue.offerId)}: ${issue.message}.`,
+    }),
+  );
 }

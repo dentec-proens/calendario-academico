@@ -158,7 +158,7 @@ test('initial analysis identifies a measurable deficit without assuming document
     processNumber: '23411.000001/2026-00',
     applicableNorm: 'Norma confirmada pelo revisor',
   });
-  assert.equal((doc.html.match(/<tr>/g) || []).length, 32);
+  assert.equal((doc.html.match(/<tr>/g) || []).length, 31);
   assert(doc.html.includes('Fonte: Arts. 4º e 5º; decisão de 03/11/2026.'));
   assert(!doc.html.includes('Referência do modelo'));
   assert(!doc.html.includes('proposta automática, não confirmada'));
@@ -168,7 +168,6 @@ test('initial analysis identifies a measurable deficit without assuming document
   assert(!doc.html.includes('<script>'));
   assert(doc.text.includes('Texto humano <script>'));
   assert(!doc.html.includes('Documento assinado eletronicamente'));
-  assert(doc.html.includes('Não é documento assinado'));
 });
 test('review displays separate registered totals and provisional counts without approving them', () => {
   const record = {

@@ -235,7 +235,7 @@ test('execution applies only to an activity that publishes something', () => {
     return evidence.kind === 'coverage' ? evidence.rows : [];
   };
   expect(rows('XIX').every((row) => row.execution === null)).toBe(true);
-  expect(rows('admission-regular').every((row) => row.execution !== null)).toBe(true);
+  expect(rows('VIII').every((row) => row.execution !== null)).toBe(true);
 });
 
 test('an offer outside the norm is not accused of missing semesters', () => {

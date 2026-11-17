@@ -210,11 +210,6 @@ export function contentAssessment(record: ContentRecord) {
         const cycleIssue = assessmentCycleIssue(record.state, stageDate);
         if (cycleIssue) stageWarning('stage-cycle', cycleIssue);
       }
-      if (stageDate && results && results.end < stageDate.end)
-        stageWarning(
-          'stage-results',
-          'o prazo de lançamento de resultados antecede o término da etapa. Confira a organização definida pelo campus.',
-        );
       if (results && councils.some((council) => council.start < results.end))
         stageWarning(
           'stage-council',

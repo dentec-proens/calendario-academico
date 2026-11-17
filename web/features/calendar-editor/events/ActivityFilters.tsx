@@ -1,5 +1,5 @@
 import { useNavigate } from '@tanstack/react-router';
-import { offerIds, labelFor } from '#src/domain/calendar/offers.ts';
+import { offerIds, labelWithKind } from '#src/domain/calendar/offers.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { activityGroups, useActivitySearch } from './activity-query.ts';
 import { useActivityList } from './activity-list.ts';
@@ -151,7 +151,7 @@ export default function ActivityFilters() {
               <option value="">Todas as ofertas</option>
               {offerIds(state).map((modality) => (
                 <option key={modality} value={modality}>
-                  {labelFor(state, modality)}
+                  {labelWithKind(state, modality)}
                 </option>
               ))}
             </select>

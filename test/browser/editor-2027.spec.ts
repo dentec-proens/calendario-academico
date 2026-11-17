@@ -85,8 +85,15 @@ test('typed notices preserve 2026 publication for 2027 and December 2027 for 202
   await page.locator('#event-publication-status').selectOption('published');
   await expect(page.locator('#event-admission-year')).toHaveValue('2027');
   await expect(page.locator('#event-admission-period')).toHaveValue('annual-2027');
+  // A date after the destination starts is said while it is typed, not only when reviewing.
+  await page.locator('#event-start').fill('2027-05-03');
+  await page.locator('#event-end').fill('2027-05-03');
+  await expect(page.locator('#event-destination-issues')).toContainText(
+    'publique antes do início do período de destino',
+  );
   await page.locator('#event-start').fill('2026-12-01');
   await page.locator('#event-end').fill('2026-12-01');
+  await expect(page.locator('#event-destination-issues')).toHaveCount(0);
 
   await page.locator('#event-form button[type="submit"]').click();
   await expect
@@ -107,45 +114,7 @@ test('typed notices preserve 2026 publication for 2027 and December 2027 for 202
   await expect(noticeRow).toContainText('Opcional');
   await expect(noticeRow).toContainText('1 dez 2026');
   await page.locator('#close-event-panel').click();
-  await openActivity(page, 'regular-admission-notice');
-  // The activity already answers what the notice is for: stated, not asked.
-  await expect(page.locator('#event-notice-summary')).toContainText('Ingresso em 2028');
-  await expect(page.locator('#event-notice-summary')).toContainText('15 de junho de 2027');
-  await expect(page.locator('#event-admission-year')).toHaveCount(0);
-  await page.locator('#event-publication-status').selectOption('published');
-  await page.locator('#event-start').fill('2027-06-15');
-  await page.locator('#event-end').fill('2027-06-15');
-  await expect(page.locator('#event-adjusted-deadline')).toHaveCount(0);
-  await page.locator('#event-end').fill('2027-06-20');
-  await expect(page.locator('#event-deadline-late')).toContainText(
-    'A publicação termina 5 dias depois do prazo',
-  );
-  // A date typed with the current year is refused with the reason, next to the field.
-  await page.locator('#event-adjusted-deadline').fill('2026-06-20');
-  await expect(page.locator('#event-deadline-issue')).toContainText('posterior a 15 de junho');
-  await page.locator('#event-form button[type="submit"]').click();
-  await expect(page.locator('#event-form')).toContainText('Corrija o novo prazo indicado acima.');
-  await page.locator('#event-adjusted-deadline').fill('2027-06-20');
-  await expect(page.locator('#event-deadline-adjusted')).toBeVisible();
-  await expect(page.locator('#event-form')).not.toContainText('Corrija o novo prazo');
-  await page.locator('#event-adjusted-deadline').fill('');
-  await page.locator('#event-start').fill('2027-12-01');
-  await page.locator('#event-end').fill('2027-12-01');
-  await page.locator('#event-form button[type="submit"]').click();
-  await expect
-    .poll(() =>
-      page.evaluate(
-        () =>
-          window.editorTest.record.state.events.find(
-            (event) => event.activity?.activityId === 'regular-admission-notice',
-          )?.start,
-      ),
-    )
-    .toBe('2027-12-01');
-  await expect(page.locator('#event-panel .activity-details')).toContainText('15 de junho de 2027');
-  await page.locator('#close-event-panel').click();
   await selectEditorSection(page, 'issues');
-  await expect(page.locator('#issue-list')).toContainText(/prazo|Proens/);
   // Each activity issue is a row that leads to the activity.
   await page.locator('#review-group-activities a.review-row').first().click();
   await expect(page).toHaveURL(/atividade=/);
@@ -333,53 +302,42 @@ test('annual integrated and semester undergraduate offers keep independent overl
   }
 });
 
-test('a regular notice keeps saved answers editable while they are corrected', async ({
+test('a retired activity is listed only while an old date still links to it', async ({
   page,
   fixtureServer,
 }) => {
   await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
   await expect(page.locator('#record-title')).toBeVisible();
+  // An old date of the regular notice, as a calendar out of editing keeps it.
   await page.evaluate(() => {
     const { record } = window.editorTest;
-    const notice = {
-      name: 'Publicação dos editais',
+    record.state.events.push({
+      id: 'regular-notice',
+      name: 'Publicação dos editais do Processo Seletivo 2028',
+      start: '2027-06-15',
+      end: '2027-06-15',
       effect: 'note',
       category: 'prazo',
       offers: record.state.offers.slice(0, 1).map((offer) => offer.id),
       activity: { activityId: 'regular-admission-notice' },
-    };
-    record.state.events.push({
-      ...notice,
-      id: 'regular-notice',
-      start: '2027-06-10',
-      end: '2027-06-10',
-      deadlineAdjustment: { date: '2027-06-20' },
       notice: {
         publication: 'planned',
-        admission: { type: 'regular', year: 2027, term: 'annual', destinations: [] },
+        admission: { type: 'regular', year: 2028, term: 'annual', destinations: [] },
       },
     } as (typeof record.state.events)[number]);
     record.version++;
     return window.publishReviewerCalendar();
   });
   await selectEditorSection(page, 'events');
-  await openActivity(page, 'regular-admission-notice');
-  await page.locator('[data-edit-activity-event="regular-notice"]').click();
-  const year = page.locator('#event-admission-year');
-  const adjusted = page.locator('#event-adjusted-deadline');
-  await year.fill('2028');
-  await expect(year).toBeFocused();
-  await adjusted.fill('');
-  await expect(adjusted).toBeFocused();
-  await page.locator('#event-form button[type="submit"]').click();
-  await expect
-    .poll(() =>
-      page.evaluate(() => {
-        const saved = window.editorTest.record.state.events.find(
-          (event) => event.id === 'regular-notice',
-        );
-        return [saved?.notice?.admission?.year, saved?.deadlineAdjustment ?? null];
-      }),
-    )
-    .toEqual([2028, null]);
+  await page.locator('#activity-pendency-todas').check();
+  const row = page.locator('[data-activity-row="regular-admission-notice"]');
+  await expect(row).toContainText('Opcional');
+  await expect(row).toContainText('15 jun');
+  await page.evaluate(() => {
+    const { record } = window.editorTest;
+    record.state.events = record.state.events.filter((event) => event.id !== 'regular-notice');
+    record.version++;
+    return window.publishReviewerCalendar();
+  });
+  await expect(row).toHaveCount(0);
 });

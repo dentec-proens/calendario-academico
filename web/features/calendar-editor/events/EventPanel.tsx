@@ -15,6 +15,13 @@ import EventEditor from './EventEditor.tsx';
 import CampusEventDetails from './CampusEventDetails.tsx';
 import { Notice } from '../../../components/ui/Notice.tsx';
 
+/** Whether the panel is up. Pausing keeps the access notice reachable, with the panel's draft. */
+export function useEventPanelOpen() {
+  const editor = useEventEditor();
+  const { editorRecovery, maintenance } = useAppSession();
+  return (editor.open || editor.panel !== null) && !(editorRecovery || maintenance);
+}
+
 /**
  * The one place where activities and campus events are filled.
  * A modal side sheet keeps the list visible behind it and closes with its button or Escape.
@@ -27,8 +34,7 @@ export default function EventPanel() {
   const navigate = useNavigate();
   const { editorRecovery, maintenance } = useAppSession();
   const paused = Boolean(editorRecovery || maintenance);
-  // Keep the access notice reachable while preserving the panel and its draft.
-  const open = (editor.open || editor.panel !== null) && !paused;
+  const open = useEventPanelOpen();
   useWorkRisk('interaction', open);
   const activityKey = editor.open
     ? editor.context?.kind === 'activity'

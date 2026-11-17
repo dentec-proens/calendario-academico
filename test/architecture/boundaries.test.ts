@@ -65,7 +65,7 @@ test('calculated imports cannot hide their dependency behind a literal prefix', 
 });
 
 test('academic domain stays independent of framework/runtime adapters and has no runtime import cycles', async () => {
-  const shared = [resolve(root, '../shared/equal.ts')];
+  const shared = [resolve(root, '../shared/equal.ts'), resolve(root, '../shared/search-text.ts')];
   const files = [...(await sources(root)), ...shared];
   const graph = new Map<string, string[]>();
   for (const file of files) {

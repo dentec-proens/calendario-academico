@@ -53,7 +53,13 @@ const user: Bootstrap['user'] = {
 };
 const info: Bootstrap = {
   user,
-  campuses: [{ id: campusId, name: 'Campus de teste', archived: false }],
+  campuses: [
+    { id: campusId, name: 'Campus de teste', archived: false },
+    // Whoever chooses among several campuses starts with none chosen.
+    ...(new URLSearchParams(location.search).has('two-campuses')
+      ? [{ id: 'campus-b' as Id<'campuses'>, name: 'Outro campus', archived: false }]
+      : []),
+  ],
   calendars: [],
   users: [
     user,

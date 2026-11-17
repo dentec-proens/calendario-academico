@@ -1,6 +1,7 @@
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
 import { onceLink } from '../helpers/activity-links.ts';
+import { activityPlan } from '../../src/domain/calendar/activities/plan.ts';
 import {
   eventFromValues,
   emptyEvent,
@@ -326,4 +327,28 @@ test('a new transfer notice starts with each offer in its own period of the cycl
     integrado: 'year-integrado',
     graduacao: 'year-graduacao',
   });
+});
+
+test('a campus week starts marked for every offer, as the norm recommends the whole community', () => {
+  const offer = (id: 'integrado' | 'graduacao') =>
+    ({
+      id,
+      kind: id,
+      delivery: 'presencial',
+      organization: 'anual',
+      scope: { status: 'covered' },
+      stages: { status: 'defined', perTerm: 3 },
+    }) as const;
+  const state = {
+    year: 2027,
+    weekdays: [1, 2, 3, 4, 5],
+    weekConfirmed: true,
+    offers: [offer('integrado'), offer('graduacao')],
+    periods: [],
+    events: [],
+  } as never;
+  const row = (id: string) => activityPlan(state).find((item) => item.id === id)!;
+  expect(activityDraft(state, row('cultural-week')).offers).toEqual(['integrado', 'graduacao']);
+  // The family meeting is required only on the integrated offer and is not recommended elsewhere.
+  expect(activityDraft(state, row('family-meeting')).offers).toEqual(['integrado']);
 });

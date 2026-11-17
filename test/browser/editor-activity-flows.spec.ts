@@ -643,6 +643,25 @@ test('a date applied in an activity is confirmed in its view, which the person t
   await expect(row).toBeFocused();
 });
 
+test('a confirmation is shown once, in the panel where the action happened', async ({
+  page,
+  fixtureServer,
+}) => {
+  await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
+  await selectEditorSection(page, 'events');
+  await openActivity(page, 'family-meeting');
+  await page.locator('#event-start').fill('2027-05-08');
+  await page.locator('#event-end').fill('2027-05-08');
+  await page.locator('#event-form button[type="submit"]').click();
+  await expect(page.locator('#event-panel-message')).toContainText('adicionada ao calendário');
+  const pageMessage = page.locator('#message');
+  await expect(pageMessage).toBeEmpty();
+  // Closing the panel does not repeat on the page what the panel already said.
+  await page.locator('#close-event-panel').click();
+  await expect(page.locator('#event-panel')).toBeHidden();
+  await expect(pageMessage).toBeEmpty();
+});
+
 test('a removal in an activity can be undone from the panel', async ({ page, fixtureServer }) => {
   await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
   await selectEditorSection(page, 'events');
@@ -654,6 +673,23 @@ test('a removal in an activity can be undone from the panel', async ({ page, fix
   await page.locator('#event-panel-message [data-undo]').click();
   await expect(page.locator('[data-remove-event="activity-event"]')).toBeVisible();
   await expect(page.locator('#event-panel-title')).toBeFocused();
+});
+
+test('a removal in a panel can still be undone from the page once the panel closes', async ({
+  page,
+  fixtureServer,
+}) => {
+  await page.goto(`${await fixtureServer('editor')}?id=synthetic-calendar`);
+  await selectEditorSection(page, 'events');
+  await openActivity(page, 'cultural-week');
+  await page.locator('[data-remove-event="activity-event"]').click();
+  const confirm = page.getByRole('alertdialog');
+  if (await confirm.isVisible()) await confirm.getByRole('button').last().click();
+  await expect(page.locator('#event-panel-message [data-undo]')).toBeVisible();
+  await page.locator('#close-event-panel').click();
+  await page.locator('#message [data-undo]').click();
+  await openActivity(page, 'cultural-week');
+  await expect(page.locator('[data-remove-event="activity-event"]')).toBeVisible();
 });
 
 test('discarding a pending draft from another activity stays on that activity', async ({

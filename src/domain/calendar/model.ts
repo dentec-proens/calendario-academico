@@ -137,11 +137,18 @@ export interface ActivityPlanItem {
   admissionType?: 'regular' | 'transfer';
   /** Offers for which the norm leaves the activity optional, with the note shown ('' for none). */
   optionalFor?: Readonly<Record<string, string>>;
+  /** Offer kinds where the activity is optional but recommended: a new record starts with them. */
+  recommendedFor?: readonly string[];
   /**
    * Activity this one became part of. The row stays declared so stored links keep reading, but a
    * save moves its dates to that activity, and lists hide the row while it has no date.
    */
   mergedInto?: string;
+  /**
+   * Ruleset version that retired the activity. The row stays declared so stored links keep
+   * reading; it asks for nothing, lists hide it while it has no date, and a save removes its dates.
+   */
+  retired?: string;
   /** New-student registration, required per offer and cycle by the intake configuration. */
   intake?: boolean;
   /** Subject that groups the activity in the plan, filled by the catalogue. */

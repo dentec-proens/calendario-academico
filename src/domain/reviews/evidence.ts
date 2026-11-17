@@ -1,5 +1,6 @@
 /** What the system found for each review criterion, as data for the interface to present. */
 import { termLabels } from '../calendar/config.ts';
+import { keptForOldLinks } from '../calendar/normalization/retired-activities.ts';
 import {
   isLocalDate,
   type CalendarEvent,
@@ -390,11 +391,11 @@ export function criterionSupport(
   const measured = measuredCriteria[criterion.id]?.(context);
   let evidence: ReviewEvidence =
     measured?.evidence ?? (criterion.pattern ? { kind: 'search' } : { kind: 'documental' });
-  // A row merged into another activity is evidence only while an old link still points to it.
+  // A row kept for old links (merged or retired) is evidence only while a link still points to it.
   const linked = coverage.filter(
     (row) =>
       row.requirement.reviewCriterionId === criterion.id &&
-      !(row.requirement.mergedInto && !row.events.length),
+      !(keptForOldLinks(row.requirement) && !row.events.length),
   );
   if (linked.length)
     evidence = { kind: 'coverage', rows: linked.map((row) => coverageRow(state, row)) };

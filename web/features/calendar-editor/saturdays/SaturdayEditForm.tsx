@@ -2,7 +2,7 @@ import { longDate } from '#src/domain/date-labels.ts';
 import type { CalendarEvent } from '#src/domain/calendar/model.ts';
 import { saturdayOfferOptions } from '#src/domain/calendar/activities/saturdays.ts';
 import { updateSaturdayActivity } from '#src/domain/calendar/commands/saturdays.ts';
-import { labelFor } from '#src/domain/calendar/offers.ts';
+import { kindNoteFor, labelFor } from '#src/domain/calendar/offers.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useCalendarForm } from '../forms/useCalendarForm.ts';
 import { Input } from '../forms/fields.tsx';
@@ -70,6 +70,7 @@ export default function SaturdayEditForm({
                 return {
                   id: option.id,
                   label: labelFor(state, option.id),
+                  kind: kindNoteFor(state, option.id),
                   checked,
                   disabled: blocked && !checked,
                   ...(!option.inPeriod

@@ -11,6 +11,7 @@ import { inspectBase } from './calendars/base';
 import { assertWritesOpen } from './lib/maintenance';
 import { equivalentRulesets, policyFor, rulesetVersion } from '../src/domain/policies/registry';
 import { withPedagogicalMeetingsMerged } from '../src/domain/calendar/normalization/pedagogical-meetings';
+import { withRetiredActivitiesDropped } from '../src/domain/calendar/normalization/retired-activities';
 import { inheritedEvents } from '../src/domain/institution/catalogue';
 import { applyObservances } from '../src/domain/calendar/observances';
 import { query, mutation } from './_generated/server';
@@ -508,8 +509,12 @@ export const createCalendarVersion = mutation({
       calendarId: copy,
       // A new draft starts under what is in force, so it never begins with a pending update.
       state: {
-        // A published content may predate a merge of activities; the new draft starts merged.
-        ...withPedagogicalMeetingsMerged(content.state, policyFor(row.year)),
+        // A published content may predate a merge or a retirement of activities; the new draft
+        // starts merged and without dates of retired activities.
+        ...withRetiredActivitiesDropped(
+          withPedagogicalMeetingsMerged(content.state, policyFor(row.year)),
+          policyFor(row.year),
+        ),
         rulesetVersion: rulesetVersion({ year: row.year, offers: content.state.offers }),
       },
       catalogueRevision: content.catalogueRevision,

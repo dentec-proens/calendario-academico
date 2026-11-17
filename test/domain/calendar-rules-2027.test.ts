@@ -213,44 +213,6 @@ test('prior publication keeps dates and destination when saved', () => {
     { offerId: 'integrado', periodId: 'deleted-period' },
   ]);
 });
-test('planned regular publication remains planned and December requires an explicit adjusted deadline', () => {
-  const state = calendar();
-  state.events = [
-    notice({
-      start: civilDate('2027-12-01'),
-      end: civilDate('2027-12-01'),
-      notice: {
-        publication: 'planned',
-        admission: { type: 'regular', year: 2028, term: 'annual', destinations: [] },
-      },
-      activity: onceLink('regular-admission-notice'),
-    }),
-  ];
-  expect(
-    evaluatePlan(state).rows.find(
-      (r) => r.offerId === 'integrado' && r.requirement.id === 'regular-admission-notice',
-    ),
-  ).toMatchObject({ coverage: 'partial', execution: 'planned' });
-  state.events[0].deadlineAdjustment = { date: civilDate('2027-12-02') };
-  expect(
-    evaluatePlan(state).rows.find(
-      (r) => r.offerId === 'integrado' && r.requirement.id === 'regular-admission-notice',
-    ),
-  ).toMatchObject({
-    coverage: 'complete',
-    execution: 'planned',
-    warnings: [],
-    reviewNotes: [
-      {
-        check: 'deadline-adjusted',
-        detail: expect.stringContaining('Prazo ajustado informado pelo campus'),
-        eventId: expect.any(String),
-      },
-    ],
-  });
-  expect(state.events[0].start).toBe('2027-12-01');
-  expect(state.events[0].notice?.publication).toBe('planned');
-});
 test('prior/cross-year references are informative even if the received discriminator claims event', () => {
   const state = calendar();
   for (const changes of [
@@ -451,43 +413,4 @@ test('duplicate occurrences remain editable one by one', () => {
   expect(applyDate(cleaned, cleaned.events[0])).toBe(cleaned);
   expect(() => applyDate(state, { ...first, id: 'new-duplicate' })).toThrow('mesmas datas');
   expect(() => applyDate(state, { ...third, name: first.name }, true)).toThrow('mesmas datas');
-});
-
-test('a deadline extended by a municipal cause is a review note, not a pending item', () => {
-  const state = calendar();
-  state.events = [
-    {
-      id: 'municipal',
-      name: 'Feriado municipal sintético',
-      start: civilDate('2027-06-15'),
-      end: civilDate('2027-06-15'),
-      effect: 'exclude',
-      offers: ['integrado'],
-      deadlineExtensionCause: 'municipal-holiday',
-    },
-    notice({
-      start: civilDate('2027-06-16'),
-      end: civilDate('2027-06-16'),
-      notice: {
-        publication: 'planned',
-        admission: { type: 'regular', year: 2028, term: 'annual', destinations: [] },
-      },
-      activity: onceLink('regular-admission-notice'),
-    }),
-  ];
-  expect(
-    evaluatePlan(state).rows.find(
-      (r) => r.offerId === 'integrado' && r.requirement.id === 'regular-admission-notice',
-    ),
-  ).toMatchObject({
-    coverage: 'complete',
-    warnings: [],
-    reviewNotes: [
-      {
-        check: 'deadline-extended',
-        detail: expect.stringContaining('por feriado municipal ou recesso decorrente'),
-        eventId: expect.any(String),
-      },
-    ],
-  });
 });

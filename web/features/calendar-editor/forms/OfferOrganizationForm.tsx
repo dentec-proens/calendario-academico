@@ -1,4 +1,5 @@
 import { Notice } from '../../../components/ui/Notice.tsx';
+import { KindNote } from '../OfferName.tsx';
 import {
   assessmentStageCounts,
   calendarLimits,
@@ -9,6 +10,7 @@ import {
 } from '#src/domain/calendar/config.ts';
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { useNavigate, useRouterState } from '@tanstack/react-router';
+import { useStore } from '@tanstack/react-form';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useCalendarForm } from './useCalendarForm.ts';
 import {
@@ -32,7 +34,7 @@ import {
   offerLabel,
   stageCount,
   stagesPerTerm,
-  labelFor,
+  offerKindNote,
 } from '#src/domain/calendar/offers.ts';
 import type {
   CalendarOffer,
@@ -83,6 +85,15 @@ const organizationOptions = Object.keys(termsByOrganization).map((organization) 
   label: organizationLabels[organization],
 }));
 const identityPaths = ['kind', 'label', 'delivery'];
+/** Block of the form a field or issue path belongs to: identity, structure or dates. */
+const blockOf = (path: string) =>
+  identityPaths.includes(path)
+    ? 0
+    : /^(organization|count)$/.test(path)
+      ? 1
+      : /^(periods|stages)/.test(path)
+        ? 2
+        : -1;
 
 function formDefaults(
   state: ActivityState & { offers: CalendarOffer[] },
@@ -221,6 +232,7 @@ export default function OfferOrganizationForm({
           : '',
     },
   );
+  const fieldMeta = useStore(form.store, (current) => current.fieldMeta);
   const kind = selectableModalities.find((kind) => kind === values.kind);
   const selectedOffer: NewOffer | undefined =
     savedOffer ??
@@ -229,6 +241,11 @@ export default function OfferOrganizationForm({
   const label = savedOffer
     ? offerLabel(savedOffer)
     : values.label.trim() || (kind ? modalityLabels[kind] : 'Nova oferta');
+  const kindNote = savedOffer
+    ? offerKindNote(savedOffer)
+    : kind
+      ? offerKindNote({ kind, label: values.label })
+      : undefined;
   const metadata = { label: values.label, delivery: values.delivery };
   const candidate = selectedOffer ? { ...selectedOffer, ...metadata } : undefined;
   const reference = candidate
@@ -282,8 +299,23 @@ export default function OfferOrganizationForm({
     candidate && dirty && issues.length === 0
       ? offerOrganizationWarnings(prepared, modality, values, savedOffer ? undefined : candidate)
       : [];
-  const visibleIssues =
-    dirty || attempted ? issues : issues.filter((issue) => issue.message.includes('inteiramente'));
+  // A new offer starts empty: an issue shows once its field is touched, or once the person moves on
+  // to a later block (identity, structure, dates), so a blocked Apply always has a visible reason.
+  const touchedNames = Object.entries(
+    fieldMeta as Record<string, { isTouched?: boolean } | undefined>,
+  )
+    .filter(([, meta]) => meta?.isTouched)
+    .map(([name]) => name);
+  const furthestBlock = Math.max(-1, ...touchedNames.map(blockOf));
+  const touched = (path: string) =>
+    touchedNames.some((name) => name === path || name.startsWith(`${path}.`));
+  const visibleIssues = attempted
+    ? issues
+    : issues.filter(
+        (issue) =>
+          issue.message.includes('inteiramente') ||
+          (existingId ? dirty : touched(issue.path) || blockOf(issue.path) < furthestBlock),
+      );
   const messageFor = (path: string) =>
     visibleIssues
       .filter((issue) => issue.path === path)
@@ -374,7 +406,10 @@ export default function OfferOrganizationForm({
     >
       <div className="offer-organization-heading">
         <div className="offer-organization-title">
-          <h4 id={`${prefix}-heading`}>{label}</h4>
+          <h4 id={`${prefix}-heading`}>
+            {label}
+            <KindNote kind={kindNote} />
+          </h4>
           {(included || dirty) && (
             <p
               className="offer-status"
@@ -400,7 +435,7 @@ export default function OfferOrganizationForm({
           aria-expanded={expanded}
           aria-controls={`${prefix}-editor`}
           data-edit-organization={modality}
-          aria-label={`${expanded ? 'Recolher' : 'Editar'} ${labelFor(state, modality)}`}
+          aria-label={`${expanded ? 'Recolher' : 'Editar'} ${label}`}
           onClick={() => {
             setApplied(false);
             setOpen(!expanded);

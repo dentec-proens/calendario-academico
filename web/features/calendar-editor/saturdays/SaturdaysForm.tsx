@@ -5,7 +5,7 @@ import {
   saturdaySelection,
   saturdayYear,
 } from '#src/domain/calendar/activities/saturdays.ts';
-import { offerIds, labelFor, offerNames } from '#src/domain/calendar/offers.ts';
+import { offerIds, kindNoteFor, labelFor, offerNames } from '#src/domain/calendar/offers.ts';
 import { periodsForOffer } from '#src/domain/calendar/organization/periods.ts';
 import { applySaturdayActivities } from '#src/domain/calendar/commands/saturdays.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
@@ -251,6 +251,7 @@ export default function SaturdaysForm() {
             items={reach.offers.map(({ id, reached, outOfPeriod }) => ({
               id,
               label: labelFor(state, id),
+              kind: kindNoteFor(state, id),
               checked: Boolean(reached.length) && !field.state.value.includes(id),
               disabled: !reached.length,
               ...(!reached.length

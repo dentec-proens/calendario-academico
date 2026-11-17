@@ -96,7 +96,6 @@ export const consup2922027Policy: CalendarPolicy = {
         },
       ],
       XXVI: [{ text: 'Se o evento é aberto à comunidade.' }],
-      'admission-regular': [{ text: 'Se o prazo foi ajustado, o registro do ajuste da Proens.' }],
     },
     excludeFromSearch: (criterionId, event) => criterionId === 'III' && isTeacherVacation(event),
     notEvaluated: [
@@ -106,9 +105,5 @@ export const consup2922027Policy: CalendarPolicy = {
       'Art. 13: finalidades dos sábados letivos.',
       'Art. 15: encaminhamento à Proens com 60 dias de antecedência do início do ano letivo.',
     ],
-  },
-  notices: {
-    regularAdmission:
-      'Art. 10: publique os editais do Processo Seletivo 2028 até 15/06/2027. Informe aqui a data da publicação; o prazo não a preenche automaticamente.',
   },
 };

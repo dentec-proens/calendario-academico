@@ -504,7 +504,7 @@
           "problems": false
         },
         "regular-admission-notice": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -1357,7 +1357,7 @@
           "problems": false
         },
         "regular-admission-notice": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -2154,7 +2154,7 @@
           "problems": false
         },
         "regular-admission-notice": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -3442,7 +3442,7 @@
           "problems": false
         },
         "regular-admission-notice": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -4742,7 +4742,7 @@
           "problems": false
         },
         "regular-admission-notice": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -5291,7 +5291,7 @@
           "problems": false
         },
         "regular-admission-notice": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -5843,7 +5843,7 @@
           "problems": false
         },
         "regular-admission-notice": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -6446,7 +6446,7 @@
           "problems": false
         },
         "regular-admission-notice": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -7055,7 +7055,7 @@
           "problems": false
         },
         "regular-admission-notice": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -7719,7 +7719,7 @@
           "problems": false
         },
         "regular-admission-notice": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -8728,7 +8728,7 @@
           "offerId": "posgraduacao",
           "applicability": "unconfigured",
           "coverage": "pending",
-          "humanReview": "pending",
+          "humanReview": "unmapped",
           "execution": "unclassified",
           "events": [],
           "issues": [],
@@ -9426,8 +9426,8 @@
           "problems": true
         },
         "regular-admission-notice": {
-          "status": "pending",
-          "toConfirm": 1,
+          "status": "unconfigured",
+          "toConfirm": 0,
           "diverges": true,
           "problems": true
         },
@@ -10639,7 +10639,7 @@
           "offerId": "posgraduacao",
           "applicability": "unconfigured",
           "coverage": "pending",
-          "humanReview": "pending",
+          "humanReview": "unmapped",
           "execution": "unclassified",
           "events": [],
           "issues": [],
@@ -12339,7 +12339,7 @@
           "offerId": "integrado",
           "applicability": "unconfigured",
           "coverage": "pending",
-          "humanReview": "pending",
+          "humanReview": "unmapped",
           "execution": "unclassified",
           "events": [],
           "issues": [],
@@ -12350,7 +12350,7 @@
           "offerId": "graduacao",
           "applicability": "unconfigured",
           "coverage": "pending",
-          "humanReview": "pending",
+          "humanReview": "unmapped",
           "execution": "unclassified",
           "events": [],
           "issues": [],
@@ -13683,7 +13683,7 @@
           "problems": false
         },
         "regular-admission-notice": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -14272,7 +14272,7 @@
           "problems": false
         },
         "regular-admission-notice": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -14852,7 +14852,7 @@
           "problems": false
         },
         "regular-admission-notice": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -15248,7 +15248,7 @@
           "problems": false
         },
         "regular-admission-notice": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -15497,7 +15497,7 @@
           "problems": false
         },
         "regular-admission-notice": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -15967,7 +15967,7 @@
           "problems": false
         },
         "regular-admission-notice": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -20667,7 +20667,7 @@
           "problems": false
         },
         "regular-admission-notice": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -20966,7 +20966,7 @@
           "problems": false
         },
         "regular-admission-notice": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -21289,7 +21289,7 @@
           "problems": false
         },
         "regular-admission-notice": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -22164,7 +22164,7 @@
           "problems": false
         },
         "regular-admission-notice": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -23500,7 +23500,7 @@
           "problems": false
         },
         "regular-admission-notice": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false
@@ -26185,7 +26185,7 @@
           "problems": false
         },
         "regular-admission-notice": {
-          "status": "pending",
+          "status": "optional",
           "toConfirm": 0,
           "diverges": false,
           "problems": false

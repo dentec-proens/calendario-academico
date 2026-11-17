@@ -134,8 +134,4 @@ export interface CalendarPolicy {
     /** Devices of the norm with no criterion of their own, listed for the reviewer. */
     notEvaluated?: readonly string[];
   };
-  notices?: {
-    /** Deadline note shown while classifying a regular admission notice. */
-    regularAdmission?: string;
-  };
 }

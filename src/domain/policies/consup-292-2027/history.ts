@@ -97,5 +97,22 @@ export const rulesetChanges: readonly RulesetChange[] = [
     summary:
       'Conselho de classe, coletivo pedagógico e reunião pedagógica passam a ser uma só atividade por etapa, porque cada campus ou curso usa um desses termos; datas vinculadas à reunião pedagógica passam a valer para essa atividade. O inciso XIII não pede uma data por etapa: ela é exigida apenas no técnico integrado e é opcional nas demais ofertas.',
   },
+  {
+    version: 'consup-292-2027-v12',
+    date: civilDate('2026-11-17'),
+    effect: 'editorial',
+    criteria: ['XXIV', 'XXV', 'XXVI'],
+    source: 'Art. 11, parágrafo único, da Resolução 292 e revisão da interface em 17/11/2026',
+    summary:
+      'As semanas dos incisos XXIV a XXVI continuam facultativas na graduação, agora com a nota de que a norma recomenda o envolvimento de toda a comunidade acadêmica; uma nova data delas começa marcada também para a graduação, que o campus pode desmarcar. Sem mudança de obrigações.',
+  },
+  {
+    version: 'consup-292-2027-v13',
+    date: civilDate('2026-11-17'),
+    effect: 'relaxes',
+    source: 'Arts. 2º e 10 da Resolução 292 e decisão da gestão do sistema em 17/11/2026',
+    summary:
+      'Os editais do Processo Seletivo 2028 são publicados pela Reitoria até 15/06/2027 (Art. 10), prazo que já consta da base institucional (Art. 2º). O campus deixa de registrar essa publicação, e a revisão deixa de ter critério próprio para ela. As datas registradas nos calendários em edição foram removidas; os envios e os calendários fora de edição as conservam.',
+  },
 ];
 export const rulesetVersion = rulesetChanges.at(-1)!.version;

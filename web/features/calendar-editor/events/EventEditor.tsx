@@ -1,4 +1,5 @@
 import { compactDate, longDate } from '#src/domain/date-labels.ts';
+import OfferName from '../OfferName.tsx';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { ArrowLeft, ChevronDown } from 'lucide-react';
 import { categories } from '#src/domain/calendar/activities/categories.ts';
@@ -54,7 +55,6 @@ const meetingLabels = { ...effectLabels, exclude: 'Aulas suspensas', note: 'Aula
 
 export default function EventEditor() {
   const { state, readOnly, events } = useCalendarEditor();
-  const regularAdmissionNotice = policyFor(state.year).notices?.regularAdmission;
   const editor = useEventEditor();
   const { form, values } = editor;
   const heading = useRef<HTMLHeadingElement>(null);
@@ -87,6 +87,7 @@ export default function EventEditor() {
   const destinations = publication ? draftDestinations(values) : [];
   const destinationIssues = destinationIssueLines(state, {
     offers: values.offers,
+    end: values.end as CivilDate,
     notice: {
       admission: {
         type: values.admissionType || 'regular',
@@ -417,9 +418,6 @@ export default function EventEditor() {
               </ul>
             </Notice>
           )}
-          {values.admissionType === 'regular' && regularAdmissionNotice && (
-            <Notice tone="info">{regularAdmissionNotice}</Notice>
-          )}
           {values.admissionType === 'transfer' && (
             <p className="help">
               Art. 11, VIII: publicação antes do início do período de destino. Vincule o período
@@ -599,7 +597,7 @@ export default function EventEditor() {
                 );
                 return choices.length === 1 && field.state.value.join() === choices.join() ? (
                   <p id="event-modalities" className="event-scope">
-                    <strong>Oferta abrangida:</strong> {labelFor(state, choices[0])}
+                    <strong>Oferta abrangida:</strong> <OfferName state={state} id={choices[0]} />
                   </p>
                 ) : (
                   <fieldset id="event-modalities" className="event-scope">
@@ -619,11 +617,13 @@ export default function EventEditor() {
                             )
                           }
                         />
-                        {labelFor(state, modality)}
-                        {requirement &&
-                        offers.includes(modality) &&
-                        applicabilityFor(state, requirement, modality) === 'required'
-                          ? ' (obrigatória)'
+                        <OfferName state={state} id={modality} />
+                        {requirement && offers.includes(modality)
+                          ? {
+                              required: ' (obrigatória)',
+                              optional: ' (facultativa)',
+                              unconfigured: '',
+                            }[applicabilityFor(state, requirement, modality)]
                           : ''}
                       </label>
                     ))}

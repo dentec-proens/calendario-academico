@@ -9,7 +9,12 @@ import {
 import { appliesTo } from '../modalities.ts';
 import { calendarOffers } from '../offers.ts';
 import { policyFor } from '../../policies/registry.ts';
-import { admissionDestination, temporalPosition, validateActivityRecord } from './validation.ts';
+import {
+  admissionDestination,
+  publishedAfterStart,
+  temporalPosition,
+  validateActivityRecord,
+} from './validation.ts';
 import { periodsForOffer } from '../organization/periods.ts';
 import { deadlineStanding, requirementDeadline } from './deadlines.ts';
 import { exactDaysIssue } from './vacations.ts';
@@ -238,7 +243,7 @@ export function evaluatePlan(
                 );
                 return false;
               }
-              if (event.end >= period.start) {
+              if (publishedAfterStart(event, period)) {
                 found(
                   issues,
                   'admission-before-period',

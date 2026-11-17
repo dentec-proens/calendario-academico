@@ -38,7 +38,7 @@ type Fields = Omit<
 >;
 
 /** Offer-level declarations are plain values: policies read them from rows of any slot. */
-type OfferFields = 'optionalFor' | 'intake';
+type OfferFields = 'optionalFor' | 'recommendedFor' | 'intake';
 
 /**
  * What one activity of a norm declares besides its repetition. Fields may depend on the slot,

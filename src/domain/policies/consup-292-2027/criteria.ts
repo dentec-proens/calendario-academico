@@ -270,13 +270,4 @@ export const criteria = frozenCriteria([
     item: 'Art. 11, XXVI',
     pattern: 'cultural|interescolar',
   },
-  {
-    id: 'admission-regular',
-    title: 'Editais do Processo Seletivo 2028',
-    requirement:
-      'Publicar os editais dos cursos técnicos e de graduação presenciais até 15/06/2027. A Proens pode ajustar o prazo conforme o cronograma do certame.',
-    source: 'Art. 10 e parágrafo único',
-    item: 'Art. 10',
-    pattern: 'processo seletivo',
-  },
 ]);

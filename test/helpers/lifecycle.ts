@@ -66,6 +66,8 @@ export function readyContent(given: readonly CalendarOffer[] = [integrado]): Cal
     offers: ids,
   }));
   for (const requirement of activityPlan(state)) {
+    // A retired activity asks for nothing: a ready calendar has no date for it.
+    if (requirement.retired) continue;
     const event: CalendarEvent = {
       id: requirement.id.replace(/:/g, '-'),
       activity: requirement.activity,

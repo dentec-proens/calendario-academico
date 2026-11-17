@@ -169,6 +169,8 @@ test('the release A capture is intact and its published versions keep their fing
 const currentFingerprints: Record<string, string> = {
   'consup-292-2027-v10': '38b41ac8441397415e0ec925e5b25f7c5e508dc26dc912ce665ca3bf5baede1b',
   'consup-292-2027-v11': '5e8c4a8a35b1feba8d021c736422e4987a38f2aa499588917158ebf582c34e7c',
+  'consup-292-2027-v12': 'bd4b7f261e406dec2d5dca713d53116e5cb7666ad46cdacf5ca6954b762742ba',
+  'consup-292-2027-v13': 'abe0073ad62ce36bb8768f4fd804fd0da91b21c82debcc283c9e12cb05a50e43',
 };
 
 test('the expanded catalogue of the current version keeps its fingerprint', () => {
@@ -233,6 +235,8 @@ const observanceFingerprints: Record<string, string> = {
   'consup-292-2027-v9': 'afa2cb2556353696ba3b20ec0f40eac2058fb230108a031380c68dde5801d0c2',
   'consup-292-2027-v10': 'afa2cb2556353696ba3b20ec0f40eac2058fb230108a031380c68dde5801d0c2',
   'consup-292-2027-v11': 'afa2cb2556353696ba3b20ec0f40eac2058fb230108a031380c68dde5801d0c2',
+  'consup-292-2027-v12': 'afa2cb2556353696ba3b20ec0f40eac2058fb230108a031380c68dde5801d0c2',
+  'consup-292-2027-v13': 'afa2cb2556353696ba3b20ec0f40eac2058fb230108a031380c68dde5801d0c2',
 };
 test('observance permissions are bound to the current ruleset history', () => {
   for (const policy of boundPolicies) {
@@ -253,6 +257,8 @@ const schoolDayFingerprints: Record<string, string> = {
   'consup-292-2027-v9': 'd87ba71081c910887995df3fb28fc342e22cb9846d881e597754de209f24e6f7',
   'consup-292-2027-v10': 'd87ba71081c910887995df3fb28fc342e22cb9846d881e597754de209f24e6f7',
   'consup-292-2027-v11': 'd87ba71081c910887995df3fb28fc342e22cb9846d881e597754de209f24e6f7',
+  'consup-292-2027-v12': 'd87ba71081c910887995df3fb28fc342e22cb9846d881e597754de209f24e6f7',
+  'consup-292-2027-v13': 'd87ba71081c910887995df3fb28fc342e22cb9846d881e597754de209f24e6f7',
 };
 test('school-day classification is bound to the current ruleset history', () => {
   for (const policy of boundPolicies) {

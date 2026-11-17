@@ -103,6 +103,35 @@ test('calendar creation asks for year and offers and previews the draft name', a
   await page.locator('[data-page="accounts"]').click();
 });
 
+test('whoever chooses among several campuses starts with none chosen', async ({
+  page,
+  fixtureServer,
+}) => {
+  const origin = new URL(await fixtureServer('portal')).origin;
+  await page.goto(origin + '/calendarios?two-campuses');
+  await page.getByRole('button', { name: 'Novo calendário' }).click();
+  const campus = page.getByRole('combobox', { name: 'Campus' });
+  const name = page.getByLabel('Nome do calendário', { exact: true });
+  await expect(campus).toHaveValue('');
+  await expect(name).toHaveText('Escolha o campus');
+  await page.getByLabel('Técnico integrado').check();
+  await page.getByRole('button', { name: 'Criar rascunho' }).click();
+  await expect(campus).toHaveJSProperty('validity.valueMissing', true);
+  await expect(page).toHaveURL(/\/calendarios\/novo/);
+  await campus.selectOption({ label: 'Outro campus' });
+  await expect(name).toHaveText('Calendário 2027 - Campus Outro campus');
+  await page.getByRole('button', { name: 'Criar rascunho' }).click();
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          window.portalRouterTest.mutations.find(({ name }) => name === 'calendars:createCalendar')
+            ?.args,
+      ),
+    )
+    .toMatchObject({ body: { campusId: 'campus-b' } });
+});
+
 test('portal shares each subject across roles while preserving drafts, scoped controls, history and mobile menus', async ({
   page,
   fixtureServer,

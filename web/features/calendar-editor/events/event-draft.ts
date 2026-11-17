@@ -253,9 +253,15 @@ export function activityDraft(
   requirement: ActivityPlanItem,
 ): EventValues {
   const valid = recordOffers(state, requirement);
-  const pertinent = valid.filter(
-    (modality) => applicabilityFor(state, requirement, modality) === 'required',
-  );
+  // Required offers, and optional ones the norm recommends; never an offer it does not cover.
+  const pertinent = valid.filter((modality) => {
+    const applicability = applicabilityFor(state, requirement, modality);
+    return (
+      applicability === 'required' ||
+      (applicability === 'optional' &&
+        Boolean(requirement.recommendedFor?.includes(offerFor(state, modality)!.kind)))
+    );
+  });
   const modalities = pertinent.length
     ? pertinent
     : requirement.modalities?.length && !requirement.offerId

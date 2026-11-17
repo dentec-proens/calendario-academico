@@ -8,6 +8,7 @@ import { normalizeOfferCalendar, offerCalendarContent } from './normalization/no
 import { kinds } from './offers.ts';
 import { policyFor } from '../policies/registry.ts';
 import { withPedagogicalMeetingsMerged } from './normalization/pedagogical-meetings.ts';
+import { withRetiredActivitiesDropped } from './normalization/retired-activities.ts';
 
 type OfferState = CalendarContent & { year: number; campus?: string };
 
@@ -25,8 +26,15 @@ export function prepareOfferCalendarSave<E extends DateFields & { active: boolea
   // A tab opened before a merge of activities, or a calendar back in editing, still links dates to
   // the activity that left: both sides move them first, so the link is kept and the save goes on.
   const policy = policyFor(edited.year);
-  const previous = withPedagogicalMeetingsMerged(stored, policy);
-  const proposed = withPedagogicalMeetingsMerged(edited, policy);
+  // Dates of a retired activity leave the same way: the activity asks for nothing anymore.
+  const previous = withRetiredActivitiesDropped(
+    withPedagogicalMeetingsMerged(stored, policy),
+    policy,
+  );
+  const proposed = withRetiredActivitiesDropped(
+    withPedagogicalMeetingsMerged(edited, policy),
+    policy,
+  );
   if (proposed.year !== previous.year) invalidCalendar('O ano não pode mudar neste registro.');
   for (const old of previous.offers) {
     const next = proposed.offers.find((offer) => offer.id === old.id);

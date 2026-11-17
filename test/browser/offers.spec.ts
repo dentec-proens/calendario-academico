@@ -159,7 +159,16 @@ for (const width of [1440, 390]) {
     await expect(page.locator('[data-offer="graduacao-3"]')).toContainText(
       '1 etapa por semestre (2 no ano)',
     );
+    // A name that does not say the kind is followed by it wherever the offer is listed.
+    await expect(page.locator('#selected-modalities')).toContainText(
+      'Engenharia Elétrica · Graduação',
+    );
+    await expect(page.locator('[data-offer="graduacao-2"] h4')).toHaveText(
+      'Engenharia Elétrica · Graduação',
+    );
+    await expect(page.locator('[data-offer="integrado"] h4')).toHaveText('Técnico integrado');
     await page.locator('[data-edit-organization="graduacao-2"]').click();
+    await expect(page.getByRole('button', { name: 'Recolher Engenharia Elétrica' })).toBeVisible();
     // A named offer keeps its type in view; without a name, the card's title already is the type.
     await expect(page.locator('#offer-graduacao-2-form .offer-readonly-field')).toHaveText(
       'Tipo de ofertaGraduação',
@@ -200,7 +209,7 @@ for (const width of [1440, 390]) {
     await expect(page).toHaveURL(/atividadeOferta=graduacao-2/);
     await expect(page.locator('#activity-modality')).toHaveValue('graduacao-2');
     await expect(page.locator('#activity-modality option:checked')).toHaveText(
-      'Engenharia Elétrica',
+      'Engenharia Elétrica · Graduação',
     );
     await selectEditorSection(page, 'calendar');
     await expect(page.locator('#months')).toContainText('Licenciatura em Química');

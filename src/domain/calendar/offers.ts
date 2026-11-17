@@ -1,5 +1,6 @@
 import { modalityIds, modalityLabels } from './config.ts';
 import { DomainError } from '../errors.ts';
+import { searchText } from '../../shared/search-text.ts';
 import type {
   CalendarOffer,
   CalendarContent,
@@ -18,9 +19,15 @@ export const offerIds = (state: AssessmentSettings): string[] =>
   calendarOffers(state).map((offer) => offer.id);
 export const offerFor = (state: AssessmentSettings, id: string): CalendarOffer | undefined =>
   calendarOffers(state).find((offer) => offer.id === id);
+/**
+ * An offer's name. An id the calendar does not hold (an offer not yet applied, or one an old date
+ * still lists) is named by the kind its id starts with (`graduacao-2`), never shown as an id.
+ */
 export const labelFor = (state: AssessmentSettings, id: string): string => {
   const offer = offerFor(state, id);
-  return offer ? offerLabel(offer) : id;
+  return offer
+    ? offerLabel(offer)
+    : (modalityLabels[id.replace(/-\d+$/, '')] ?? 'Oferta não cadastrada');
 };
 /** The offers by name, for a sentence: "Técnico integrado e Graduação". */
 export const offerNames = (state: AssessmentSettings, ids: readonly string[]): string => {
@@ -39,6 +46,27 @@ export const levelOf = (offer: CalendarOffer): 'tecnico' | 'graduacao' | 'posgra
   offer.kind === 'integrado' || offer.kind === 'subsequente' ? 'tecnico' : offer.kind;
 export const offerLabel = (offer: CalendarOffer): string =>
   offer.label?.trim() || modalityLabels[offer.kind];
+/**
+ * The kind of a named offer, shown beside its name where offers are chosen or listed: "Cursos
+ * Trimestrais" alone does not say it is the integrated technical offer. Undefined when the name is
+ * the kind or already says it.
+ */
+export const offerKindNote = (offer: Pick<CalendarOffer, 'kind' | 'label'>): string | undefined => {
+  const kind = modalityLabels[offer.kind];
+  const label = offer.label?.trim();
+  return label && !searchText(label).includes(searchText(kind)) ? kind : undefined;
+};
+export const kindNoteFor = (state: AssessmentSettings, id: string): string | undefined => {
+  const offer = offerFor(state, id);
+  return offer ? offerKindNote(offer) : undefined;
+};
+/** Separator between an offer's name and its kind, wherever both are shown. */
+export const kindSeparator = ' · ';
+/** Name and kind in plain text, for a select option: "Cursos Trimestrais · Técnico integrado". */
+export const labelWithKind = (state: AssessmentSettings, id: string): string => {
+  const note = kindNoteFor(state, id);
+  return note ? `${labelFor(state, id)}${kindSeparator}${note}` : labelFor(state, id);
+};
 
 /**
  * Norm an offer follows under a policy with scope (`CalendarPolicy.scope`): the campus answer when

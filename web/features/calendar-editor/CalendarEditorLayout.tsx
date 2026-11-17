@@ -1,4 +1,5 @@
 import { LoadingIndicator } from '../../components/ui/LoadingIndicator.tsx';
+import OfferName from './OfferName.tsx';
 import { EditorErrorBoundary } from './EditorErrorBoundary.tsx';
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, Check, Eye, Copy, History } from 'lucide-react';
@@ -17,8 +18,8 @@ import { activityPlan } from '#src/domain/calendar/activities/plan.ts';
 import { Link, Outlet, useNavigate, useRouterState } from '@tanstack/react-router';
 import { CalendarEditorProvider, useCalendarEditor } from './session/CalendarEditorProvider.tsx';
 import { EventEditorProvider, useEventEditor } from './events/EventEditorProvider.tsx';
-import EditorNotices from './EditorNotices.tsx';
-import EventPanel from './events/EventPanel.tsx';
+import EditorNotices, { usePageNotices } from './EditorNotices.tsx';
+import EventPanel, { useEventPanelOpen } from './events/EventPanel.tsx';
 import NewEventButton from './events/NewEventButton.tsx';
 import { SectionActionsProvider } from './section-actions.tsx';
 import { CalendarExportProvider } from './export/CalendarExportProvider.tsx';
@@ -33,7 +34,7 @@ import {
   criterionDestination,
   stepIssueCounts,
 } from './editor-steps.ts';
-import { offerIds, labelFor } from '#src/domain/calendar/offers.ts';
+import { offerIds } from '#src/domain/calendar/offers.ts';
 import { groupPendencies } from '#src/domain/calendar/pendencies.ts';
 import { contentIssues } from '#src/domain/calendar/readiness.ts';
 import EditorSteps from './EditorSteps.tsx';
@@ -72,6 +73,7 @@ function EditorFrame() {
   } = useCalendarEditor();
   const { context, resume, open: eventEditorOpen } = useEventEditor();
   const { message } = useSessionState();
+  const pageNotices = usePageNotices(message, undoable, useEventPanelOpen());
   const { permissions } = useAppSession();
   const currentContent = useMemo<DiffSide>(
     () => ({
@@ -171,6 +173,8 @@ function EditorFrame() {
       </Link>
     ) : null;
   };
+  // The missing courses count as one more pending item, in the header as in the steps.
+  const issueCount = pendencies.length + (record.courses ? 0 : 1);
   // The backend refuses these submissions too; saying why beats an error after confirming.
   const submitUnavailable = !connected
     ? 'Sem conexão. O envio volta a ficar disponível quando a conexão for restabelecida.'
@@ -178,13 +182,11 @@ function EditorFrame() {
       ? 'O calendário mudou em outra sessão. Reabra-o antes de enviar.'
       : status === 'error' || status === 'blocked'
         ? 'Resolva o salvamento das alterações antes de enviar.'
-        : !record.courses
-          ? // The courses come first, without hiding how much else is left.
-            pendencies.length
-            ? `${missingCoursesIssue} Corrija também ${pendencies.length === 1 ? 'a pendência' : `as ${pendencies.length} pendências`} de conteúdo.`
-            : missingCoursesIssue
-          : pendencies.length
-            ? `Corrija ${pendencies.length === 1 ? 'a pendência' : `as ${pendencies.length} pendências`} de conteúdo antes de enviar.`
+        : !record.courses && !pendencies.length
+          ? missingCoursesIssue
+          : issueCount
+            ? // The same total as the steps; the courses, when missing, are named first.
+              `Corrija ${issueCount === 1 ? 'a pendência' : `as ${issueCount} pendências`} antes de enviar.${record.courses ? '' : ` ${missingCoursesIssue}`}`
             : undefined;
   // Shared by the header and by the review step's footer, which repeats only the submission.
   const lifecycle = {
@@ -247,7 +249,9 @@ function EditorFrame() {
               aria-label="Formas de oferta e níveis"
             >
               {offerIds(state).map((item) => (
-                <li key={item}>{labelFor(state, item)}</li>
+                <li key={item}>
+                  <OfferName state={state} id={item} />
+                </li>
               ))}
             </ul>
             {/* Rarely needed, so it sits with the record's data; it needs only read access. */}
@@ -304,8 +308,8 @@ function EditorFrame() {
       <div className="editor-feedback" ref={feedback}>
         <div id="message" role="status" aria-live="polite">
           <EditorNotices
-            message={message}
-            undoable={undoable}
+            message={pageNotices.message}
+            undoable={pageNotices.undoable}
             // The step's title keeps the place.
             onUndone={() => heading.current?.focus({ preventScroll: true })}
           />
@@ -444,7 +448,7 @@ function EditorFrame() {
           calendarId={record.id}
           current={currentSection}
           // Courses are a content issue too: the backend refuses the submission without them.
-          issueCount={pendencies.length + (record.courses ? 0 : 1)}
+          issueCount={issueCount}
           stepCounts={stepCounts}
         />
         <div className="editor-section-content">

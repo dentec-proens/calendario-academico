@@ -1,6 +1,7 @@
 import { calendarLimits } from '../config.ts';
 import type { ActivityState, AssessmentSettings, CalendarEvent, CalendarPeriod } from '../model.ts';
 import { parseDate } from '../../civil-date.ts';
+import { longDate } from '../../date-labels.ts';
 import { offerFor } from '../offers.ts';
 import { isAssessmentStage, sameActivity } from './activity-ref.ts';
 import { assessmentIntervalIssue } from './assessment-intervals.ts';
@@ -144,7 +145,12 @@ export const admissionDestination = (event: Pick<CalendarEvent, 'notice'>, offer
   event.notice?.admission?.destinations.find((destination) => destination.offerId === offerId)
     ?.periodId;
 
-export type NoticeDestinationProblem = 'missing' | 'orphan' | 'unassociated' | 'other-term';
+export type NoticeDestinationProblem =
+  | 'missing'
+  | 'orphan'
+  | 'unassociated'
+  | 'other-term'
+  | 'after-start';
 
 export interface NoticeDestinationIssue {
   offerId: string;
@@ -202,5 +208,37 @@ export function noticeDestinationIssues(
         },
       ];
     return [];
+  });
+}
+
+/** Art. 11, VIII: a transfer notice is published before its destination period starts. */
+export const publishedAfterStart = (event: Pick<CalendarEvent, 'end'>, period: CalendarPeriod) =>
+  event.end >= period.start;
+
+/**
+ * Offers whose transfer notice, as dated, comes out once its destination period has started. The
+ * readiness check refuses it (`admission-before-period`); the form says it while the date is typed.
+ * Destinations that are missing or wrong are `noticeDestinationIssues`, not repeated here.
+ */
+export function noticeAfterStartIssues(
+  state: AssessmentSettings & { periods: CalendarPeriod[] },
+  event: Pick<CalendarEvent, 'notice' | 'offers' | 'end'>,
+): NoticeDestinationIssue[] {
+  const admission = event.notice?.admission;
+  if (admission?.type !== 'transfer' || !event.end) return [];
+  return event.offers.flatMap((offerId): NoticeDestinationIssue[] => {
+    const periodId = admissionDestination(event, offerId);
+    const period = periodsForOffer(state, offerId).find((item) => item.id === periodId);
+    if (!period || period.association.term !== admission.term) return [];
+    return publishedAfterStart(event, period)
+      ? [
+          {
+            offerId,
+            periodId,
+            problem: 'after-start',
+            message: `publique antes do início do período de destino “${period.name ?? periodId}”, em ${longDate(period.start)}`,
+          },
+        ]
+      : [];
   });
 }

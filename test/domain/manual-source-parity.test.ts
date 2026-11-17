@@ -2,7 +2,6 @@ import { civilDate } from '../../src/domain/civil-date.ts';
 import { expect, test } from 'vitest';
 import { countCalendar } from '../../src/domain/calendar/counting/core.ts';
 import { evaluateCalendar } from '../../src/domain/calendar/counting/evaluation.ts';
-import { evaluatePlan } from '../../src/domain/calendar/activities/plan-evaluation.ts';
 import { applicabilityFor } from '../../src/domain/policies/registry.ts';
 import { prorogatedDeadline } from '../../src/domain/calendar/activities/deadlines.ts';
 import { validateActivityRecord } from '../../src/domain/calendar/activities/validation.ts';
@@ -301,59 +300,6 @@ test('local registration keeps its explicit required and optional choices withou
   expect(rows.map((row) => applicabilityFor(stripped, row, 'graduacao'))).toEqual(
     rows.map((row) => applicabilityFor(original, row, 'graduacao')),
   );
-});
-
-test('an exceptional regular notice deadline keeps its date even with no source', () => {
-  const original = {
-    ...deadlineState(),
-    offers: [
-      {
-        id: 'integrado',
-        kind: 'integrado' as const,
-        delivery: 'a-conferir' as const,
-        organization: 'anual' as const,
-        stages: { status: 'defined' as const, perTerm: 2 },
-      },
-    ],
-  };
-  const row = activityPlan(original).find((item) => item.admissionType === 'regular')!;
-  expect(row.deadline).toBeTruthy();
-  const event: AnnotatedEvent = {
-    id: 'notice',
-    name: row.name,
-    activity: row.activity,
-    effect: 'note' as const,
-    offers: ['integrado'],
-    start: civilDate('2027-12-01'),
-    end: civilDate('2027-12-01'),
-    evidence: 'Publicação manual',
-    notice: {
-      publication: 'planned',
-      admission: { type: 'regular', year: 2028, term: 'annual', destinations: [] },
-    },
-    deadlineAdjustment: {
-      date: civilDate('2027-12-03'),
-      evidence: 'Cronograma manual',
-    },
-  };
-  original.events = [event];
-  const stripped = removeManualSources(original);
-  expect(() => validateActivityRecord(stripped, stripped.events[0])).not.toThrow();
-  const before = evaluatePlan(original).rows.find(
-    (item) => item.requirement.id === row.id && item.offerId === 'integrado',
-  )!;
-  const after = evaluatePlan(stripped).rows.find(
-    (item) => item.requirement.id === row.id && item.offerId === 'integrado',
-  )!;
-  expect(before.coverage).toBe('complete');
-  expect(after.coverage).toBe(before.coverage);
-  expect(after.execution).toBe(before.execution);
-  stripped.events[0].end = civilDate('2027-12-04');
-  expect(
-    evaluatePlan(stripped).rows.find(
-      (item) => item.requirement.id === row.id && item.offerId === 'integrado',
-    )?.coverage,
-  ).toBe('partial');
 });
 
 test('PDF omits manual source text but keeps automatic institutional references and full dates', () => {

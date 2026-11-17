@@ -73,7 +73,7 @@ for (const width of [1440, 390]) {
 
       // Every pendency keeps the submission unavailable, saying how many; each row leads to its
       // correction.
-      const reason = `Corrija as ${total} pendências de conteúdo antes de enviar.`;
+      const reason = `Corrija as ${total} pendências antes de enviar.`;
       await expect(page.locator('[data-lifecycle-footer-action="submit"]')).toBeDisabled();
       await expect(page.locator('#footer-lifecycle-submit-unavailable')).toHaveText(reason);
       // The header keeps the reason only as the button's description, without the line of text.

@@ -1,5 +1,5 @@
 import { declaredCategory } from '../helpers/declared-categories.ts';
-import { calendarOffers } from '../../src/domain/calendar/offers.ts';
+import { calendarOffers, offerFor } from '../../src/domain/calendar/offers.ts';
 import { expect, test } from 'vitest';
 import type { ActivityPlanItem, AssessmentSettings } from '../../src/domain/calendar/model.ts';
 import { activityPlan } from '../../src/domain/calendar/activities/plan.ts';
@@ -98,9 +98,14 @@ test('every catalogue subject is offered by the checklist filter', () => {
 // The values `prepare()` produced before it moved to `activityDraft`.
 function previousDraft(state: (typeof settings)[number], row: ActivityPlanItem) {
   const modalities = state.offers.map((offer) => offer.id);
-  const pertinent = modalities.filter(
-    (modality) => applicabilityFor(state, row, modality) === 'required',
-  );
+  const pertinent = modalities.filter((modality) => {
+    const applicability = applicabilityFor(state, row, modality);
+    return (
+      applicability === 'required' ||
+      (applicability === 'optional' &&
+        Boolean(row.recommendedFor?.includes(offerFor(state, modality)!.kind)))
+    );
+  });
   const notice = previous.notice(row.id);
   return {
     offers: pertinent.length

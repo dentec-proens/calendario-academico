@@ -153,7 +153,7 @@ test('definitive release requires every reviewed criterion, current versions and
   assert.deepEqual(flexible.issues, []);
   assert.equal(
     flexible.warnings.filter((w) => w.includes('organização definida pelo campus')).length,
-    2,
+    1,
   );
   assert(flexible.warnings.some((w) => w.includes('definição institucional')));
   assert.deepEqual(record.state.events, before);

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Undo2 } from 'lucide-react';
 import { Button } from '../../components/ui/Button.tsx';
 import { Notice } from '../../components/ui/Notice.tsx';
@@ -67,4 +68,27 @@ export default function EditorNotices({
       ) : null}
     </>
   );
+}
+
+/**
+ * What the page shows while a modal panel may cover it. A message stays where focus ends: while
+ * the panel is up it shows the messages of its own actions, so the page holds them; once it closes,
+ * the page shows only what the panel did not, such as the confirmation of the action that closed
+ * it. The offer to undo returns to the page, where it stays available after the panel closes.
+ */
+export function usePageNotices(
+  message: Message | null,
+  undoable: Undoable | null,
+  panelOpen: boolean,
+): { message: Message | null; undoable: Undoable | null } {
+  const [panel, setPanel] = useState({ open: panelOpen, message, shown: null as Message | null });
+  // Opening takes the current message as the page's; later ones are the panel's while it is up.
+  let next = panel;
+  if (panelOpen !== next.open)
+    next = panelOpen ? { ...next, open: true, message } : { ...next, open: false };
+  if (panelOpen && message !== next.message && message !== next.shown)
+    next = { ...next, shown: message };
+  if (next !== panel) setPanel(next);
+  if (panelOpen) return { message: null, undoable: null };
+  return { message: message && message === next.shown ? null : message, undoable };
 }

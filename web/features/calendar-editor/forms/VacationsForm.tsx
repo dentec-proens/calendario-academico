@@ -21,7 +21,7 @@ import {
 import { durationEnd } from '#src/domain/calendar/counting/duration.ts';
 import { vacationRemovedDays } from '#src/domain/calendar/counting/vacation-days.ts';
 import type { CalendarEvent } from '#src/domain/calendar/model.ts';
-import { labelFor, offerIds, offerNames } from '#src/domain/calendar/offers.ts';
+import { kindNoteFor, labelFor, offerIds, offerNames } from '#src/domain/calendar/offers.ts';
 import { Button } from '../../../components/ui/Button.tsx';
 import { FormActions } from '../../../shared/forms/FormActions.tsx';
 import { FormFeedback } from '../../../shared/forms/FormFeedback.tsx';
@@ -285,6 +285,7 @@ export default function VacationsForm() {
                 items={offerIds(state).map((offer) => ({
                   id: offer,
                   label: labelFor(state, offer),
+                  kind: kindNoteFor(state, offer),
                   checked: field.state.value.includes(offer),
                   disabled: false,
                 }))}

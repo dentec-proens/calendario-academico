@@ -18,9 +18,26 @@ for (const width of [1440, 390]) {
     // Creation sits beside the step heading, as in the Activities step.
     await expect(page.locator('.editor-section-heading #add-offer')).toBeVisible();
     await page.locator('#add-offer').click();
+    await expect(page.getByRole('button', { name: 'Recolher Nova oferta' })).toBeVisible();
+    const form = page.locator('#offer-new-form');
+    // Each field shows its issue once touched; an untouched field waits for the apply attempt.
     await page.locator('#offer-new-kind').selectOption('graduacao');
+    await expect(page.getByRole('button', { name: 'Recolher Graduação' })).toBeVisible();
+    await expect(form.locator('.field-error:not(:empty)')).toHaveCount(0);
     await page.locator(`#offer-new-organization [data-choice="anual"]`).click();
+    await expect(form.locator('.field-error:not(:empty)')).toHaveCount(0);
     await page.locator('#offer-new-period-0-start').fill('2027-03-01');
+    await page.locator('#offer-new-period-0-start').blur();
+    await expect(form).toContainText('Informe início e término.');
+    // Moving on to the dates reveals what the structure still lacks.
+    await expect(form).toContainText('Selecione a quantidade de etapas');
+    await page.locator('#offer-new-cancel').click();
+    // A repeated kind needs a name: once the person moves past the identity, the reason shows.
+    await page.locator('#add-offer').click();
+    await page.locator('#offer-new-kind').selectOption('integrado');
+    await expect(page.locator('#offer-new-label-error')).toBeEmpty();
+    await page.locator(`#offer-new-organization [data-choice="anual"]`).click();
+    await expect(page.locator('#offer-new-label-error')).not.toBeEmpty();
     await expect(page.locator('#offer-new-apply')).toBeDisabled();
     expect(await page.evaluate(() => window.editorTest.calls.saves)).toBe(0);
     expect(

@@ -11,6 +11,7 @@ import { useDraftForm } from '../../shared/forms/useDraftForm.ts';
 import { FormFeedback } from '../../shared/forms/FormFeedback.tsx';
 import { Notice } from '../../components/ui/Notice.tsx';
 import OfferChoices, { offersSummary, type CreationOffer } from './OfferChoices.tsx';
+import { chosenCampus } from './chosen-campus.ts';
 
 const otherYear = 'outro';
 const yearOptions = [
@@ -48,12 +49,12 @@ export default function CreateCalendarForm({
     draftKey: `calendar:new:${info.user.id}`,
     defaultValues: defaults,
     onSubmit: async (value, { isCurrent }) => {
-      const selectedCampus =
-        info.campuses.find((item) => item.id === value.campusId) || info.campuses[0];
-      if (!selectedCampus)
+      const selectedCampus = chosenCampus(info.campuses, value.campusId, canSelectCampus);
+      if (!info.campuses.length)
         throw new Error(
           'Nenhum campus ativo está disponível para esta conta. Solicite à administração PROENS a conferência do seu cadastro.',
         );
+      if (!selectedCampus) throw new Error('Escolha o campus.');
       if (!value.offers.length) throw new Error('Marque ao menos uma oferta.');
       const calendar = await calendarClient.create({
         campusId: selectedCampus.id,
@@ -68,18 +69,19 @@ export default function CreateCalendarForm({
       });
     },
   });
-  const campus = info.campuses.find((item) => item.id === values.campusId) || info.campuses[0];
+  const campus = chosenCampus(info.campuses, values.campusId, canSelectCampus);
+  const available = info.campuses.length > 0;
   const configured = policyFor(values.year).configured;
   const summary = offersSummary(values.offers);
 
   return (
     <form id="create-calendar" onSubmit={submit}>
-      {!campus ? (
+      {!available ? (
         <Notice tone="warning" id="calendar-campus-notice" announce="polite">
           Nenhum campus ativo vinculado à conta. Solicite a regularização à administração PROENS.
         </Notice>
       ) : null}
-      <fieldset className="form-fields" disabled={pending || !campus}>
+      <fieldset className="form-fields" disabled={pending || !available}>
         {canSelectCampus ? (
           <label className="calendar-create-campus">
             Campus
@@ -89,6 +91,11 @@ export default function CreateCalendarForm({
               value={campus?.id || ''}
               onChange={(event) => form.setFieldValue('campusId', event.target.value)}
             >
+              {campus ? null : (
+                <option value="" disabled>
+                  Selecione o campus
+                </option>
+              )}
               {info.campuses.map((item) => (
                 <option key={item.id} value={item.id}>
                   {item.name}
@@ -144,7 +151,11 @@ export default function CreateCalendarForm({
               htmlFor="calendar-campus calendar-year"
               aria-label="Nome do calendário"
             >
-              {campus ? calendarName(values.year, campus.name) : 'Nenhum campus disponível'}
+              {campus
+                ? calendarName(values.year, campus.name)
+                : available
+                  ? 'Escolha o campus'
+                  : 'Nenhum campus disponível'}
             </output>
             <small id="calendar-offer-summary">
               {summary || 'Nenhuma oferta marcada'} · começa como rascunho

@@ -91,6 +91,24 @@ test('missing courses block the submission and are filled from the review issues
   await expect(submit).toBeEnabled();
 });
 
+test('missing courses join the other pendencies in one total, the same in the header and the steps', async ({
+  page,
+  fixtureServer,
+}) => {
+  await page.goto(await fixtureServer('editor'));
+  await page.evaluate(() => {
+    window.editorTest.record.courses = '';
+    return window.publishReviewerCalendar();
+  });
+  const note = page.locator('[data-view="issues"] .editor-step-note');
+  await expect(note).toHaveText(/^\d+ pendências no total$/);
+  const total = Number((await note.textContent())!.split(' ')[0]);
+  expect(total).toBeGreaterThan(1);
+  await expect(page.locator('#lifecycle-submit-unavailable')).toHaveText(
+    `Corrija as ${total} pendências antes de enviar. Informe os cursos do calendário na identificação.`,
+  );
+});
+
 test('a reviewer reads the identity without the edit action', async ({ page, fixtureServer }) => {
   await page.goto(await fixtureServer('editor-reviewer'));
   await expect(page.locator('#calendar-identity')).toHaveText(/Curso sintético/);

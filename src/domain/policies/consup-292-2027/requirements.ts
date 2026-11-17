@@ -55,7 +55,22 @@ const meetingInCouncil = Object.fromEntries(
 const notOnIntegrated = {
   integrado: 'Não exigido por este inciso para o integrado; cadastro permitido.',
 };
-const optionalOnUndergraduate = { graduacao: '' };
+/**
+ * Art. 11, parágrafo único: the weeks of XXIV to XXVI are "facultativa nos calendários dos cursos de
+ * graduação, sendo recomendável o envolvimento de toda a comunidade acadêmica". A new record of them
+ * therefore starts marked for undergraduate offers too, which the campus may unmark.
+ */
+const campusWeek = {
+  optionalFor: {
+    graduacao:
+      'Facultativa na graduação; a norma recomenda o envolvimento de toda a comunidade acadêmica.',
+  },
+  recommendedFor: ['graduacao'],
+};
+/** v13: a retired row asks nothing of any offer; it stays only for the links already stored. */
+const retiredRow = Object.fromEntries(
+  modalityIds.map((m) => [m, 'Atividade retirada; a data permanece só nos registros antigos.']),
+);
 /** v8: the transfer notice is optional for every offer; the row stays for the dates it holds. */
 const optionalNotice = Object.fromEntries(
   modalityIds.map((m) => [m, 'Edital opcional por decisão institucional; cadastro permitido.']),
@@ -332,16 +347,18 @@ export const rules: ActivityRule[] = [
       category: 'ferias',
       variant: 'vacation',
     },
+    // Released before v13, the notice stays declared: dates of submissions keep linking to it. The
+    // Processo Seletivo is published by the Reitoria (Art. 10); its deadline is a base date (Art.
+    // 2º), so the campus registers nothing. Calendars in editing had these dates removed.
     {
       id: 'regular-admission-notice',
       name: 'Publicação dos editais do Processo Seletivo 2028',
       basis: 'Art. 10',
-      deadline: civilDate('2027-06-15'),
-      deadlinePolicy: 'reference',
-      acceptsPriorReference: true,
+      decision: 'data da base institucional, sem registro do campus (consup-292-2027-v13)',
+      retired: 'consup-292-2027-v13',
       admissionType: 'regular',
+      optionalFor: retiredRow,
       group: 'admission',
-      criterion: 'admission-regular',
     },
     {
       id: 'robotics',
@@ -386,7 +403,7 @@ export const rules: ActivityRule[] = [
       month: 3,
       reviewInstruction:
         'Confira a segunda semana de março; o critério operacional de semana depende de definição institucional.',
-      optionalFor: optionalOnUndergraduate,
+      ...campusWeek,
       group: 'campus',
       criterion: 'XXIV',
       category: 'comemorativo',
@@ -398,7 +415,7 @@ export const rules: ActivityRule[] = [
       month: 5,
       reviewInstruction:
         'Confira a primeira semana de maio; o critério operacional de semana depende de definição institucional.',
-      optionalFor: optionalOnUndergraduate,
+      ...campusWeek,
       group: 'campus',
       criterion: 'XXV',
       category: 'comemorativo',
@@ -408,7 +425,7 @@ export const rules: ActivityRule[] = [
       name: 'Semana Cultural Interescolar — outubro',
       basis: 'Art. 11, XXVI',
       month: 10,
-      optionalFor: optionalOnUndergraduate,
+      ...campusWeek,
       group: 'campus',
       criterion: 'XXVI',
       category: 'evento',

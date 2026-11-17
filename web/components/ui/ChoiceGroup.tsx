@@ -55,16 +55,18 @@ export function ChoiceGroup<Value extends string>({
           if (next !== null) onValueChange(next);
         }}
       >
-        {options.map((option) => (
+        {options.map((option, index) => (
           <label key={option.value} className="ui-choice">
+            {/* Named by its own text, not by the wrapping label the radio library may not read. */}
             <Radio.Root
               value={option.value}
               className="ui-choice__radio"
               data-choice={option.value}
+              aria-labelledby={`${labelId}-${index}`}
             >
               <Radio.Indicator className="ui-choice__indicator" />
             </Radio.Root>
-            <span>{option.label}</span>
+            <span id={`${labelId}-${index}`}>{option.label}</span>
           </label>
         ))}
       </RadioGroup>
