@@ -50,11 +50,16 @@
   padding: 10px;
   border-radius: 5px;
 }
+/* The proposed text is read before it is edited: the field grows to show all of it. */
+#review-conclusion {
+  field-sizing: content;
+  min-block-size: calc(5lh + 20px);
+  resize: vertical;
+}
 #review-items {
   container: review-list / inline-size;
   display: grid;
-  margin: var(--ui-space-5) 0;
-  border-bottom: 1px solid var(--ui-border-soft);
+  margin: var(--ui-space-5) 0 var(--ui-space-3);
 }
 #review-items > .review-item {
   display: grid;
@@ -399,7 +404,6 @@
 #review-preview {
   padding: 25px;
   border: 1px solid var(--ui-border);
-  margin-top: 24px;
   background: white;
   color: #111;
 }
@@ -422,6 +426,10 @@
 }
 #review-preview th {
   background: #eee;
+}
+#review-preview td em {
+  color: #555;
+  font-size: 90%;
 }
 .workspace.sequential-editor {
   display: block;

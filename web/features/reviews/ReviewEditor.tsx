@@ -182,12 +182,12 @@ export default function ReviewEditor({
       if (!active.current) return;
       if (action === 'preview') {
         setPreview(document);
-        onMessage('Parecer disponível abaixo para leitura e seleção do texto.');
+        onMessage('Parecer disponível abaixo para leitura, cópia e download.');
       } else if (action === 'html' || action === 'txt') {
         downloadDocument(document, draft, action);
         onMessage('Download solicitado. Confira a minuta e a formatação antes de inserir no SEI.');
       } else {
-        setPreview(document);
+        // Copying is offered only from the preview, which already shows this document.
         try {
           if (window.ClipboardItem && navigator.clipboard?.write) {
             await navigator.clipboard.write([
@@ -198,7 +198,9 @@ export default function ReviewEditor({
             ]);
           } else await navigator.clipboard.writeText(document.text);
           if (active.current)
-            onMessage('Parecer copiado. Cole no editor do SEI e confira a tabela e o texto.');
+            onMessage(
+              'Parecer copiado para a área de transferência. Cole no editor do SEI e confira a tabela e o texto.',
+            );
         } catch {
           if (active.current)
             onMessage(
@@ -245,6 +247,7 @@ export default function ReviewEditor({
         changeField={changeField}
         changeEntry={changeEntry}
         exportReview={exportReview}
+        closePreview={() => setPreview(null)}
       />
     </>
   );

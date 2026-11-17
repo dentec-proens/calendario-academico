@@ -105,7 +105,7 @@ Este guia registra as regras de negócio e as decisões que o código sozinho n�
 - A busca de candidatos no parecer só localiza; não comprova atendimento nem ausência.
 - A devolução registra os critérios não atendidos com as observações (sem autor nem revisão do parecer); se as observações não couberem, a devolução é recusada.
 - Comparação: reenvio compara com o último devolvido; o primeiro envio de uma nova versão compara com o vigente que substituiria. O efeito recalculado ajuda, mas não comprova que a devolução foi atendida.
-- Exportar e copiar para o SEI exigem revisão salva e atual; assinatura e tramitação ocorrem fora da aplicação.
+- Copiar e baixar o parecer ficam na visualização, que só existe com revisão salva e atual e se fecha a qualquer nova edição; o texto copiado vai para a área de transferência, para colar no SEI. Assinatura e tramitação ocorrem fora da aplicação.
 
 ## Impressão
 

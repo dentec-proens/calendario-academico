@@ -138,7 +138,7 @@ const reviewOf = (entries: { id: string; status: string; reviewed: boolean }[]) 
 
 test('the export tells a human assessment from a suggestion saved before this interface', () => {
   const state = calendarOffersFixture();
-  const { text } = reviewDocument(
+  const { text, body } = reviewDocument(
     { state },
     reviewOf([
       { id: 'annual', status: 'ATENDIDO', reviewed: true },
@@ -146,12 +146,17 @@ test('the export tells a human assessment from a suggestion saved before this in
       { id: 'window', status: 'PENDENTE', reviewed: false },
     ]),
   );
-  expect(text).toContain('Atendido — avaliação humana');
   expect(text).toContain('Atendido — proposta automática, não confirmada');
+  expect(text).toMatch(/^Atendido$/m);
   expect(text).not.toContain('A avaliar — ');
   expect(text).toContain('Conjunto de regras: consup-292-2027-v8');
   expect(text).toContain('pelo menos 200 dias letivos');
   expect(text).not.toContain('Referência do modelo');
+  // The item heads its cell and the source reads as a reference, also once pasted into the SEI.
+  expect(body).toMatch(/<td[^>]*><strong>[^<]+<\/strong><br>[^<]+<br><em style="[^"]+">Fonte: /);
+  // The situation heads its cell; with no observation, nothing follows it.
+  expect(body).toContain('<strong>Atendido</strong></td>');
+  expect(text).not.toContain('\n\n\n');
 });
 
 test('a review of the previous version keeps holding under the wording version', () => {

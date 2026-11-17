@@ -1,6 +1,5 @@
 import { useState, type FormEvent, type ReactNode, type RefObject } from 'react';
-import { ChevronDown, Copy, Download, Eye, FileCode2, FileText, Pencil, Save } from 'lucide-react';
-import { ActionMenu, ActionMenuItem } from '../../components/ui/ActionMenu.tsx';
+import { Copy, Eye, FileCode2, FileText, Pencil, Save, X } from 'lucide-react';
 import { Button } from '../../components/ui/Button.tsx';
 import { assessmentCounts, assessmentSituation } from '#src/domain/reviews/criteria.ts';
 import { TextField } from '../../components/ui/Field.tsx';
@@ -36,6 +35,7 @@ interface Props {
   ) => void;
   changeEntry: <K extends 'status' | 'notes'>(id: string, field: K, value: ReviewEntry[K]) => void;
   exportReview: (format: 'preview' | 'copy' | 'html' | 'txt') => Promise<void>;
+  closePreview: () => void;
 }
 
 export default function ReviewFormView({
@@ -56,6 +56,7 @@ export default function ReviewFormView({
   changeField,
   changeEntry,
   exportReview,
+  closePreview,
 }: Props) {
   const opened = draft.opened;
   const dirty = draft.dirty;
@@ -164,27 +165,42 @@ export default function ReviewFormView({
             </ul>
           </details>
         ) : null}
-        <Button
-          type="button"
-          id="edit-conclusion"
-          variant="secondary"
-          disabled={busy || readOnly}
-          onClick={onEditConclusion}
-        >
-          <Pencil size={16} aria-hidden="true" /> Editar texto do parecer
-        </Button>
-        <label>
-          Conclusão do parecerista — texto proposto
-          <textarea
-            id="review-conclusion"
-            ref={conclusionRef}
-            disabled={!conclusionEditable || busy || readOnly}
-            maxLength={8000}
-            rows={5}
-            value={draft.conclusion}
-            onChange={(event) => changeField('conclusion', event.target.value)}
-          />
-        </label>
+        <section className="review-conclusion" aria-labelledby="review-conclusion-title">
+          <div className="review-conclusion__heading">
+            <div>
+              <h3 id="review-conclusion-title">Conclusão</h3>
+              <p className="help" id="review-conclusion-help">
+                {conclusionEditable
+                  ? 'Edite o texto; o encaminhamento ao fim continua acompanhando as avaliações.'
+                  : 'Texto proposto; o encaminhamento ao fim acompanha cada avaliação.'}
+              </p>
+            </div>
+            {conclusionEditable ? null : (
+              <Button
+                type="button"
+                id="edit-conclusion"
+                variant="secondary"
+                disabled={busy || readOnly}
+                onClick={onEditConclusion}
+              >
+                <Pencil size={16} aria-hidden="true" /> Editar texto
+              </Button>
+            )}
+          </div>
+          <label>
+            <span className="visually-hidden">Conclusão do parecer</span>
+            <textarea
+              id="review-conclusion"
+              ref={conclusionRef}
+              aria-describedby="review-conclusion-help"
+              disabled={!conclusionEditable || busy || readOnly}
+              maxLength={8000}
+              rows={5}
+              value={draft.conclusion}
+              onChange={(event) => changeField('conclusion', event.target.value)}
+            />
+          </label>
+        </section>
         {opened.stale ? (
           <label id="review-stale-label" className="check">
             <input
@@ -200,7 +216,57 @@ export default function ReviewFormView({
         ) : null}
       </form>
       <FormFeedback error={error} />
-      <ReviewPreview document={preview} previewRef={previewRef} />
+      {/* What is exported is what is read: the saved parecer, retired by any new edit. */}
+      {preview ? (
+        <section className="review-preview-panel" aria-labelledby="review-preview-title">
+          <div className="review-preview-toolbar">
+            <h3 id="review-preview-title">Parecer salvo</h3>
+            <div className="actions">
+              <Button
+                type="button"
+                id="copy-review"
+                disabled={busy}
+                onClick={() => {
+                  void exportReview('copy');
+                }}
+              >
+                <Copy size={18} aria-hidden="true" /> Copiar
+              </Button>
+              <Button
+                type="button"
+                id="download-review-html"
+                variant="secondary"
+                disabled={busy}
+                onClick={() => {
+                  void exportReview('html');
+                }}
+              >
+                <FileCode2 size={18} aria-hidden="true" /> Baixar HTML
+              </Button>
+              <Button
+                type="button"
+                id="download-review-txt"
+                variant="secondary"
+                disabled={busy}
+                onClick={() => {
+                  void exportReview('txt');
+                }}
+              >
+                <FileText size={18} aria-hidden="true" /> Baixar TXT
+              </Button>
+              <Button
+                type="button"
+                id="close-review-preview"
+                variant="secondary"
+                onClick={closePreview}
+              >
+                <X size={18} aria-hidden="true" /> Fechar
+              </Button>
+            </div>
+          </div>
+          <ReviewPreview document={preview} previewRef={previewRef} />
+        </section>
+      ) : null}
       <p className="help review-disclaimer">
         A revisão apoia o parecer; assinatura e tramitação ocorrem no SEI. Não constitui aprovação
         institucional. Confira a formatação ao colar no SEI.
@@ -218,55 +284,19 @@ export default function ReviewFormView({
                   : 'O parecer ainda não foi salvo.'}
         </div>
         <div className="actions">
-          {/* Nothing to read or export until a review is saved. */}
+          {/* Nothing to read or export until a review is saved; locked, reading it is what remains. */}
           {opened.review ? (
-            <>
-              <Button
-                type="button"
-                id="preview-review"
-                variant="secondary"
-                disabled={busy}
-                onClick={() => {
-                  void exportReview('preview');
-                }}
-              >
-                <Eye size={18} aria-hidden="true" /> Visualizar
-              </Button>
-              <ActionMenu
-                disabled={busy}
-                trigger={
-                  <>
-                    <Download size={18} aria-hidden="true" /> Exportar
-                    <ChevronDown size={16} aria-hidden="true" />
-                  </>
-                }
-              >
-                {locked ? null : (
-                  <ActionMenuItem id="copy-review" onClick={() => void exportReview('copy')}>
-                    <Copy size={18} aria-hidden="true" /> Copiar para o SEI
-                  </ActionMenuItem>
-                )}
-                <ActionMenuItem id="download-review-html" onClick={() => void exportReview('html')}>
-                  <FileCode2 size={18} aria-hidden="true" /> Baixar HTML
-                </ActionMenuItem>
-                <ActionMenuItem id="download-review-txt" onClick={() => void exportReview('txt')}>
-                  <FileText size={18} aria-hidden="true" /> Baixar TXT
-                </ActionMenuItem>
-              </ActionMenu>
-              {/* With nothing left to save, copying to the SEI is what remains to do here. */}
-              {locked ? (
-                <Button
-                  type="button"
-                  id="copy-review"
-                  disabled={busy}
-                  onClick={() => {
-                    void exportReview('copy');
-                  }}
-                >
-                  <Copy size={18} aria-hidden="true" /> Copiar para o SEI
-                </Button>
-              ) : null}
-            </>
+            <Button
+              type="button"
+              id="preview-review"
+              variant={locked ? 'primary' : 'secondary'}
+              disabled={busy}
+              onClick={() => {
+                void exportReview('preview');
+              }}
+            >
+              <Eye size={18} aria-hidden="true" /> Visualizar
+            </Button>
           ) : null}
           {locked ? null : (
             <Button
@@ -276,8 +306,7 @@ export default function ReviewFormView({
               variant={dirty || !opened.review ? 'primary' : 'secondary'}
               disabled={busy || readOnly}
             >
-              <Save size={18} aria-hidden="true" />{' '}
-              {pending === 'save' ? 'Salvando parecer…' : 'Salvar parecer'}
+              <Save size={18} aria-hidden="true" /> {pending === 'save' ? 'Salvando…' : 'Salvar'}
             </Button>
           )}
         </div>

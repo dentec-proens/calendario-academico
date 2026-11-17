@@ -213,6 +213,11 @@ function query(
         catalogueRevision: 1,
       };
     }
+    // The document itself is covered by the export tests; the interface only shows it.
+    case 'reviews:exportReview': {
+      const body = '<article><h1>PARECER</h1><p>Parecer sintético.</p></article>';
+      return { html: `<!doctype html><html><body>${body}</body></html>`, body, text: 'PARECER' };
+    }
     default:
       throw new Error(`Consulta sintética não implementada: ${getFunctionName(reference)}`);
   }

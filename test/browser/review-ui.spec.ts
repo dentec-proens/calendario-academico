@@ -297,7 +297,7 @@ test('the review list states each parecer and names the next step', async ({
   await expect(page.locator('#review-assignee')).toHaveText('Você');
   const item = page.locator('#review-items > li').first();
   await item.locator('[data-choice="ATENDIDO"]').click();
-  await page.getByRole('button', { name: 'Salvar parecer' }).first().click();
+  await page.getByRole('button', { name: 'Salvar' }).first().click();
   await expect(page.locator('#review-message')).toContainText('Parecer salvo');
   await page.getByRole('navigation', { name: 'Trilha de navegação' }).getByRole('link').click();
   // Saving started the review, so the calendar left the first tab.
@@ -318,7 +318,7 @@ test('a parecer held by a colleague is read only until assumed, and keeps the dr
 }) => {
   const origin = new URL(await fixtureServer('review')).origin;
   await page.goto(origin + '/revisoes/synthetic-review');
-  const save = page.getByRole('button', { name: 'Salvar parecer' }).first();
+  const save = page.getByRole('button', { name: 'Salvar' }).first();
   await page.locator('#review-process').fill('Processo do rascunho local');
   await expect(save).toBeEnabled();
   await page.evaluate(() => window.reviewUiTest.publishAssignee('Fulana'));
@@ -476,10 +476,16 @@ test('the parecer opens with its state and offers exporting once a review is sav
   await expect(preview).toHaveCount(0);
   await page.locator('button[form="review-form"]').click();
   await expect(preview).toBeVisible();
-  await page.getByRole('button', { name: 'Exportar' }).click();
-  await expect(page.getByRole('menuitem', { name: 'Copiar para o SEI' })).toBeVisible();
-  await expect(page.getByRole('menuitem', { name: 'Baixar HTML' })).toBeVisible();
-  await expect(page.getByRole('menuitem', { name: 'Baixar TXT' })).toBeVisible();
+  // Exporting belongs to the preview: what is copied or downloaded is what was read.
+  const panel = page.getByRole('region', { name: 'Parecer salvo' });
+  await expect(panel).toHaveCount(0);
+  await preview.click();
+  await expect(panel.locator('#review-preview')).toBeVisible();
+  for (const name of ['Copiar', 'Baixar HTML', 'Baixar TXT'])
+    await expect(panel.getByRole('button', { name, exact: true })).toBeVisible();
+  // A new edit retires the preview, so nothing stale is ever exported.
+  await page.locator('#review-process').fill('23354.000006/2027-06');
+  await expect(panel).toHaveCount(0);
 });
 
 test('a first submission keeps its history a click away; a resubmission opens what changed', async ({
@@ -554,7 +560,7 @@ test('concluding states why it is unavailable until the review allows it', async
   await expect(conclude).toBeDisabled();
 });
 
-test('a parecer that can no longer change leaves copying to the SEI as the main action', async ({
+test('a parecer that can no longer change leaves reading and exporting it as the main action', async ({
   page,
   fixtureServer,
 }) => {
@@ -564,7 +570,7 @@ test('a parecer that can no longer change leaves copying to the SEI as the main 
   await save.click();
   await expect(page.locator('#review-message')).toContainText('Parecer salvo');
   await page.evaluate(() => window.reviewUiTest.publishStatus('revisado'));
-  await expect(page.locator('#copy-review')).toHaveClass(/ui-button--primary/);
+  await expect(page.locator('#preview-review')).toHaveClass(/ui-button--primary/);
   await expect(save).toHaveCount(0);
   await expect(page.locator('[data-lifecycle-action="reopen"]')).toHaveClass(
     /ui-button--secondary/,

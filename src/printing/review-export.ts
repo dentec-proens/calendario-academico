@@ -13,6 +13,7 @@ const esc = (s: string | number | undefined | null) =>
     /[&<>"']/g,
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!,
   );
+const lines = (s: string | undefined) => esc(s).replace(/\n/g, '<br>');
 const statusLabels: Record<string, string> = {
   PENDENTE: 'A avaliar',
   ATENDIDO: 'Atendido',
@@ -23,8 +24,8 @@ const statusLabels: Record<string, string> = {
 /** A suggestion saved before assessments replaced confirmation still reads as a proposal. */
 const assessmentLabel = (e: Pick<ReviewEntry, 'status' | 'reviewed'>) => {
   const label = statusLabels[e.status] || statusLabels.PENDENTE;
-  if (e.status === 'PENDENTE') return label;
-  return `${label} — ${e.reviewed === true ? 'avaliação humana' : 'proposta automática, não confirmada'}`;
+  if (e.status === 'PENDENTE' || e.reviewed === true) return label;
+  return `${label} — proposta automática, não confirmada`;
 };
 
 export function reviewDocument(
@@ -49,11 +50,6 @@ export function reviewDocument(
   const reviewCriteria = reviewCriteriaFor(record.state.year),
     reviewSource = reviewSourceFor(record.state.year);
   const title = 'PARECER TÉCNICO-PEDAGÓGICO DE CALENDÁRIO ACADÊMICO E ADMINISTRATIVO';
-  const assessed = review.entries.filter(
-    (e) =>
-      e.reviewed === true && e.status !== 'PENDENTE' && reviewCriteria.some((c) => c.id === e.id),
-  ).length;
-  const notice = `Minuta para revisão humana e inserção no SEI. ${assessed}/${reviewCriteria.length} critérios avaliados pelo parecerista. Não é documento assinado nem aprovação oficial.`;
   const metadata = [
     ['Conjunto de regras', review.rulesetVersion ?? rulesetVersion(record.state)],
     ['Processo nº', record.seiProcess || review.processNumber || 'Não informado'],
@@ -89,12 +85,24 @@ export function reviewDocument(
       criterion: [c.title, c.requirement, `Fonte: ${c.source ?? c.item}.`]
         .filter(Boolean)
         .join('\n'),
-      assessment: `${assessmentLabel(e)}\n${e.notes}`,
+      // The item names the row, the rule is read, and the source is only consulted.
+      criterionHtml: [
+        `<strong>${lines(c.title)}</strong>`,
+        c.requirement ? lines(c.requirement) : '',
+        `<em style="color:#555;font-size:90%">Fonte: ${lines(c.source ?? c.item)}.</em>`,
+      ]
+        .filter(Boolean)
+        .join('<br>'),
+      // An observation is written only when it adds something; without one, the situation stands alone.
+      assessment: [assessmentLabel(e), (e.notes ?? '').trim()].filter(Boolean).join('\n'),
+      assessmentHtml: [`<strong>${esc(assessmentLabel(e))}</strong>`, lines((e.notes ?? '').trim())]
+        .filter(Boolean)
+        .join('<br>'),
     };
   });
   const conclusion = review.conclusion || 'Conclusão pendente de elaboração pelo parecerista.';
   const section = '1. ANÁLISE TÉCNICO-PEDAGÓGICA';
-  let body = `<article><h1>PARECER</h1><h2>${title}</h2><p class="center">Pró-Reitoria de Ensino — PROENS</p><p class="notice">${esc(notice)}</p>${record.state.year !== reviewSource.year ? `<p><strong>Atenção:</strong> o modelo é de ${reviewSource.year}; seus prazos e artigos não substituem a norma de ${record.state.year}.</p>` : ''}${metadata.map(([key, value]) => `<p><strong>${esc(key)}:</strong> ${esc(value)}</p>`).join('')}<h2>${section}</h2><table><thead><tr><th>Itens do calendário — roteiro do parecer</th><th>Situação e observações</th></tr></thead><tbody>${bodyRows.map((r) => `<tr><td>${esc(r.criterion).replace(/\n/g, '<br>')}</td><td>${esc(r.assessment).replace(/\n/g, '<br>')}</td></tr>`).join('')}</tbody></table><h2>2. PARECER</h2><p>${esc(conclusion).replace(/\n/g, '<br>')}</p><p>Responsável pelo registro da análise: ${esc(review.reviewer.name)}.</p><p>A formalização, assinatura e tramitação são realizadas pelas instâncias competentes no SEI.</p></article>`;
+  let body = `<article><h1>PARECER</h1><h2>${title}</h2><p class="center">Pró-Reitoria de Ensino — PROENS</p>${record.state.year !== reviewSource.year ? `<p><strong>Atenção:</strong> o modelo é de ${reviewSource.year}; seus prazos e artigos não substituem a norma de ${record.state.year}.</p>` : ''}${metadata.map(([key, value]) => `<p><strong>${esc(key)}:</strong> ${esc(value)}</p>`).join('')}<h2>${section}</h2><table><thead><tr><th>Itens do calendário — roteiro do parecer</th><th>Situação e observações</th></tr></thead><tbody>${bodyRows.map((r) => `<tr><td>${r.criterionHtml}</td><td>${r.assessmentHtml}</td></tr>`).join('')}</tbody></table><h2>2. PARECER</h2><p>${esc(conclusion).replace(/\n/g, '<br>')}</p><p>Responsável pelo registro da análise: ${esc(review.reviewer.name)}.</p><p>A formalização, assinatura e tramitação são realizadas pelas instâncias competentes no SEI.</p></article>`;
   // Inline table formatting also travels with HTML clipboard content.
   body = body
     .replace('<table>', '<table style="border-collapse:collapse;width:100%;table-layout:fixed">')
@@ -103,12 +111,11 @@ export function reviewDocument(
       '<td style="border:1px solid #555;padding:8px;vertical-align:top;overflow-wrap:anywhere">',
     )
     .replaceAll('<th>', '<th style="border:1px solid #555;padding:8px;background:#eee">');
-  const html = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Parecer PROENS — minuta</title><style>@page{size:A4;margin:20mm}body{font:12pt Arial,sans-serif;color:#000;background:#fff;line-height:1.4;max-width:900px;margin:25px auto}h1,h2,.center{text-align:center}h1{font-size:14pt}h2{font-size:12pt;margin-top:24px}table{border-collapse:collapse;width:100%;table-layout:fixed}th,td{border:1px solid #555;padding:8px;vertical-align:top;overflow-wrap:anywhere}th{background:#eee}tr{break-inside:avoid}thead{display:table-header-group}.notice{border:1px solid #999;padding:8px;font-size:10pt}</style></head><body>${body}</body></html>`;
+  const html = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Parecer PROENS — minuta</title><style>@page{size:A4;margin:20mm}body{font:12pt Arial,sans-serif;color:#000;background:#fff;line-height:1.4;max-width:900px;margin:25px auto}h1,h2,.center{text-align:center}h1{font-size:14pt}h2{font-size:12pt;margin-top:24px}table{border-collapse:collapse;width:100%;table-layout:fixed}th,td{border:1px solid #555;padding:8px;vertical-align:top;overflow-wrap:anywhere}th{background:#eee}td em{color:#555;font-size:90%}tr{break-inside:avoid}thead{display:table-header-group}</style></head><body>${body}</body></html>`;
   const text = [
     'PARECER',
     title,
     'Pró-Reitoria de Ensino — PROENS',
-    notice,
     ...metadata.map(([key, value]) => `${key}: ${value}`),
     section,
     ...bodyRows.map((r) => r.criterion + '\n' + r.assessment),

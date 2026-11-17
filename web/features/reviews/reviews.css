@@ -267,6 +267,27 @@
   background: var(--ui-info-soft);
   font-weight: 600;
 }
+/* The conclusion opens its own section, headed like the criteria, so the divider names what follows. */
+.review-conclusion {
+  margin-top: var(--ui-space-4);
+  padding-top: var(--ui-space-4);
+  border-top: 1px solid var(--ui-border-soft);
+}
+.review-conclusion__heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--ui-space-2) var(--ui-space-3);
+  margin-bottom: var(--ui-space-3);
+}
+.review-conclusion__heading h3,
+.review-conclusion__heading .help {
+  margin: 0;
+}
+.review-conclusion__heading .ui-button {
+  margin: 0;
+}
 .review-not-evaluated {
   margin-bottom: var(--ui-space-4);
   font-size: 0.85rem;
@@ -274,6 +295,33 @@
 .review-not-evaluated ul {
   margin: var(--ui-space-2) 0 0;
   padding-left: var(--ui-space-4);
+}
+/* The export actions belong to the document they export and stay in reach along it. */
+.review-preview-panel {
+  margin-top: var(--ui-space-5);
+}
+.review-preview-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-space-2) var(--ui-space-4);
+  padding: var(--ui-space-2) 0;
+  background: var(--ui-surface);
+}
+.review-preview-toolbar h3 {
+  margin: 0;
+}
+.review-preview-toolbar .ui-button {
+  margin: 0;
+}
+@media (max-height: 560px) {
+  .review-preview-toolbar {
+    position: static;
+  }
 }
 .review-disclaimer {
   margin-block: var(--ui-space-4) 0;
