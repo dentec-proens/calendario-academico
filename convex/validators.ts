@@ -80,7 +80,6 @@ export const event = v.object({
   hours: v.optional(v.number()),
   assessmentAutoStart: v.optional(v.string()),
   notice: v.optional(notice),
-  deadlineAdjustment: v.optional(v.object({ date: v.string() })),
   deadlineExtensionCause: v.optional(
     v.union(v.literal('municipal-holiday'), v.literal('municipal-recess')),
   ),
@@ -108,7 +107,6 @@ export const institutionalEventSnapshot = v.object({
   hours: v.optional(v.number()),
   assessmentAutoStart: v.optional(v.string()),
   notice: v.optional(notice),
-  deadlineAdjustment: v.optional(v.object({ date: v.string() })),
   deadlineExtensionCause: v.optional(
     v.union(v.literal('municipal-holiday'), v.literal('municipal-recess')),
   ),

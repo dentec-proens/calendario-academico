@@ -10,11 +10,7 @@ import { readCalendarOfferInput } from './input.ts';
 import { invalidCalendar as fail } from './input.ts';
 import { datesBetween } from '../counting/core.ts';
 import { validateActivityRecord } from '../activities/validation.ts';
-import {
-  activityExtensionIssue,
-  schoolDayEdited,
-  schoolDayIssue,
-} from '../activities/school-day.ts';
+import { schoolDayEdited, schoolDayIssue } from '../activities/school-day.ts';
 import {
   generatedActivities,
   generatedActivity,
@@ -168,14 +164,13 @@ export function normalizeOfferCalendar(
       stageInterval: false,
       keptWithoutActivity: linkKept(old, event) && !generatedActivity(generated, event.activity),
     });
-    // Art. 5º and the municipal cause bind a new or edited date; an unchanged one stays a
-    // readiness issue, so it never blocks saving other changes.
+    // Art. 5º binds a new or edited date; an unchanged one stays a readiness issue, so it never
+    // blocks saving other changes.
     if (schoolDayEdited(old, event)) {
       const issue =
         vacationEditIssue(s, old, event) ??
         vacationOverlapIssue(s.events, event) ??
-        schoolDayIssue(s, event) ??
-        activityExtensionIssue(event);
+        schoolDayIssue(s, event);
       if (issue) fail(issue);
     }
     if (

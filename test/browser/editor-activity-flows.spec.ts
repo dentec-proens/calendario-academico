@@ -237,8 +237,6 @@ test('a meeting keeps the classes of a teaching day unless the campus suspends t
   await expect(page.locator('#event-more-options .event-more-summary')).toContainText(
     'Aulas suspensas',
   );
-  // A suspension for a meeting is not a municipal holiday or recess.
-  await expect(page.locator('#event-deadline-extension-cause')).toHaveCount(0);
   await page.locator('#event-start').fill('2027-05-11');
   await page.locator('#event-end').fill('2027-05-11');
   await applyEvent(page);

@@ -134,8 +134,6 @@ function dateWarning(event: CalendarEvent) {
     return 'Marcada como publicada na origem. Confira se vale para este calendário.';
   if (event.notice)
     return 'É uma publicação de edital na origem. Confira se vale para este calendário.';
-  if (event.deadlineAdjustment)
-    return 'Tem prazo ajustado na origem. Confira se vale para este calendário.';
   return undefined;
 }
 

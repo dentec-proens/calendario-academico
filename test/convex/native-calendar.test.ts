@@ -129,7 +129,6 @@ test('the round-trip preserves independent organization, intake, actual dates an
           publication: 'planned',
           admission: { type: 'regular', year: 2028, term: 'annual', destinations: [] },
         },
-        deadlineAdjustment: { date: civilDate('2027-12-15') },
         offers: ['integrado'],
       },
     ],

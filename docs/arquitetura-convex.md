@@ -125,7 +125,7 @@ Cobertura é calculada por atividade, oferta e ciclo. Matrícula de ingressantes
 
 Ano do calendário, data real da publicação, destino do ingresso e prazo normativo são dados independentes. Situação de publicação e finalidade de ingresso ficam agrupadas em `notice` (`AdmissionNotice`), com destino por oferta (`destinations`); o destino é diagnosticado por oferta (`noticeDestinationIssues`) e nunca corrigido automaticamente. Previsão pode completar o planejamento após conferência, sem comprovar execução, e a passagem do tempo não muda seu estado. Intervalos informativos podem atravessar a virada do ano, mas registros com efeito letivo respeitam ano, períodos e oferta.
 
-A primeira e a segunda semana das atividades mantêm conferência humana, pois a fonte não define o intervalo operacional. O prazo dos editais do Processo Seletivo é da Reitoria e fica só na base institucional (Art. 2º); o campus não o registra. A extensão por feriado municipal ou recesso não se aplica genericamente aos prazos do art. 11. Pós-graduação, EaD e qualificação não recebem conformidade automática.
+A primeira e a segunda semana das atividades mantêm conferência humana, pois a fonte não define o intervalo operacional. O prazo dos editais do Processo Seletivo é da Reitoria e fica só na base institucional (Art. 2º); o campus não o registra. Os prazos das atividades são fixos: a prorrogação por feriado municipal ou recesso (Art. 3º, § 2º) valia só para o prazo de referência do edital do Processo Seletivo, que saiu do calendário do campus. Pós-graduação, EaD e qualificação não recebem conformidade automática.
 
 ## Períodos, atividades e painéis
 

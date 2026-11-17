@@ -150,8 +150,9 @@ publicação exige todos os critérios como `ATENDIDO` ou `NAO_APLICAVEL` num pa
 
 A exceção é **um dado do calendário**, não uma classificação. Sem a declaração, a verificação cobra
 o campus; com ela, o achado vira `institution` sob o critério do requisito, e a DENTEC/PROENS decide no
-parecer. O padrão já existe: `deadlineAdjustment` produz `standing === 'adjusted'` e uma nota de
-revisão (`plan-evaluation.ts:223-226`).
+parecer. O padrão existiu em `deadlineAdjustment`, que produzia `standing === 'adjusted'` e uma nota
+de revisão; saiu com o edital do Processo Seletivo do campus (`consup-292-2027-v13`), mas o desenho
+continua sendo a referência para uma exceção declarada.
 
 ### Erros inesperados
 

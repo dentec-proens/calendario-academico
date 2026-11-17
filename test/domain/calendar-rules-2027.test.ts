@@ -6,7 +6,6 @@ import { activityPlan } from '../../src/domain/calendar/activities/plan.ts';
 import { evaluatePlan } from '../../src/domain/calendar/activities/plan-evaluation.ts';
 import { applicabilityFor } from '../../src/domain/policies/registry.ts';
 import { rulesetVersion } from '../../src/domain/policies/registry.ts';
-import { prorogatedDeadline } from '../../src/domain/calendar/activities/deadlines.ts';
 
 import { normalizeOfferCalendar } from '../../src/domain/calendar/normalization/normalize.ts';
 import { applyDate } from '../helpers/date-commands.ts';
@@ -285,69 +284,6 @@ test('postgraduate and other years are not implicitly certified by 2027', () => 
   expect(evaluatePlan(state).rows.every((r) => r.applicability === 'unconfigured')).toBe(true);
 });
 
-test('article 3 extends only explicitly classified municipal causes to the first teaching day of the offer', () => {
-  const state = calendar();
-  const holiday: CalendarEvent = {
-    id: 'municipal',
-    name: 'Feriado municipal sintético',
-    start: civilDate('2027-08-31'),
-    end: civilDate('2027-09-02'),
-    effect: 'exclude' as const,
-    offers: ['integrado'],
-    deadlineExtensionCause: 'municipal-holiday',
-  };
-  const otherHoliday: CalendarEvent = {
-    ...holiday,
-    id: 'following',
-    start: civilDate('2027-09-03'),
-    end: civilDate('2027-09-03'),
-    deadlineExtensionCause: undefined,
-  };
-  expect(
-    prorogatedDeadline(state, civilDate('2027-08-31'), [holiday, otherHoliday], 'integrado'),
-  ).toMatchObject({
-    original: '2027-08-31',
-    date: civilDate('2027-09-06'),
-    source: 'municipal-extension',
-  });
-  expect(
-    prorogatedDeadline(state, civilDate('2027-08-31'), [holiday, otherHoliday], 'graduacao'),
-  ).toMatchObject({ date: civilDate('2027-08-31'), source: 'norm' });
-  expect(
-    prorogatedDeadline(
-      state,
-      civilDate('2027-08-31'),
-      [{ ...holiday, deadlineExtensionCause: undefined }],
-      'integrado',
-    ).date,
-  ).toBe('2027-08-31');
-  expect(
-    prorogatedDeadline(
-      { ...state, weekConfirmed: false },
-      civilDate('2027-08-31'),
-      [holiday],
-      'integrado',
-    ).date,
-  ).toBeNull();
-  state.events = [
-    holiday,
-    {
-      id: 'robotics',
-      name: 'Robótica sintética',
-      start: civilDate('2027-09-03'),
-      end: civilDate('2027-09-03'),
-      effect: 'note' as const,
-      offers: ['integrado'],
-      activity: onceLink('robotics'),
-    },
-  ];
-  expect(
-    evaluatePlan(state).rows.find(
-      (r) => r.offerId === 'integrado' && r.requirement.id === 'robotics',
-    )?.coverage,
-  ).toBe('partial');
-  expect(state.events[1].start).toBe('2027-09-03');
-});
 test('repeating the same command is idempotent and another ID cannot duplicate the same occurrence', () => {
   const state = calendar(),
     event = notice(),

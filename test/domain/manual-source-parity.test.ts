@@ -3,8 +3,6 @@ import { expect, test } from 'vitest';
 import { countCalendar } from '../../src/domain/calendar/counting/core.ts';
 import { evaluateCalendar } from '../../src/domain/calendar/counting/evaluation.ts';
 import { applicabilityFor } from '../../src/domain/policies/registry.ts';
-import { prorogatedDeadline } from '../../src/domain/calendar/activities/deadlines.ts';
-import { validateActivityRecord } from '../../src/domain/calendar/activities/validation.ts';
 import { activityPlan } from '../../src/domain/calendar/activities/plan.ts';
 import {
   projectDates,
@@ -15,10 +13,7 @@ import {
 } from '../../src/domain/calendar/model.ts';
 
 // External metadata is test input, never a storage/API contract.
-type AnnotatedEvent = CalendarEvent & {
-  evidence?: string;
-  deadlineAdjustment?: CalendarEvent['deadlineAdjustment'] & { evidence?: string };
-};
+type AnnotatedEvent = CalendarEvent & { evidence?: string };
 type AnnotatedState = Omit<ActivityState, 'events' | 'offers'> & {
   events: AnnotatedEvent[];
   weekEvidence?: string;
@@ -125,8 +120,6 @@ function removeManualSources(input: AnnotatedState): AnnotatedState {
   for (const offer of result.offers) if (offer.scope) delete offer.scope.source;
   for (const event of result.events) {
     delete event.evidence;
-    if (event.deadlineAdjustment)
-      delete (event.deadlineAdjustment as { evidence?: string }).evidence;
   }
   return result;
 }
@@ -188,103 +181,6 @@ test('the counting core requires applied confirmation, not a textual source', ()
   ).toThrow(/não confirmada/);
 });
 
-function deadlineState(): ActivityState {
-  return {
-    ...state(),
-    periods: [
-      {
-        id: 'one',
-        start: civilDate('2027-08-01'),
-        end: civilDate('2027-09-30'),
-        association: { status: 'defined', offers: ['integrado', 'graduacao'], term: 'annual' },
-      },
-    ],
-    events: [],
-    offers: state().offers.map((offer) => ({
-      ...offer,
-      organization: 'anual' as const,
-    })),
-  };
-}
-const holiday = (overrides: Partial<AnnotatedEvent> = {}): AnnotatedEvent => ({
-  id: 'municipal',
-  name: 'Feriado municipal',
-  start: civilDate('2027-08-31'),
-  end: civilDate('2027-08-31'),
-  effect: 'exclude' as const,
-  offers: ['integrado'],
-  evidence: 'Lei manual',
-  deadlineExtensionCause: 'municipal-holiday',
-  ...overrides,
-});
-
-for (const scenario of [
-  {
-    name: 'single municipal holiday',
-    events: [holiday()],
-    expected: '2027-09-01',
-    source: 'municipal-extension',
-  },
-  {
-    name: 'municipal recess and a weekend',
-    events: [holiday({ end: civilDate('2027-09-03'), deadlineExtensionCause: 'municipal-recess' })],
-    expected: '2027-09-06',
-    source: 'municipal-extension',
-  },
-  {
-    name: 'an explicitly included Saturday',
-    events: [
-      holiday({ end: civilDate('2027-09-03') }),
-      {
-        ...holiday(),
-        id: 'saturday',
-        start: civilDate('2027-09-04'),
-        end: civilDate('2027-09-04'),
-        effect: 'include' as const,
-        deadlineExtensionCause: undefined,
-      },
-    ],
-    expected: '2027-09-04',
-    source: 'municipal-extension',
-  },
-  {
-    name: 'an ordinary exclusion',
-    events: [holiday({ deadlineExtensionCause: undefined })],
-    expected: '2027-08-31',
-    source: 'norm',
-  },
-  {
-    name: 'a municipal holiday belonging to another offer',
-    events: [holiday({ offers: ['graduacao'] })],
-    expected: '2027-08-31',
-    source: 'norm',
-  },
-])
-  test(`deadline is unchanged without manual sources: ${scenario.name}`, () => {
-    const original = { ...deadlineState(), events: scenario.events };
-    const stripped = removeManualSources(original);
-    const before = prorogatedDeadline(
-      original,
-      civilDate('2027-08-31'),
-      original.events,
-      'integrado',
-    );
-    const after = prorogatedDeadline(
-      stripped,
-      civilDate('2027-08-31'),
-      stripped.events,
-      'integrado',
-    );
-    expect(before).toMatchObject({ date: scenario.expected, source: scenario.source });
-    expect(after).toMatchObject({
-      date: before.date,
-      original: before.original,
-      source: before.source,
-    });
-    for (const event of stripped.events)
-      expect(() => validateActivityRecord(stripped, event)).not.toThrow();
-  });
-
 test('local registration keeps its explicit required and optional choices without sources', () => {
   const original = state();
   original.offers.find((offer) => offer.id === 'graduacao')!.intake = { first: true };
@@ -324,10 +220,6 @@ test('PDF omits manual source text but keeps automatic institutional references 
           destinations: [],
         },
       },
-      deadlineAdjustment: {
-        date: civilDate('2027-09-03'),
-        evidence: 'SEGREDO MANUAL DO AJUSTE',
-      },
       offers: ['integrado'],
     },
     {
@@ -361,34 +253,4 @@ test('own-regulation status preserves unconfigured minimums after removing its m
   expect(after.byOffer.integrado.checks.every((check) => check.status === 'NOT_VERIFIABLE')).toBe(
     true,
   );
-});
-
-test('municipal deadline preserves automatic institutional references while absent next teaching dates stay unresolved', () => {
-  const input = deadlineState();
-  const automatic = projectDates(
-    [{ ...holiday({ id: 'inst:municipal' }), evidence: 'Registro institucional automático' }],
-    [],
-  );
-  expect(prorogatedDeadline(input, civilDate('2027-08-31'), automatic, 'integrado')).toMatchObject({
-    date: civilDate('2027-09-01'),
-    evidence: ['Registro institucional automático'],
-  });
-  const stripped = {
-    ...removeManualSources({ ...input, events: [holiday()] }),
-    weekConfirmed: false,
-  };
-  expect(
-    prorogatedDeadline(stripped, civilDate('2027-08-31'), stripped.events, 'integrado'),
-  ).toMatchObject({
-    date: null,
-    source: 'municipal-extension',
-  });
-  const endOfPeriod = {
-    ...stripped,
-    weekConfirmed: true,
-    periods: input.periods.map((period) => ({ ...period, end: civilDate('2027-08-31') })),
-  };
-  expect(
-    prorogatedDeadline(endOfPeriod, civilDate('2027-08-31'), stripped.events, 'integrado'),
-  ).toMatchObject({ date: null, source: 'municipal-extension' });
 });

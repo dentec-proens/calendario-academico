@@ -68,12 +68,6 @@ test('calendar storage requires offerKinds', async () => {
 test('starting the pending migrations on an empty database writes nothing', async () => {
   const { client } = await createNativeFixture();
   expect(await client.mutation(internal.migrations.start, {})).toBeNull();
-  // Only the migration of this release is pending, and an empty database has nothing for it.
-  expect(
-    (await client.query(internal.migrations.status, {})).map(({ name, error }) => ({
-      name,
-      error,
-    })),
-  ).toEqual([{ name: 'migrations:dropRetiredActivityLinks', error: null }]);
+  expect(await client.query(internal.migrations.status, {})).toEqual([]);
   expect(await client.run((ctx) => ctx.db.query('audit').take(10))).toEqual([]);
 });

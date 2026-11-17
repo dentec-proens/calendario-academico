@@ -1,11 +1,10 @@
-import { compactDate, longDate } from '#src/domain/date-labels.ts';
+import { compactDate } from '#src/domain/date-labels.ts';
 import OfferName from '../OfferName.tsx';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { ArrowLeft, ChevronDown } from 'lucide-react';
 import { categories } from '#src/domain/calendar/activities/categories.ts';
 import { CategoryMark } from '../../../components/ui/CategoryMark.tsx';
 import { offerIds, labelFor } from '#src/domain/calendar/offers.ts';
-import { deadlineAdjustmentRefusal } from '#src/domain/calendar/activities/deadlines.ts';
 import { generatedActivities, generatedActivity } from '#src/domain/calendar/activities/links.ts';
 import { activityKey } from '#src/domain/calendar/activities/activity-ref.ts';
 import { applicabilityFor, policyFor } from '#src/domain/policies/registry.ts';
@@ -16,11 +15,8 @@ import { useEventEditor } from './EventEditorProvider.tsx';
 import {
   draftDestinations,
   eventTypes,
-  eventValues,
   destinationsByOffer,
   noticeActive,
-  noticeAnswered,
-  publicationDeadlineView,
   recordOffers,
 } from './event-draft.ts';
 import { destinationIssueLines } from './notice-details.ts';
@@ -54,7 +50,7 @@ const effectLabels = {
 const meetingLabels = { ...effectLabels, exclude: 'Aulas suspensas', note: 'Aulas mantidas' };
 
 export default function EventEditor() {
-  const { state, readOnly, events } = useCalendarEditor();
+  const { state, readOnly } = useCalendarEditor();
   const editor = useEventEditor();
   const { form, values } = editor;
   const heading = useRef<HTMLHeadingElement>(null);
@@ -81,9 +77,6 @@ export default function EventEditor() {
   const realDate = values.publicationStatus === 'published';
   // One destination common to every offer, or one period for each offer; each offer is
   // diagnosed on its own.
-  const saved = editor.eventId
-    ? state.events.find((event) => event.id === editor.eventId)
-    : undefined;
   const destinations = publication ? draftDestinations(values) : [];
   const destinationIssues = destinationIssueLines(state, {
     offers: values.offers,
@@ -97,13 +90,6 @@ export default function EventEditor() {
       },
     },
   });
-  const deadlineView = publication
-    ? publicationDeadlineView(state, requirement, events, values)
-    : undefined;
-  // Decided from what the date opened with, so the fields do not vanish while being corrected.
-  const fixedNotice =
-    deadlineView !== undefined &&
-    noticeAnswered(saved ? eventValues(saved) : values, requirement, state.year);
   // Hours prove the annual minimum of training and planning; other activities do not ask.
   const showHours = !requirement || requirement.variant === 'hours' || Boolean(values.hours);
   // Inside an activity the link is fixed: the panel was opened from that activity.
@@ -297,15 +283,7 @@ export default function EventEditor() {
   // come before the dates, and a stated notice leaves only its situation, after them; otherwise the
   // classification stays an optional detail at the end.
   const noticeFirst = values.eventType === 'notice' || requirement?.variant === 'admission-notice';
-  const noticeFields = fixedNotice ? (
-    <p className="event-scope" id="event-notice-summary">
-      <strong>Ingresso em {values.admissionYear}</strong>
-      {deadlineView.limit
-        ? ` · Prazo: até ${longDate(deadlineView.limit)}${deadlineView.extended ? ' (prorrogado)' : ''}`
-        : ` · Prazo de ${longDate(deadlineView.original)} prorrogado; dia a conferir`}
-      {requirement?.basis ? ` (${requirement.basis})` : ''}
-    </p>
-  ) : (
+  const noticeFields = (
     <>
       {(publication ||
         values.eventType === 'notice' ||
@@ -428,65 +406,6 @@ export default function EventEditor() {
       )}
     </>
   );
-  const lateTitle =
-    deadlineView?.limit && deadlineView.daysLate
-      ? `A publicação termina ${deadlineView.daysLate} ${deadlineView.daysLate === 1 ? 'dia' : 'dias'} depois do prazo`
-      : 'Prazo prorrogado a conferir';
-  // The declared deadline is asked only when the date needs it; one already saved stays editable,
-  // even while its field is emptied.
-  const askAdjustment =
-    noticeActive(values) &&
-    ((deadlineView && deadlineView.standing !== 'within') ||
-      Boolean(values.adjustedDeadline) ||
-      Boolean(saved?.deadlineAdjustment));
-  const deadlineStatus = deadlineView && (
-    // Always mounted: a live region announces what appears in it, not a region that appears.
-    <div className="event-deadline-status" aria-live="polite">
-      {deadlineView.standing === 'late' && (
-        <Notice tone="warning" id="event-deadline-late" title={lateTitle}>
-          {deadlineView.limit
-            ? `Termine a publicação até ${longDate(deadlineView.limit)}. `
-            : `O prazo de ${longDate(deadlineView.original)} foi prorrogado por feriado municipal ou recesso, mas o dia letivo seguinte ainda não pode ser calculado. Confira os dias letivos. `}
-          Se a Proens definiu outro prazo para o campus, informe-o abaixo.
-        </Notice>
-      )}
-      {deadlineView.standing === 'adjusted' && !deadlineView.issue && (
-        <Notice tone="info" id="event-deadline-adjusted">
-          A publicação termina depois do prazo de {longDate(deadlineView.original)}, dentro do novo
-          prazo informado.
-        </Notice>
-      )}
-    </div>
-  );
-  const deadlineFields = (
-    <div className="event-deadline">
-      <form.Field name="adjustedDeadline">
-        {(field) => (
-          <Input
-            field={field}
-            id="event-adjusted-deadline"
-            label="Novo prazo definido pela Proens"
-            type="date"
-            aria-invalid={deadlineView?.issue ? true : undefined}
-            aria-describedby={deadlineView?.issue ? 'event-deadline-issue' : 'event-deadline-help'}
-          />
-        )}
-      </form.Field>
-      {deadlineView?.issue ? (
-        <Notice tone="warning" id="event-deadline-issue">
-          {deadlineView.issue}
-        </Notice>
-      ) : (
-        <p className="help" id="event-deadline-help">
-          {deadlineView?.standing === 'within'
-            ? 'A publicação está dentro do prazo. Apague este campo se a Proens não definiu outro prazo.'
-            : 'A revisão institucional confere essa informação.'}
-        </p>
-      )}
-    </div>
-  );
-  // The error stays until the next attempt: a refusal of the deadline follows the field instead.
-  const adjustmentRefused = editor.error.startsWith(deadlineAdjustmentRefusal);
   return (
     <form id="event-form" className="ui-panel-view" hidden={!editor.open} onSubmit={editor.submit}>
       {activityRecord && (
@@ -526,13 +445,11 @@ export default function EventEditor() {
                   <Input
                     field={field}
                     label={
-                      fixedNotice
-                        ? 'Início da publicação'
-                        : publication
-                          ? realDate
-                            ? 'Data real de início da publicação'
-                            : 'Data programada de início da publicação'
-                          : 'Início'
+                      publication
+                        ? realDate
+                          ? 'Data real de início da publicação'
+                          : 'Data programada de início da publicação'
+                        : 'Início'
                     }
                     id="event-start"
                     type="date"
@@ -545,13 +462,11 @@ export default function EventEditor() {
                   <Input
                     field={field}
                     label={
-                      fixedNotice
-                        ? 'Término da publicação'
-                        : publication
-                          ? realDate
-                            ? 'Data real de término da publicação'
-                            : 'Data programada de término da publicação'
-                          : 'Término'
+                      publication
+                        ? realDate
+                          ? 'Data real de término da publicação'
+                          : 'Data programada de término da publicação'
+                        : 'Término'
                     }
                     id="event-end"
                     type="date"
@@ -569,9 +484,6 @@ export default function EventEditor() {
                 form.setFieldValue('end', range.end);
               }}
             />
-            {deadlineStatus}
-            {askAdjustment && deadlineFields}
-            {fixedNotice && <div className="row-form">{publicationStatusField}</div>}
             {showHours && (
               <div className="row-form">
                 <form.Field name="hours">
@@ -697,31 +609,6 @@ export default function EventEditor() {
                 {unmarkedReason} A data passa a constar do calendário oficial.
               </Notice>
             )}
-            {/* A municipal holiday or recess is a date of the campus, never an activity or meeting. */}
-            {((values.effect === 'exclude' && !editor.activity && nature !== 'meeting') ||
-              values.deadlineExtensionCause) && (
-              <form.Field name="deadlineExtensionCause">
-                {(field) => (
-                  <Select
-                    field={field}
-                    id="event-deadline-extension-cause"
-                    label="Prorrogação de prazos por motivo municipal"
-                  >
-                    <option value="">Sem prorrogação municipal vinculada</option>
-                    <option value="municipal-holiday">Feriado municipal</option>
-                    <option value="municipal-recess">
-                      Recesso decorrente de feriado municipal
-                    </option>
-                  </Select>
-                )}
-              </form.Field>
-            )}
-            {values.deadlineExtensionCause && (
-              <p className="help">
-                Art. 3º, § 2º: classifique o feriado municipal ou recesso correspondente. A política
-                confere os prazos afetados por oferta e preserva as datas reais das atividades.
-              </p>
-            )}
             {!noticeFirst && noticeFields}
           </fieldset>
         </div>
@@ -732,11 +619,7 @@ export default function EventEditor() {
               error={
                 effectIssue && editor.error === effectIssue
                   ? 'Corrija o efeito indicado em “Efeito a corrigir”.'
-                  : adjustmentRefused
-                    ? deadlineView?.issue
-                      ? 'Corrija o novo prazo indicado acima.'
-                      : ''
-                    : editor.error
+                  : editor.error
               }
             />
           }

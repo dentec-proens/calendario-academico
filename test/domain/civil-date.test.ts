@@ -78,13 +78,12 @@ test('reading persisted dates preserves historical choices, metadata and the exa
         originalStart: '2027-10-28',
         originalEnd: '2027-10-28',
         assessmentAutoStart: '2027-10-01',
-        deadlineAdjustment: { date: '2027-10-30', evidence: 'Decisão preservada' },
       },
     ],
     updatedAt: '2026-10-30T15:00:00Z',
   };
   const decoded = readCalendarDates(input);
-  expectTypeOf(decoded.events[0].deadlineAdjustment.date).toEqualTypeOf<CivilDate>();
+  expectTypeOf(decoded.events[0].assessmentAutoStart).toEqualTypeOf<CivilDate>();
   expectTypeOf(decoded.updatedAt).toEqualTypeOf<string>();
   expect(decoded).toEqual(input);
   expect(JSON.stringify(decoded)).toBe(JSON.stringify(input));
@@ -105,10 +104,6 @@ test('JSON import validates auxiliary dates and observances as well as event int
   for (const invalid of [
     { ...base, observanceDates: { 'teacher-day': '2027-02-30' } },
     { ...base, events: [{ ...base.events[0], assessmentAutoStart: '2027-02-30' }] },
-    {
-      ...base,
-      events: [{ ...base.events[0], deadlineAdjustment: { date: '2027-02-30' } }],
-    },
   ])
     expect(() => normalizeOfferCalendar(invalid)).toThrow();
 });

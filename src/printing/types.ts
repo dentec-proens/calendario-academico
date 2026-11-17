@@ -36,9 +36,6 @@ export interface PrintRecord {
   version?: number;
   currentCatalogueRevision?: number;
 }
-export type PrintEvent = Pick<
-  CalendarEvent,
-  'start' | 'end' | 'category' | 'notice' | 'deadlineAdjustment'
-> &
+export type PrintEvent = Pick<CalendarEvent, 'start' | 'end' | 'category' | 'notice'> &
   Partial<Pick<CalendarEvent, 'effect' | 'id' | 'name' | 'activity' | 'internal'>> &
   Pick<InstitutionalEventSnapshot, 'institutional' | 'evidence' | 'offers'>;

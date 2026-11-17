@@ -101,8 +101,6 @@ const activity = (value: unknown): CalendarEvent => {
   if ('modalities' in row) return fail('Formato de atividade incompatível.');
   const notice = row.notice === undefined ? undefined : calendarObject(row.notice);
   const admission = notice?.admission === undefined ? undefined : calendarObject(notice.admission);
-  const adjustment =
-    row.deadlineAdjustment === undefined ? undefined : calendarObject(row.deadlineAdjustment);
   return {
     id: text(row.id),
     name: text(row.name),
@@ -153,11 +151,6 @@ const activity = (value: unknown): CalendarEvent => {
                 }
               : {}),
           },
-        }
-      : {}),
-    ...(adjustment
-      ? {
-          deadlineAdjustment: { date: date(adjustment.date) },
         }
       : {}),
   };

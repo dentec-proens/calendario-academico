@@ -39,15 +39,6 @@ export function validateActivityRecord(
   const position = temporalPosition(state, event);
   if (!['include', 'exclude', 'note'].includes(event.effect))
     throw new DomainError('Efeito inválido.');
-  if (
-    event.deadlineExtensionCause !== undefined &&
-    (!['municipal-holiday', 'municipal-recess'].includes(event.deadlineExtensionCause) ||
-      event.effect !== 'exclude' ||
-      position !== 'current')
-  )
-    throw new DomainError(
-      'A prorrogação municipal exige feriado ou recesso decorrente e exclusão no ano.',
-    );
   const notice = event.notice;
   if (notice?.publication !== undefined && !['planned', 'published'].includes(notice.publication))
     throw new DomainError('Situação de publicação inválida.');
@@ -130,11 +121,6 @@ export function validateActivityRecord(
           'O dia letivo acrescentado precisa estar dentro de um período letivo da oferta.',
         );
     }
-  }
-  if (event.deadlineAdjustment) {
-    parseDate(event.deadlineAdjustment.date);
-    if (notice?.admission?.type !== 'regular')
-      throw new DomainError('Ajuste de prazo exige edital regular e data válida.');
   }
   if (notice?.publication && !notice.admission && event.activity?.activityId === 'admission-notice')
     throw new DomainError('Identifique a finalidade de ingresso do edital.');

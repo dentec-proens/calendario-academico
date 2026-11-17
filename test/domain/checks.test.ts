@@ -64,7 +64,7 @@ test.each(drafts)('the activity rows of %s agree with the registry', (_, draft) 
 });
 
 test('the review judges in a criterion, so it never blocks by itself; the campus and the base do', () => {
-  expect(blocks('deadline-adjusted')).toEqual({ submit: false, publish: false });
+  expect(blocks('review-instruction')).toEqual({ submit: false, publish: false });
   expect(blocks('coverage-pending')).toEqual({ submit: true, publish: true });
   expect(blocks('system-error')).toEqual({ submit: true, publish: true });
   expect(blocks('stage-council')).toEqual({ submit: false, publish: false });

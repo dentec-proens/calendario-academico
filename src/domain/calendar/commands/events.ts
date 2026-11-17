@@ -2,13 +2,8 @@ import type { ActivityPlanItem, ActivityState, CalendarEvent } from '../model.ts
 import { equalValues } from '../../../shared/equal.ts';
 import { datesBetween } from '../counting/core.ts';
 import { periodsForOffer } from '../organization/periods.ts';
-import { deadlineAdjustmentIssue } from '../activities/deadlines.ts';
 import { validateActivityRecord } from '../activities/validation.ts';
-import {
-  activityExtensionIssue,
-  schoolDayEdited,
-  schoolDayIssue,
-} from '../activities/school-day.ts';
+import { schoolDayEdited, schoolDayIssue } from '../activities/school-day.ts';
 import {
   isAssessmentStage,
   isStageActivity,
@@ -162,7 +157,7 @@ function correctedDate<S extends ActivityState>(
   // Automatic distribution belongs to an assessment interval only (`normalizeOfferCalendar`).
   if (!isAssessmentStage(activity)) delete corrected.assessmentAutoStart;
   validateActivityRecord(state, corrected, { stageInterval: true });
-  const schoolDay = schoolDayIssue(state, corrected) ?? activityExtensionIssue(corrected);
+  const schoolDay = schoolDayIssue(state, corrected);
   if (schoolDay) throw new DomainError(schoolDay);
   const cycleIssue = assessmentCycleIssue(state, corrected);
   if (cycleIssue) throw new DomainError(cycleIssue);
@@ -274,8 +269,7 @@ function applyDate<S extends ActivityState>(
     const issue =
       vacationEditIssue(state, previous, event) ??
       vacationOverlapIssue(state.events, event) ??
-      schoolDayIssue(state, event) ??
-      activityExtensionIssue(event);
+      schoolDayIssue(state, event);
     if (issue) throw new DomainError(issue);
   }
   validateActivityRecord(state, event, {
@@ -285,15 +279,6 @@ function applyDate<S extends ActivityState>(
   if (!event.name.trim()) throw new DomainError('Informe a descrição.');
   if (!['include', 'exclude', 'note'].includes(event.effect))
     throw new DomainError('Tipo de evento inválido.');
-  // A saved adjustment is only judged when it or the date changes: other edits stay possible.
-  const adjustmentEdited =
-    previous?.end !== event.end ||
-    previous?.deadlineAdjustment?.date !== event.deadlineAdjustment?.date;
-  const adjustmentIssue =
-    adjustmentEdited &&
-    activity?.admissionType === 'regular' &&
-    deadlineAdjustmentIssue(activity, event);
-  if (adjustmentIssue) throw new DomainError(adjustmentIssue);
   // Only a date of the campus, without effect on the count, in an allowed category (art. 18).
   validateInternalDate(event);
   const modalities = event.offers;

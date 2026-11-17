@@ -56,12 +56,7 @@ export const checks = {
     label: 'Edital de transferência antes do período de destino',
     resolver: 'campus',
   },
-  'deadline-extended': {
-    label: 'Prazo prorrogado por feriado municipal ou recesso',
-    resolver: 'institution',
-  },
   'deadline-late': { label: 'Data posterior ao prazo', resolver: 'campus' },
-  'deadline-adjusted': { label: 'Prazo ajustado informado pelo campus', resolver: 'institution' },
   month: { label: 'Mês exigido', resolver: 'campus' },
   'min-hours': { label: 'Carga horária mínima', resolver: 'campus' },
   'exact-days': { label: 'Total exato de dias', resolver: 'campus' },

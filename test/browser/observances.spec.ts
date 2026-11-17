@@ -13,7 +13,7 @@ for (const width of [1440, 390]) {
     await expect(page.locator('#record-title')).toBeVisible();
     const events = inheritedEvents(initialCatalogue(), 2027, [
       { id: 'integrado', kind: 'integrado', delivery: 'presencial', organization: 'anual' },
-    ]).map(({ deadlineAdjustment: _adjustment, effect, ...event }) => {
+    ]).map(({ effect, ...event }) => {
       return {
         id: event.id,
         name: event.name,

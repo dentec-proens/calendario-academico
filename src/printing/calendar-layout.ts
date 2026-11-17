@@ -156,10 +156,6 @@ function publicationDetails(event: PrintEvent, year: number, includeSource = tru
   }
   const source = automaticEventSource(event);
   if (includeSource && (admission || publication) && source) labels.push(`Fonte: ${source}`);
-  if (event.deadlineAdjustment)
-    labels.push(
-      `Prazo ajustado declarado: ${dateLabel(event.deadlineAdjustment.date, year)}; consulte a conferência institucional no parecer`,
-    );
   return labels.length ? `<small>${labels.map(esc).join(' · ')}</small>` : '';
 }
 

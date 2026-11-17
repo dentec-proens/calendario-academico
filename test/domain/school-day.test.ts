@@ -149,17 +149,6 @@ describe('date commands', () => {
     ).toThrow('não constitui dia letivo');
   });
 
-  test('refuse a municipal cause on a date linked to an activity', () => {
-    const state = ivaiporaAnnual();
-    expect(() =>
-      planActivityDate(
-        state,
-        rowLink(state, 'family-meeting'),
-        date({ effect: 'exclude', deadlineExtensionCause: 'municipal-holiday' }),
-      ),
-    ).toThrow('prorrogação municipal');
-  });
-
   test('keep an unchanged saved date and recheck it once its effect changes', () => {
     const base = ivaiporaAnnual();
     const state = stored(base, legacyMeeting(base));

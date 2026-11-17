@@ -92,20 +92,11 @@ function teachingDay(
 }
 
 /**
- * Whether the save boundary rechecks the art. 5º rule and the municipal cause of a date: a new
- * date, or one whose dates, offers, link, effect, category or cause changed. A saved date left as
- * it was stays as a readiness issue, so it never blocks saving other changes.
+ * Whether the save boundary rechecks the art. 5º rule of a date: a new date, or one whose dates,
+ * offers, link, effect or category changed. A saved date left as it was stays as a readiness
+ * issue, so it never blocks saving other changes.
  */
 export const schoolDayEdited = (previous: CalendarEvent | undefined, next: CalendarEvent) =>
   dateEdited(previous, next) ||
   previous!.effect !== next.effect ||
-  eventCategory(previous!) !== eventCategory(next) ||
-  previous!.deadlineExtensionCause !== next.deadlineExtensionCause;
-
-/** A municipal holiday or recess extends deadlines; a date linked to an activity is neither. */
-export const activityExtensionIssue = (
-  event: Pick<CalendarEvent, 'activity' | 'deadlineExtensionCause'>,
-) =>
-  event.activity && event.deadlineExtensionCause
-    ? 'A prorrogação municipal de prazos vale para feriado ou recesso, não para data vinculada a atividade.'
-    : undefined;
+  eventCategory(previous!) !== eventCategory(next);

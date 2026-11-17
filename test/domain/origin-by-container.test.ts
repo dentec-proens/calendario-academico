@@ -2,7 +2,6 @@ import { expect, test } from 'vitest';
 import { civilDate } from '../../src/domain/civil-date.ts';
 import { automaticEventSource } from '../../src/domain/calendar/counting/core.ts';
 import { evaluateCalendar } from '../../src/domain/calendar/counting/evaluation.ts';
-import { prorogatedDeadline } from '../../src/domain/calendar/activities/deadlines.ts';
 import {
   projectDates,
   type ActivityState,
@@ -94,33 +93,6 @@ test('counting credits only the base date with an automatic source', () => {
     'Resolução institucional automática',
   ]);
   expect(ledger.find((day) => day.date === '2027-03-11')?.evidenceIds).toEqual([]);
-});
-
-test('a municipal deadline extension cites only the base date', () => {
-  const s = state();
-  const extended = (events: Parameters<typeof prorogatedDeadline>[2]) =>
-    prorogatedDeadline(s, civilDate('2027-03-11'), events, 'integrado');
-  expect(extended(projectDates([], s.events))).toMatchObject({
-    date: '2027-03-12',
-    source: 'municipal-extension',
-    evidence: [],
-  });
-  expect(
-    extended(
-      projectDates(
-        [
-          {
-            ...base,
-            id: 'municipal',
-            start: civilDate('2027-03-11'),
-            end: civilDate('2027-03-11'),
-            deadlineExtensionCause: 'municipal-holiday',
-          },
-        ],
-        [],
-      ),
-    ),
-  ).toMatchObject({ date: '2027-03-12', evidence: ['Resolução institucional automática'] });
 });
 
 test('review candidates and the PDF show no source for the local look-alike', () => {

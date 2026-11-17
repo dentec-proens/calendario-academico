@@ -8,8 +8,6 @@ import {
   eventValues,
   activityDraft,
   destinationsByOffer,
-  noticeAnswered,
-  publicationDeadlineView,
   type EventValues,
 } from '../../web/features/calendar-editor/events/event-draft.ts';
 import type { CalendarEvent } from '../../web/features/calendar-editor/types.ts';
@@ -39,23 +37,6 @@ test('the link is not a form value: the date command decides it from the context
   const base = saved({ activity: onceLink('family-meeting') });
   expect(eventValues(base)).not.toHaveProperty('activity');
   expect(edit(base, { name: 'Encontro revisado' })).not.toHaveProperty('activity');
-});
-
-test('a deadline adjustment keeps its date until the form changes it', () => {
-  const base = saved({
-    activity: onceLink('regular-admission-notice'),
-    notice: {
-      publication: 'planned',
-      admission: { type: 'regular', year: 2028, term: 'annual', destinations: [] },
-    },
-    deadlineAdjustment: { date: civilDate('2027-07-01') },
-  });
-  expect(edit(base, { category: 'evento' }).deadlineAdjustment).toEqual({
-    date: civilDate('2027-07-01'),
-  });
-  expect(edit(base, { adjustedDeadline: '2027-07-02' }).deadlineAdjustment).toEqual({
-    date: civilDate('2027-07-02'),
-  });
 });
 
 test('notice metadata is written only while the free event is answered as a notice', () => {
@@ -181,112 +162,6 @@ test('the internal option (art. 18) is a form value: marking and unmarking keep 
   expect(emptyEvent(['integrado']).internal).toBe(false);
 });
 
-test('the form shows where a regular notice stands against its deadline, as it is typed', () => {
-  const state = {
-    year: 2027,
-    periods: [],
-    offers: [],
-  } as unknown as Parameters<typeof publicationDeadlineView>[0];
-  const requirement = {
-    id: 'regular-admission-notice',
-    name: 'Edital',
-    activity: onceLink('regular-admission-notice'),
-    admissionType: 'regular',
-    deadline: civilDate('2027-06-15'),
-    deadlinePolicy: 'reference',
-  } as Parameters<typeof publicationDeadlineView>[1];
-  const view = (end: string, adjustedDeadline = '') =>
-    publicationDeadlineView(state, requirement, [], {
-      end,
-      adjustedDeadline,
-      offers: ['integrado'],
-    });
-  expect(view('')).toMatchObject({ standing: 'within', daysLate: 0 });
-  expect(view('2027-06-15')).toMatchObject({ standing: 'within', daysLate: 0 });
-  expect(view('2027-06-20')).toMatchObject({ standing: 'late', daysLate: 5, limit: '2027-06-15' });
-  expect(view('2027-06-20', '2027-06-20')).toMatchObject({ standing: 'adjusted' });
-  expect(view('2027-06-20', '2027-06-20')?.issue).toBeUndefined();
-  expect(view('2027-06-20', '2026-06-20')?.issue).toContain('posterior a 15 de junho de 2027');
-  expect(view('2027-06-20', '2027-06-18')?.issue).toContain('fim da publicação');
-  // A year still being typed is not a date yet, even past the deadline as text.
-  expect(view('20270-06-10')).toMatchObject({ standing: 'within', daysLate: 0 });
-  expect(view('2027-06-20', '20270-06-10')).toMatchObject({ standing: 'late' });
-  expect(
-    publicationDeadlineView(state, undefined, [], {
-      end: '2027-06-20',
-      adjustedDeadline: '',
-      offers: ['integrado'],
-    }),
-  ).toBeUndefined();
-});
-
-test('an extended deadline is the strictest of the offers, and open while it cannot be determined', () => {
-  const state = {
-    year: 2027,
-    periods: [
-      {
-        id: 'annual',
-        name: 'Anual',
-        start: civilDate('2027-02-01'),
-        end: civilDate('2027-12-17'),
-        association: { status: 'defined', offers: ['integrado', 'graduacao'], term: 'annual' },
-      },
-    ],
-    offers: [
-      { id: 'integrado', kind: 'integrado' },
-      { id: 'graduacao', kind: 'graduacao' },
-    ],
-    weekdays: [1, 2, 3, 4, 5],
-    weekConfirmed: true,
-  } as unknown as Parameters<typeof publicationDeadlineView>[0];
-  const requirement = {
-    admissionType: 'regular',
-    deadline: civilDate('2027-06-15'),
-    deadlinePolicy: 'reference',
-  } as Parameters<typeof publicationDeadlineView>[1];
-  const holiday = {
-    id: 'holiday',
-    name: 'Feriado municipal',
-    start: civilDate('2027-06-15'),
-    end: civilDate('2027-06-15'),
-    effect: 'exclude',
-    deadlineExtensionCause: 'municipal-holiday',
-    offers: ['integrado'],
-  } as unknown as Parameters<typeof publicationDeadlineView>[2][number];
-  const values = (offers: string[]) => ({ end: '2027-06-16', adjustedDeadline: '', offers });
-  expect(
-    publicationDeadlineView(state, requirement, [holiday], values(['integrado'])),
-  ).toMatchObject({ limit: '2027-06-16', extended: true, standing: 'within' });
-  expect(
-    publicationDeadlineView(state, requirement, [holiday], values(['integrado', 'graduacao'])),
-  ).toMatchObject({ limit: '2027-06-15', standing: 'late', daysLate: 1 });
-  expect(
-    publicationDeadlineView({ ...state, weekConfirmed: false }, requirement, [holiday], {
-      ...values(['integrado']),
-    }),
-  ).toMatchObject({ limit: null, extended: true, standing: 'late', daysLate: 0 });
-  expect(publicationDeadlineView(state, requirement, [], values([]))).toMatchObject({
-    limit: '2027-06-15',
-  });
-});
-
-test('only the answers the activity already gives are stated instead of asked', () => {
-  const answered = {
-    admissionType: 'regular',
-    admissionYear: '2028',
-    admissionTerm: 'annual',
-    admissionPeriodId: '',
-  } as const;
-  expect(noticeAnswered(answered, {}, 2027)).toBe(true);
-  for (const change of [
-    { admissionType: 'transfer' },
-    { admissionYear: '2027' },
-    { admissionTerm: 'second' },
-    { admissionPeriodId: 'annual-2027' },
-  ] as const)
-    expect(noticeAnswered({ ...answered, ...change }, {}, 2027)).toBe(false);
-});
-
 test('a new transfer notice starts with each offer in its own period of the cycle', () => {
   const offer = (id: 'integrado' | 'graduacao') =>
     ({
@@ -351,4 +226,13 @@ test('a campus week starts marked for every offer, as the norm recommends the wh
   expect(activityDraft(state, row('cultural-week')).offers).toEqual(['integrado', 'graduacao']);
   // The family meeting is required only on the integrated offer and is not recommended elsewhere.
   expect(activityDraft(state, row('family-meeting')).offers).toEqual(['integrado']);
+});
+
+test('an edited date leaves the municipal cause behind: it no longer extends any deadline', () => {
+  const holiday = saved({ effect: 'exclude', deadlineExtensionCause: 'municipal-holiday' });
+  expect(holiday.deadlineExtensionCause).toBe('municipal-holiday');
+  expect(edit(holiday, { name: 'Feriado municipal' })).toMatchObject({
+    name: 'Feriado municipal',
+    deadlineExtensionCause: undefined,
+  });
 });

@@ -78,9 +78,13 @@ export interface DateFields {
   category?: string;
   hours?: number;
   assessmentAutoStart?: CivilDate;
+  /**
+   * Municipal cause that used to extend the regular notice deadline (Art. 3º, § 2º), retired in
+   * `consup-292-2027-v13`. Kept only as stored in submissions and dates left untouched; it has no
+   * effect, and editing the date drops it.
+   */
   deadlineExtensionCause?: 'municipal-holiday' | 'municipal-recess';
   notice?: AdmissionNotice;
-  deadlineAdjustment?: { date: CivilDate };
 }
 /** A local date of the calendar (`state.events`). */
 export interface CalendarEvent extends DateFields {
@@ -117,7 +121,6 @@ export interface ActivityPlanItem {
   name: string;
   required?: boolean;
   deadline?: CivilDate;
-  deadlinePolicy?: 'reference' | 'fixed';
   minHours?: number;
   /** Days the linked dates must add up to, exactly, within the calendar year. */
   exactDays?: number;

@@ -1,18 +1,10 @@
 import { civilDate } from '../../../../src/domain/civil-date.ts';
-import { parseDate, type CivilDate } from '#src/domain/civil-date.ts';
-import {
-  deadlineAdjustmentIssue,
-  deadlineStanding,
-  requirementDeadline,
-  type DeadlineStanding,
-} from '#src/domain/calendar/activities/deadlines.ts';
 import type {
   ActivityPlanItem,
   AdmissionDestination,
   AssessmentSettings,
   CalendarPeriod,
   CalendarOffer,
-  ProjectedDate,
 } from '#src/domain/calendar/model.ts';
 import { applicabilityFor } from '#src/domain/policies/registry.ts';
 import { eventCategory } from '#src/domain/calendar/activities/categories.ts';
@@ -78,8 +70,6 @@ export interface EventValues {
   admissionPeriodId: string;
   /** Destination of each offer when `admissionPeriodId` is `destinationsByOffer`; '' for none. */
   admissionPeriods: Record<string, string>;
-  adjustedDeadline: string;
-  deadlineExtensionCause: '' | 'municipal-holiday' | 'municipal-recess';
   category: string;
   offers: OfferId[];
   hours: string;
@@ -140,8 +130,6 @@ export const emptyEvent = (offers: OfferId[]): EventValues => ({
   admissionTerm: 'annual',
   admissionPeriodId: '',
   admissionPeriods: {},
-  adjustedDeadline: '',
-  deadlineExtensionCause: '',
   category: 'recesso',
   offers,
   hours: '',
@@ -167,8 +155,6 @@ export function eventValues(event: CalendarEvent): EventValues {
         destination.periodId,
       ]),
     ),
-    adjustedDeadline: event.deadlineAdjustment?.date ?? '',
-    deadlineExtensionCause: event.deadlineExtensionCause ?? '',
     category: eventCategory(event),
     offers: dateOffers,
     hours: event.hours === undefined ? '' : String(event.hours),
@@ -224,15 +210,14 @@ export function eventFromValues(
       publication || admission
         ? { ...(publication && { publication }), ...(admission && { admission }) }
         : undefined,
-    deadlineAdjustment:
-      notice && value.adjustedDeadline ? { date: civilDate(value.adjustedDeadline) } : undefined,
     category:
       target.base && !target.base.category && value.category === eventCategory(target.base)
         ? undefined
         : value.category,
     offers: value.offers,
     hours: value.hours ? Number(value.hours) : undefined,
-    deadlineExtensionCause: value.deadlineExtensionCause || undefined,
+    // The municipal cause no longer extends any deadline (v13): an edited date drops it.
+    deadlineExtensionCause: undefined,
     // Marking or unmarking keeps ID, dates and offers; the command checks eligibility.
     internal: value.internal ? true : undefined,
   };
@@ -306,73 +291,5 @@ export function activityDraft(
     admissionPeriods: ownPeriods ?? {},
     publicationStatus: notice ? 'planned' : '',
     category: requirement.defaultCategory ?? 'prazo',
-  };
-}
-
-/** The value of a date field once typed in full; a year still growing (20270) is not a date yet. */
-const typedDate = (value: string) => (/^\d{4}-\d{2}-\d{2}$/.test(value) ? value : '');
-
-/**
- * Whether the activity already answers what these values say about its notice, so the form can state
- * them. Any other saved answer stays in the fields, where it can be corrected.
- */
-export function noticeAnswered(
-  values: Pick<
-    EventValues,
-    'admissionType' | 'admissionYear' | 'admissionTerm' | 'admissionPeriodId'
-  >,
-  requirement: Pick<ActivityPlanItem, 'term'> | undefined,
-  year: number,
-) {
-  return (
-    values.admissionType === 'regular' &&
-    values.admissionYear === String(year + 1) &&
-    values.admissionTerm === (requirement?.term ?? 'annual') &&
-    !values.admissionPeriodId
-  );
-}
-
-const standingOrder: DeadlineStanding[] = ['within', 'adjusted', 'late'];
-
-/**
- * The deadline of a regular admission notice as the form shows it while the date is typed, by the
- * same rules as the evaluation. With several offers the strictest one decides; `limit` is null
- * while an extension cannot be determined.
- */
-export function publicationDeadlineView(
-  state: Parameters<typeof requirementDeadline>[0],
-  requirement: ActivityPlanItem | undefined,
-  events: readonly ProjectedDate[],
-  values: Pick<EventValues, 'end' | 'adjustedDeadline' | 'offers'>,
-) {
-  if (requirement?.admissionType !== 'regular' || !requirement.deadline) return undefined;
-  const deadlines = (values.offers.length ? values.offers : ['']).map((offer) =>
-    requirementDeadline(state, requirement, events, offer),
-  );
-  const dates = deadlines.map((deadline) => deadline?.date ?? null);
-  const limit = dates.includes(null) ? null : dates.map(String).sort()[0]!;
-  const typedEnd = typedDate(values.end);
-  const adjusted = typedDate(values.adjustedDeadline);
-  const end = typedEnd as CivilDate;
-  const event = {
-    end,
-    deadlineAdjustment: adjusted ? { date: adjusted as CivilDate } : undefined,
-  };
-  const standing: DeadlineStanding = typedEnd
-    ? standingOrder[
-        Math.max(
-          ...deadlines.map((deadline) =>
-            standingOrder.indexOf(deadlineStanding(requirement, deadline, event)),
-          ),
-        )
-      ]!
-    : 'within';
-  return {
-    original: requirement.deadline,
-    limit,
-    extended: limit !== requirement.deadline,
-    standing,
-    daysLate: limit && typedEnd > limit ? (parseDate(end) - parseDate(limit)) / 86400000 : 0,
-    issue: typedEnd ? deadlineAdjustmentIssue(requirement, event) : undefined,
   };
 }

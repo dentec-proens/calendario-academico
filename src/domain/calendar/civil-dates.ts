@@ -3,15 +3,12 @@ import { activityRef, type ActivityRef } from './activities/activity-ref.ts';
 
 type RangeDates<T> = { [K in keyof T]: K extends 'start' | 'end' ? CivilDate : T[K] };
 type ActivityDateKey = 'start' | 'end' | 'originalStart' | 'originalEnd' | 'assessmentAutoStart';
-type AdjustmentDates<T> = T extends { date: string } ? Omit<T, 'date'> & { date: CivilDate } : T;
 type ActivityDates<T> = {
   [K in keyof T]: K extends ActivityDateKey
     ? CivilDate
-    : K extends 'deadlineAdjustment'
-      ? AdjustmentDates<T[K]>
-      : K extends 'activity'
-        ? ActivityRef | Extract<T[K], undefined>
-        : T[K];
+    : K extends 'activity'
+      ? ActivityRef | Extract<T[K], undefined>
+      : T[K];
 };
 type CalendarDates<T extends CalendarInput> = {
   [K in keyof T]: K extends 'periods'
@@ -36,7 +33,6 @@ interface ActivityInput extends RangeInput {
   originalStart?: string;
   originalEnd?: string;
   assessmentAutoStart?: string;
-  deadlineAdjustment?: { date: string };
   activity?: unknown;
 }
 export function readDateRange<T extends RangeInput>(value: T) {
@@ -55,14 +51,6 @@ export function readActivityDates<T extends ActivityInput>(value: T): ActivityDa
     ...(value.assessmentAutoStart === undefined
       ? {}
       : { assessmentAutoStart: civilDate(value.assessmentAutoStart) }),
-    ...(value.deadlineAdjustment === undefined
-      ? {}
-      : {
-          deadlineAdjustment: {
-            ...value.deadlineAdjustment,
-            date: civilDate(value.deadlineAdjustment.date),
-          },
-        }),
     ...(value.activity === undefined ? {} : { activity: activityRef(value.activity) }),
   } as ActivityDates<T>;
 }

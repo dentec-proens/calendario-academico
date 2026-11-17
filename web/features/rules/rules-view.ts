@@ -149,7 +149,7 @@ export function rulesView(year: number) {
               sample.exactDays && `Exatamente ${sample.exactDays} dias no ano do calendário.`,
               sample.deadline &&
                 !sample.name.includes(dateInRuleName(sample.deadline)) &&
-                `Prazo${sample.deadlinePolicy === 'reference' ? ' de referência' : ''}: ${longDate(sample.deadline)}.`,
+                `Prazo: ${longDate(sample.deadline)}.`,
               policy.schoolDay &&
                 schoolDayNature(year, { activity: sample.activity, effect: 'note' }) !==
                   'school-day' &&

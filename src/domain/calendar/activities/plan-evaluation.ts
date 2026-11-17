@@ -16,7 +16,6 @@ import {
   validateActivityRecord,
 } from './validation.ts';
 import { periodsForOffer } from '../organization/periods.ts';
-import { deadlineStanding, requirementDeadline } from './deadlines.ts';
 import { exactDaysIssue } from './vacations.ts';
 import type { ActivityRef } from './activity-ref.ts';
 import type { CheckId, RowFinding } from '../checks.ts';
@@ -254,33 +253,15 @@ export function evaluatePlan(
               }
             }
           }
-          const deadline = requirementDeadline(state, requirement, events, modality);
-          if (deadline?.source === 'municipal-extension')
-            found(
-              reviewNotes,
-              'deadline-extended',
-              `Prazo de ${longDate(deadline.original)} prorrogado para ${deadline.date ? longDate(deadline.date) : 'conferência do primeiro dia letivo subsequente'} por feriado municipal ou recesso decorrente.${deadline.evidence.length ? ` Fontes institucionais: ${deadline.evidence.join('; ')}.` : ''}`,
-              event.id,
-            );
-          const standing = deadlineStanding(requirement, deadline, event);
-          if (standing === 'late') {
+          if (requirement.deadline && event.end > requirement.deadline) {
             found(
               issues,
               'deadline-late',
-              requirement.admissionType === 'regular'
-                ? `Data posterior ao prazo de ${longDate(requirement.deadline!)}. Antecipe a data ou, se a Proens definiu outro prazo para o campus, informe-o em “Novo prazo definido pela Proens”.`
-                : `Data posterior ao prazo de ${longDate(requirement.deadline!)}. Antecipe a data para até o prazo.`,
+              `Data posterior ao prazo de ${longDate(requirement.deadline)}. Antecipe a data para até o prazo.`,
               event.id,
             );
             return false;
           }
-          if (standing === 'adjusted')
-            found(
-              reviewNotes,
-              'deadline-adjusted',
-              'Prazo ajustado informado pelo campus; confira a autorização e o escopo na revisão.',
-              event.id,
-            );
           if (
             requirement.month &&
             (Number(event.start.slice(5, 7)) !== requirement.month ||

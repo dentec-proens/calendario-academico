@@ -29,7 +29,7 @@ export function reviewSupport<
 >(
   record: T,
   events: (Pick<DateFields, 'id' | 'name' | 'start' | 'end' | 'category'> &
-    Partial<Pick<DateFields, 'effect' | 'notice' | 'deadlineAdjustment' | 'hours'>> & {
+    Partial<Pick<DateFields, 'effect' | 'notice' | 'hours'>> & {
       activity?: ActivityRef;
       internal?: true;
     } & Pick<InstitutionalEventSnapshot, 'evidence' | 'institutional' | 'offers'>)[],
