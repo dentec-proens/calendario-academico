@@ -8,18 +8,13 @@ type CoverageRow = Extract<Evidence, { kind: 'coverage' }>['rows'][number];
 
 /** Above this, the records collapse: name search can bring many without relation to the rule. */
 const openRecords = 5;
-/** Above this, the activities collapse behind a count of how their planning stands. */
+/** Above this, the activities collapse behind a count of those without dates or with warnings. */
 const openActivities = 6;
 
 const applicabilityLabels: Record<CoverageRow['applicability'], string> = {
-  required: 'Obrigatório',
+  required: 'Obrigatória',
   optional: 'Opcional',
-  unconfigured: 'Escopo a conferir',
-};
-const coverageLabels: Record<CoverageRow['coverage'], string> = {
-  complete: 'Planejamento completo',
-  partial: 'Planejamento parcial',
-  pending: 'Planejamento pendente',
+  unconfigured: 'Aplicação a confirmar',
 };
 const executionLabels: Record<NonNullable<CoverageRow['execution']>, string> = {
   published: 'Publicação realizada',
@@ -42,13 +37,7 @@ function coverageLines(rows: readonly CoverageRow[]) {
     const messages = [...row.issues, ...row.warnings];
     if (row.applicability === 'optional' && row.coverage === 'pending' && !messages.length)
       continue;
-    const key = JSON.stringify([
-      row.activity,
-      row.applicability,
-      row.coverage,
-      row.execution,
-      messages,
-    ]);
+    const key = JSON.stringify([row.activity, row.coverage, row.execution, messages]);
     const line = lines.get(key);
     if (line) line.offers.push(row.offer);
     else lines.set(key, { ...row, offers: [row.offer] });
@@ -70,8 +59,7 @@ function CoverageList({ rows }: { rows: readonly CoverageRow[] }) {
           <small>
             {[
               line.offers.join(', '),
-              applicabilityLabels[line.applicability],
-              coverageLabels[line.coverage],
+              line.coverage === 'pending' ? 'Nenhuma data registrada' : null,
               line.execution ? executionLabels[line.execution] : null,
             ]
               .filter(Boolean)
@@ -92,25 +80,40 @@ function CoverageList({ rows }: { rows: readonly CoverageRow[] }) {
   for (const line of lines)
     byActivity.set(line.activity, [...(byActivity.get(line.activity) ?? []), line]);
   const activities = [...byActivity.values()];
-  const count = (coverage: CoverageRow['coverage']) =>
-    activities.filter((group) =>
-      coverage === 'partial'
-        ? new Set(group.map((line) => line.coverage)).size > 1 ||
-          group.every((line) => line.coverage === 'partial')
-        : group.every((line) => line.coverage === coverage),
-    ).length;
+  const undated = activities.filter((group) =>
+    group.every((line) => line.coverage === 'pending'),
+  ).length;
   const problems = activities.filter((group) =>
     group.some((line) => line.issues.length + line.warnings.length > 0),
   ).length;
   return (
     <details className="review-item__coverage-all">
       <summary>
-        Ver {activities.length} atividades: {count('complete')} completas, {count('partial')}{' '}
-        parciais, {count('pending')} pendentes
-        {problems ? `, ${problems} com aviso` : ''}
+        Ver {activities.length} atividades
+        {[undated ? `${undated} sem data registrada` : '', problems ? `${problems} com aviso` : '']
+          .filter(Boolean)
+          .join(', ')
+          .replace(/^(?=.)/, ': ')}
       </summary>
       {list}
     </details>
+  );
+}
+
+const offerList = new Intl.ListFormat('pt-BR');
+
+/** What the norm asks of each offer: it reads with the rule, apart from the records. */
+export function RuleScope({ scope }: { scope: Criterion['scope'] }) {
+  if (!scope.length) return null;
+  return (
+    <ul className="review-item__scope">
+      {scope.map((group) => (
+        <li key={`${group.applicability}:${group.offers.join()}`}>
+          {applicabilityLabels[group.applicability]} para {offerList.format(group.offers)}.
+          {group.note ? <small> {group.note}</small> : null}
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -267,11 +270,7 @@ export default function ReviewEvidence({
   return (
     <>
       <Evidence evidence={evidence} calendarYear={calendarYear} />
-      <Records
-        label="Datas vinculadas às atividades"
-        records={linkedRecords}
-        calendarYear={calendarYear}
-      />
+      <Records label="Datas" records={linkedRecords} calendarYear={calendarYear} />
       <Records
         label="Encontrados por nome e categoria"
         records={candidates}

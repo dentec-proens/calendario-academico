@@ -311,6 +311,47 @@ const coverageRow = (state: TeachingState, row: ActivityEvaluation) => ({
 });
 
 /**
+ * What the norm asks of each offer under a criterion. An offer is required when the criterion asks
+ * any of its activities of it, and optional only when all of them are; the activity rows on the
+ * other side say which. It belongs to the rule, not to the records.
+ */
+function scopeOf(
+  policy: CalendarPolicy,
+  state: TeachingState,
+  linked: readonly ActivityEvaluation[],
+) {
+  const byOffer = new Map<
+    string,
+    { applicability: Set<Applicability>; notes: Set<string | null> }
+  >();
+  for (const row of linked) {
+    const offer = byOffer.get(row.offerId) ?? { applicability: new Set(), notes: new Set() };
+    offer.applicability.add(row.applicability);
+    if (row.applicability === 'optional')
+      offer.notes.add(policy.applicabilityNote?.(row.requirement, row.offer) || null);
+    byOffer.set(row.offerId, offer);
+  }
+  const order: Applicability[] = ['required', 'unconfigured', 'optional'];
+  const groups = new Map<
+    string,
+    { applicability: Applicability; offers: string[]; note: string | null }
+  >();
+  for (const [offerId, offer] of byOffer) {
+    const applicability = order.find((value) => offer.applicability.has(value))!;
+    // A reason shared by every optional activity of the offer; several reasons read on each row.
+    const note =
+      applicability === 'optional' && offer.notes.size === 1 ? [...offer.notes][0]! : null;
+    const key = JSON.stringify([applicability, note]);
+    const group = groups.get(key) ?? { applicability, offers: [], note };
+    group.offers.push(labelFor(state, offerId));
+    groups.set(key, group);
+  }
+  return [...groups.values()].sort(
+    (a, b) => order.indexOf(a.applicability) - order.indexOf(b.applicability),
+  );
+}
+
+/**
  * What the human review confirms, once. A note that holds for only some offers says which: without
  * them, a deadline moved for one offer would read as moved for all.
  */
@@ -385,6 +426,7 @@ export function criterionSupport(
         : 'CONFERENCIA_NECESSARIA');
   return {
     evidence,
+    scope: scopeOf(policy, state, linked),
     linkedRecords,
     candidates,
     internalDates,

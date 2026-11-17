@@ -3,7 +3,7 @@ import type { reviews } from '../../shared/convex/reviews.ts';
 import { ChoiceGroup } from '../../components/ui/ChoiceGroup.tsx';
 import { TextAreaField } from '../../components/ui/Field.tsx';
 import { StatusBadge } from '../../components/ui/Feedback.tsx';
-import ReviewEvidence, { type Criterion } from './ReviewEvidence.tsx';
+import ReviewEvidence, { RuleScope, type Criterion } from './ReviewEvidence.tsx';
 
 type Entry = Parameters<typeof reviews.save>[1]['entries'][number];
 
@@ -80,6 +80,7 @@ export default function ReviewCriterion({
           <section className="review-item__rule" data-rule={criterion.id}>
             <h4>A regra exige</h4>
             {criterion.requirement ? <p>{criterion.requirement}</p> : null}
+            <RuleScope scope={criterion.scope} />
             <p className="review-item__source">{criterion.source}</p>
           </section>
           <section className="review-item__registered" data-registered={criterion.id}>

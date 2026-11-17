@@ -396,11 +396,15 @@ test('coverage reads by activity, without optional activities that have nothing 
   await expect(page.locator('#review-scope-warning')).toHaveCount(0);
   const family = page.locator('[data-registered="XVI"]');
   await expect(family.locator('.review-coverage li')).toHaveCount(1);
-  await expect(family.locator('.review-coverage small').first()).toContainText('Obrigatório');
-  // Many activities collapse behind how they stand.
+  // What the norm asks reads with the rule; the records say only what was registered.
+  await expect(page.locator('[data-rule="XVI"] .review-item__scope')).toContainText(
+    /^Obrigatória para /,
+  );
+  await expect(family.locator('.review-coverage small').first()).not.toContainText('Obrigatória');
+  // Many activities collapse behind how many have no date or a warning.
   // The partial results of each stage are asked of every offer (Art. 11, IX).
   const stages = page.locator('[data-registered="IX"] .review-item__coverage-all summary');
-  await expect(stages).toContainText(/^Ver \d+ atividades: \d+ completas/);
+  await expect(stages).toContainText(/^Ver \d+ atividades/);
 });
 
 test('a closed parecer shows a suggestion saved long ago as a proposal, not as an assessment', async ({

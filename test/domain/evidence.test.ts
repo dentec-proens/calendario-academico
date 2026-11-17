@@ -262,3 +262,25 @@ test('history counts a suggestion saved without an assessment as pending', () =>
     ]),
   ).toEqual({ ATENDIDO: 1, PENDENTE: 2 });
 });
+
+test('the scope of a criterion says per offer what the norm asks, with its reason when optional', () => {
+  const council = criterionOf(support(calendarOffersFixture()), 'XIII');
+  // Every stage is asked of the integrated offer only; the others may register them.
+  expect(council.scope).toEqual([
+    { applicability: 'required', offers: ['Técnico integrado'], note: null },
+    {
+      applicability: 'optional',
+      offers: [
+        'Licenciatura em Química',
+        'Engenharia Elétrica',
+        'Tecnologia em Análise de Sistemas',
+      ],
+      note: 'Exigido por etapa apenas no técnico integrado; cadastro permitido.',
+    },
+  ]);
+  // An offer asked for one activity of the criterion is required, though others are optional.
+  const reenrolment = criterionOf(support(calendarOffersFixture()), 'V').scope;
+  expect(reenrolment.find((group) => group.applicability === 'required')?.offers).toContain(
+    'Licenciatura em Química',
+  );
+});

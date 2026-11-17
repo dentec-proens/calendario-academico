@@ -244,6 +244,11 @@ const candidate = v.object({
   evidence: v.string(),
 });
 const planCoverage = v.union(v.literal('pending'), v.literal('partial'), v.literal('complete'));
+const planApplicability = v.union(
+  v.literal('required'),
+  v.literal('optional'),
+  v.literal('unconfigured'),
+);
 const planExecution = v.union(
   v.literal('planned'),
   v.literal('published'),
@@ -282,11 +287,7 @@ const reviewEvidence = v.union(
       v.object({
         offer: v.string(),
         activity: v.string(),
-        applicability: v.union(
-          v.literal('required'),
-          v.literal('optional'),
-          v.literal('unconfigured'),
-        ),
+        applicability: planApplicability,
         coverage: planCoverage,
         execution: v.union(planExecution, v.null()),
         issues: v.array(v.string()),
@@ -306,6 +307,15 @@ const criterion = v.object({
   requirement: v.union(v.string(), v.null()),
   source: v.string(),
   evidence: reviewEvidence,
+  /** What the norm asks of each offer under the criterion. */
+  scope: v.array(
+    v.object({
+      applicability: planApplicability,
+      offers: v.array(v.string()),
+      /** Why the norm leaves the activity optional for these offers, when the policy says. */
+      note: v.union(v.string(), v.null()),
+    }),
+  ),
   /** Dates linked to the activities of the criterion. */
   linkedRecords: v.array(candidate),
   /** Records found only by name and category: a hint, never evidence. */

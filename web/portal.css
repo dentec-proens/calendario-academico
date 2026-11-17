@@ -205,6 +205,26 @@
 .review-coverage small.review-evidence__issue {
   color: var(--ui-warning);
 }
+.review-item__scope {
+  display: grid;
+  gap: var(--ui-space-1);
+  margin: var(--ui-space-2) 0 0;
+  padding: 0;
+  list-style: none;
+}
+.review-item .review-item__scope li {
+  display: block;
+  padding: 0;
+  border: 0;
+}
+.review-item__scope small {
+  display: block;
+  color: var(--ui-muted);
+  font-size: 0.8rem;
+}
+.review-item__comparison .review-item__scope + p {
+  margin-top: var(--ui-space-2);
+}
 .review-item__check {
   margin-top: var(--ui-space-2);
   font-size: 0.85rem;
