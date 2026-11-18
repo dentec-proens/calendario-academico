@@ -24,19 +24,26 @@ test('calendar print identifies each offer in the header, periods, event scopes 
   ];
   const result = evaluateCalendar(state, events);
   const html = proensLayout(state, events, result, null, '');
-  for (const [index, label] of [
+  const labels = [
     'Técnico integrado',
     'Licenciatura em Química',
     'Engenharia Elétrica',
     'Tecnologia em Análise de Sistemas',
-  ].entries()) {
+  ];
+  for (const [index, label] of labels.entries()) {
     expect(html).toContain(label);
     expect(html).toContain(`Dias letivos — ${label}`);
     expect(html).toContain(`Reunião ${index + 1} da oferta [${label}]`);
     expect(html).toContain(`— ${label}</td>`);
     expect(html).not.toContain(`— ${label} [${label}]`);
   }
-  expect(html).toContain('<th>Oferta</th>');
+  // The count has a column per offer, and each annual total comes from that offer's own count.
+  expect(html).toContain(
+    `<table class="period-count"><thead><tr><th>Período</th>${labels.map((label) => `<th>${label}</th>`).join('')}</tr></thead>`,
+  );
+  expect(html).toContain(
+    `<tr><th>Total anual</th>${state.offers.map((offer) => `<th>${result.byOffer[offer.id].total}</th>`).join('')}</tr>`,
+  );
   expect(html).not.toContain('undefined');
   expect(html).not.toContain('[graduacao-2]');
   expect(html).not.toContain('[graduacao-3]');

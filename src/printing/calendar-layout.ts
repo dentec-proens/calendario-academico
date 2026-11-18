@@ -12,7 +12,6 @@ import {
   startsDecemberVacation,
   vacationKind,
 } from '../domain/calendar/activities/vacations.ts';
-import { periodsForOffer } from '../domain/calendar/organization/periods.ts';
 import { associationOffers, labelFor, offerIds } from '../domain/calendar/offers.ts';
 import { executionLabels } from '../domain/calendar/activities/plan-evaluation.ts';
 import { canBeInternal, isInternalDate } from '../domain/calendar/internal-dates.ts';
@@ -321,42 +320,42 @@ export function proensLayout(
       .join('');
     return `<section class="proens-month"><div><h3>${name}</h3><table class="month-grid"><thead><tr>${['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map((d) => '<th>' + d + '</th>').join('')}</tr></thead><tbody>${rows}</tbody></table><p class="monthly-total">${result ? total : '—'} dias letivos</p></div><div><h3>${name}</h3><div class="event-columns">${eventTables}</div></div></section>`;
   }).join('');
+  // One table for every offer: a column per offer, a row per period, the annual total last.
+  const countedOffers = byOffer ? offerIds(state).filter((m) => byOffer[m]) : [];
+  const countHeads =
+    countedOffers.length > 1
+      ? countedOffers.map((m) => `<th>${esc(labelFor(state, m))}</th>`).join('')
+      : '<th>Dias letivos</th>';
+  const countCells = (value: (m: string | undefined) => number | string | undefined) =>
+    (countedOffers.length ? countedOffers : [undefined]).map((m) => value(m) ?? '—');
   const countRows = state.periods
     .map((p) => {
-      const counts = associationOffers(p.association)
-        .map(
-          (m) =>
-            `${esc(labelFor(state, m))}: ${byOffer?.[m]?.byPeriod[p.id] ?? (byOffer ? '—' : (result?.byPeriod[p.id] ?? '—'))}`,
-        )
-        .join(' · ');
-      return `<tr><td>${esc(p.name)}</td><td>${counts}</td></tr>`;
+      const offers = associationOffers(p.association);
+      const cells = countCells((m) =>
+        m === undefined
+          ? result?.byPeriod[p.id]
+          : offers.includes(m)
+            ? byOffer?.[m]?.byPeriod[p.id]
+            : '',
+      );
+      return `<tr><td>${esc(p.name)}</td>${cells.map((c) => `<td>${c}</td>`).join('')}</tr>`;
     })
     .join('');
+  const annualCells = countCells((m) => (m === undefined ? result?.total : byOffer?.[m]?.total));
   const dayDistribution = distributionTables(state, events, result);
   return `<div class="proens-document"${version === 'complete' ? ' data-print-version="complete"' : ''}><div class="proens-heading"><img class="ifpr-logo" src="${esc(logo)}" alt="Instituto Federal do Paraná"><strong>INSTITUTO FEDERAL DO PARANÁ</strong><h2>CALENDÁRIO ACADÊMICO E ADMINISTRATIVO ${state.year}</h2><h2>CAMPUS ${esc(state.campus)}</h2><small class="proens-status-mark" data-status="${status}">${esc(printMark(status, { seiProcess: record?.seiProcess, supersededByName: record?.supersededByName }))}</small>${version === 'complete' ? `<small class="proens-version-mark">${esc(completeVersionNote)}</small>` : ''}<p>${esc(
     offerIds(state)
       .map((m) => labelFor(state, m))
       .join(' + '),
-  )}</p></div>${months}${externalReferences(state, listed)}<section class="proens-summary"><h3>Legendas e contagem</h3><p>Marcação gráfica de dias: ${esc(labelFor(state, offerIds(state)[0] ?? ''))}.</p>${
-    byOffer
-      ? `<table><thead><tr><th>Oferta</th><th>Total anual</th><th>Períodos</th></tr></thead><tbody>${Object.entries(
-          byOffer,
-        )
-          .map(
-            ([m, r]) =>
-              `<tr><td>${esc(labelFor(state, m))}</td><td>${r.total}</td><td>${periodsForOffer(
-                state,
-                m,
-              )
-                .map((p) => `${esc(p.name)}: ${r.byPeriod[p.id] ?? '—'}`)
-                .join(' · ')}</td></tr>`,
-          )
-          .join('')}</tbody></table>`
+  )}</p></div>${months}<section class="proens-legend">${
+    // The grid marks the days of the first offer; with one offer the heading already names it.
+    offerIds(state).length > 1
+      ? `<p>Os pontos de dia letivo seguem a contagem de ${esc(labelFor(state, offerIds(state)[0]))}.</p>`
       : ''
   }<div class="proens-key">${categories
     .filter((c) => c[2] && usedCategories.has(c[0]))
     .map(([key, label]) => `<div><span class="swatch cat-${key}"></span>${esc(label)}</div>`)
     .join(
       '',
-    )}${showsInternal ? '<div><span class="swatch internal-swatch"></span>Data interna</div>' : ''}</div><p>· Dia letivo calculado; dia sem o ponto não conta como letivo. Faixas adicionais na data indicam categorias simultâneas. A cor não substitui a conferência de conflitos.</p><table><thead><tr><th>Período</th><th>Dias letivos</th></tr></thead><tbody>${countRows}<tr><th>Total anual</th><th>${result?.total ?? '—'}</th></tr></tbody></table>${dayDistribution}<p>Carga horária, checklist integral e deliberação institucional permanecem sujeitos à conferência.</p></section></div>`;
+    )}${showsInternal ? '<div><span class="swatch internal-swatch"></span>Data interna</div>' : ''}</div><p>· Dia letivo calculado; dia sem o ponto não conta como letivo. Faixas adicionais na data indicam categorias simultâneas.</p></section>${externalReferences(state, listed)}<section class="proens-summary"><h3>Contagem de dias letivos</h3><table class="period-count"><thead><tr><th>Período</th>${countHeads}</tr></thead><tbody>${countRows}<tr><th>Total anual</th>${annualCells.map((c) => `<th>${c}</th>`).join('')}</tr></tbody></table>${dayDistribution}</section></div>`;
 }

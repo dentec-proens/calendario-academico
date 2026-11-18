@@ -111,8 +111,12 @@
   max-width: 420px;
   margin: 12px 0;
 }
-.proens-summary p {
+.proens-summary p,
+.proens-legend p {
   font-size: 0.75rem;
+}
+.proens-legend {
+  margin: 0 0 20px;
 }
 .local-origin {
   color: #555;
@@ -175,10 +179,12 @@
   .proens-document {
     print-color-adjust: exact;
   }
-  .proens-summary {
+  .proens-summary,
+  .proens-legend {
     break-inside: avoid;
   }
-  .proens-summary p {
+  .proens-summary p,
+  .proens-legend p {
     font-size: 8pt;
   }
   .proens-heading {
@@ -504,7 +510,8 @@
     width: 25px;
     height: 10px;
   }
-  .proens-summary p {
+  .proens-summary p,
+  .proens-legend p {
     font-size: 6pt;
     margin: 4px 0;
   }

@@ -79,6 +79,10 @@ const day = (section: string, n: number) =>
 const counts = (html: string) => ({
   monthly: [...html.matchAll(/<p class="monthly-total">([^<]*)<\/p>/g)].map((m) => m[1]),
   summary: html.slice(html.indexOf('<section class="proens-summary">')),
+  legend: html.slice(
+    html.indexOf('<section class="proens-legend">'),
+    html.indexOf('</section>', html.indexOf('<section class="proens-legend">')),
+  ),
 });
 
 test('both versions print the same count of school days, which internal dates never change', () => {
@@ -92,15 +96,12 @@ test('both versions print the same count of school days, which internal dates ne
   expect(before.monthly.some((total) => total !== '0 dias letivos')).toBe(true);
   const complete = counts(print('complete'));
   expect(complete.monthly).toEqual(before.monthly);
-  // The summary differs only by the key: the entry of internal dates and the categories the
-  // internal dates add to the grid.
-  const withoutKey = (summary: string) =>
-    summary.replace(/<div class="proens-key">.*?<\/div><p>/u, '<p>');
-  expect(withoutKey(complete.summary)).toBe(withoutKey(before.summary));
-  expect(complete.summary).toContain(
+  expect(complete.summary).toBe(before.summary);
+  // Only the key differs: the entry of internal dates and the categories they add to the grid.
+  expect(complete.legend).toContain(
     '<div><span class="swatch internal-swatch"></span>Data interna</div>',
   );
-  expect(before.summary).not.toContain('internal-swatch');
+  expect(before.legend).not.toContain('internal-swatch');
 });
 
 test('the official version, the default, prints no internal date in the grid or in the lists', () => {
