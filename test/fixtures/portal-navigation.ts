@@ -123,6 +123,17 @@ const calendar: Bootstrap['calendars'][number] = {
   createdByName: 'Pessoa autora',
   updatedByName: 'Pessoa editora',
 };
+// As the server lists another campus's calendar to a campus account: without its authors.
+const { createdByName: _created, updatedByName: _updated, ...withoutAuthors } = calendar;
+const foreignCalendar: Bootstrap['calendars'][number] = {
+  ...withoutAuthors,
+  id: 'calendar-b' as Id<'calendars'>,
+  name: 'Calendário do outro campus',
+  campusId: 'campus-b' as Id<'campuses'>,
+  campusName: 'Outro campus',
+  // A draft, which its own campus would edit and delete.
+  status: 'rascunho',
+};
 // As the server, the queue lists one situation at a time; the rows default to the first tab.
 const queueStatus = (new URLSearchParams(location.search).get('queue-status') ??
   'enviado') as CalendarStatus;
@@ -164,13 +175,18 @@ const longListRows = Array.from({ length: 260 }, (_, index) => ({
 /** As `calendarPage`: the situation fills the page, and the search filters each page once read. */
 function calendarPage(args: {
   deleted?: boolean;
+  campusId?: string;
   status?: string;
   search?: string;
   paginationOpts?: { numItems: number; cursor: string | null };
 }) {
-  const rows = (longList && !args.deleted ? longListRows : calendarRows(!!args.deleted)).filter(
-    (item) => !args.status || item.status === args.status,
-  );
+  const rows = (
+    args.campusId && args.campusId !== campusId && !args.deleted
+      ? [foreignCalendar]
+      : longList && !args.deleted
+        ? longListRows
+        : calendarRows(!!args.deleted)
+  ).filter((item) => !args.status || item.status === args.status);
   const start = Number(args.paginationOpts?.cursor ?? 0);
   const end = start + (args.paginationOpts?.numItems ?? rows.length);
   return {

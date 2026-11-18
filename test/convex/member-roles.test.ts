@@ -226,7 +226,7 @@ test('portal capabilities separate reviewing, calendar editing and account admin
   assert.equal(portalPermissions('ADMIN').manageAccounts, true);
 });
 
-test('campus cannot read or change another campus while admin can manage both', async () => {
+test('campus reads the live calendars of another campus but changes none of them', async () => {
   const { admin, campus, ids } = await fixture();
   const body = {
     campusId: ids.campuses.b,
@@ -240,13 +240,22 @@ test('campus cannot read or change another campus while admin can manage both', 
     campus.mutation(api.calendars.createCalendar, { body }).then(calendarRecordDates),
     /Registro não encontrado/,
   );
-  await assert.rejects(
-    campus.query(api.calendars.calendar, { id: other.id }).then(calendarRecordDates),
-    /Registro não encontrado/,
+  assert.equal(
+    (await campus.query(api.calendars.calendar, { id: other.id }).then(calendarRecordDates)).id,
+    other.id,
   );
+  const page = await campus.query(api.calendars.calendarPage, {
+    campusId: ids.campuses.b,
+    paginationOpts: { numItems: 10, cursor: null },
+  });
+  assert.deepEqual(
+    page.page.map((item) => item.id),
+    [other.id],
+  );
+  // Who did what stays with the calendar's own campus.
   await assert.rejects(
-    campus.query(api.calendars.calendarPage, {
-      campusId: ids.campuses.b,
+    campus.query(api.calendars.history, {
+      id: other.id,
       paginationOpts: { numItems: 10, cursor: null },
     }),
     /Registro não encontrado/,
@@ -264,6 +273,7 @@ test('campus cannot read or change another campus while admin can manage both', 
       .then(calendarSaveDates),
     /Registro não encontrado/,
   );
+  await assert.rejects(act(campus, other.id, 'submit'), /Registro não encontrado/);
   await assert.rejects(
     campus.mutation(api.calendars.deleteCalendar, { id: other.id, version: other.version }),
     /Registro não encontrado/,
@@ -277,6 +287,19 @@ test('campus cannot read or change another campus while admin can manage both', 
     /Acesso exclusivo/,
   );
   await admin.mutation(api.calendars.deleteCalendar, { id: other.id, version: other.version });
+  // The trash of another campus stays closed: neither its calendars nor its list.
+  await assert.rejects(
+    campus.query(api.calendars.calendar, { id: other.id }),
+    /Registro não encontrado/,
+  );
+  await assert.rejects(
+    campus.query(api.calendars.calendarPage, {
+      campusId: ids.campuses.b,
+      deleted: true,
+      paginationOpts: { numItems: 10, cursor: null },
+    }),
+    /Registro não encontrado/,
+  );
   await assert.rejects(
     campus.mutation(api.calendars.restoreCalendar, { id: other.id, version: other.version }),
     /Registro não encontrado/,

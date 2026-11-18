@@ -146,7 +146,7 @@ function ReviewGroup({
 }
 
 export default function IssuesSection() {
-  const { state, record, dirty, evaluation, baseEvents } = useCalendarEditor();
+  const { state, record, dirty, evaluation, baseEvents, foreign } = useCalendarEditor();
   const assessment = useMemo(
     () => contentAssessment({ state, institutionalSnapshot: baseEvents }),
     [state, baseEvents],
@@ -168,9 +168,9 @@ export default function IssuesSection() {
   const showOffer = state.offers.length > 1;
   // What only the institutional review resolves, after the submission (saved state only).
   const contentMessages = new Set(assessment.issues.map((issue) => issue.message));
-  const validation = dirty
-    ? []
-    : record.readiness.issues.filter((issue) => !contentMessages.has(issue));
+  // Another campus reads the content, not the submission: nothing here is for it to resolve.
+  const validation =
+    dirty || foreign ? [] : record.readiness.issues.filter((issue) => !contentMessages.has(issue));
   const plan = useMemo(() => diagnoseCalendar(state).plan.rows, [state]);
   const groups = pendencyGroupOrder
     .map((group) => ({ group, items: issues.filter((issue) => issue.group === group) }))
@@ -189,8 +189,10 @@ export default function IssuesSection() {
       >
         <p>
           {issues.length
-            ? `${groups.map(({ group, items }) => `${items.length} em ${groupTitles[group].toLowerCase()}`).join(' · ')}. ${showOffer ? 'Cada atividade conta uma vez, mesmo que falte em várias ofertas; estrutura e dias letivos contam por item. ' : ''}Corrija as pendências para enviar o calendário; os avisos não impedem o envio.`
-            : 'O calendário pode ser enviado para análise. A revisão da DENTEC/PROENS acontece depois do envio.'}
+            ? `${groups.map(({ group, items }) => `${items.length} em ${groupTitles[group].toLowerCase()}`).join(' · ')}. ${showOffer ? 'Cada atividade conta uma vez, mesmo que falte em várias ofertas; estrutura e dias letivos contam por item. ' : ''}${foreign ? 'O campus do calendário corrige as pendências antes do envio.' : 'Corrija as pendências para enviar o calendário; os avisos não impedem o envio.'}`
+            : foreign
+              ? 'O conteúdo deste calendário está completo para o envio.'
+              : 'O calendário pode ser enviado para análise. A revisão da DENTEC/PROENS acontece depois do envio.'}
         </p>
       </Notice>
       <ScopeForm />
@@ -296,19 +298,21 @@ export default function IssuesSection() {
           </ul>
         </details>
       )}
-      <section className="review-section" aria-labelledby="review-reminders-title">
-        <h3 id="review-reminders-title" className="review-heading">
-          Antes de enviar, confira
-        </h3>
-        <ul id="review-reminders" className="review-reminders">
-          {reminders.map((item) => (
-            <li key={item.title}>
-              <strong>{item.title}</strong>
-              <span>{item.detail}</span>
-            </li>
-          ))}
-        </ul>
-      </section>
+      {foreign ? null : (
+        <section className="review-section" aria-labelledby="review-reminders-title">
+          <h3 id="review-reminders-title" className="review-heading">
+            Antes de enviar, confira
+          </h3>
+          <ul id="review-reminders" className="review-reminders">
+            {reminders.map((item) => (
+              <li key={item.title}>
+                <strong>{item.title}</strong>
+                <span>{item.detail}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       <p className="help review-ruleset">
         Regras: {rulesetVersion(state)} · <Link to="/regras">Ver regras do calendário</Link>
       </p>

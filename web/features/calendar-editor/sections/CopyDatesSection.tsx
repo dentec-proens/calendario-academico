@@ -264,10 +264,10 @@ function CopyDatesList({ sourceId }: { sourceId: string }) {
 
 /** Copies dates of another calendar of the campus and year into this draft. */
 export default function CopyDatesSection() {
-  const { record, locked, role } = useCalendarEditor();
+  const { record, locked, foreign, role } = useCalendarEditor();
   const { origem } = useSearch({ strict: false });
   const navigate = useNavigate();
-  const { sources, loading } = useCopySources(record.campusId);
+  const { sources, loading } = useCopySources(foreign ? undefined : record.campusId);
   const options = sources.filter((item) => item.year === record.year && item.id !== record.id);
   // An address may name a calendar that is gone or out of reach: it simply is not offered.
   const source = options.find((item) => item.id === origem);
@@ -281,7 +281,7 @@ export default function CopyDatesSection() {
       >
         Voltar às atividades
       </BackLink>
-      {locked || role === 'PARECERISTA' ? (
+      {locked || foreign || role === 'PARECERISTA' ? (
         <Notice tone="warning" id="copy-dates-locked">
           Este calendário não pode ser alterado agora, por isso não recebe datas copiadas.
         </Notice>

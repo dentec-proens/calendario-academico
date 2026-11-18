@@ -815,7 +815,28 @@ test('a return copies the unmet criteria of the saved parecer, and the campus re
   });
   // The copy is what the campus gets: the parecer stays closed to it, and to other campuses too.
   await expect(f.campus.query(api.reviews.review, { id })).rejects.toThrow(/exclusivo/);
-  await expect(f.otherCampus.query(api.calendars.calendar, { id })).rejects.toThrow();
+  // Another campus follows the calendar itself, not its submission, return, review or authors.
+  const foreign = await f.otherCampus.query(api.calendars.calendar, { id });
+  expect(campusRead.record).toMatchObject({
+    submission: expect.any(Object),
+    createdByName: expect.any(String),
+    readiness: { humanReview: expect.any(Object), ready: false },
+  });
+  expect(foreign).toMatchObject({ id, status: 'devolvido', submission: null, lastReturn: null });
+  expect(foreign.createdByName).toBeUndefined();
+  expect(foreign.updatedByName).toBeUndefined();
+  expect(foreign.readiness).toEqual({
+    issues: expect.any(Array),
+    warnings: expect.any(Array),
+    officialApproval: false,
+  });
+  // What only the review resolves tells how the parecer is going: the owner sees it, not others.
+  const fromReview = (issues: readonly string[]) =>
+    issues.filter((issue) =>
+      /revisão desta versão|norma vigente aplicável|aguardando avaliação/.test(issue),
+    );
+  expect(fromReview(campusRead.record.readiness.issues)).not.toEqual([]);
+  expect(fromReview(foreign.readiness.issues)).toEqual([]);
   await expect(
     f.otherCampus.query(api.calendars.calendarSubmissions, {
       id,

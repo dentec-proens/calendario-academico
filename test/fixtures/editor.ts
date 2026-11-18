@@ -18,7 +18,7 @@ const info: Bootstrap = {
     name: 'Pessoa de teste',
     email: 'editor@example.invalid',
     role: fixtureProfile.role,
-    campusId: null,
+    campusId: fixtureProfile.campusId,
     active: true,
     inviteExpiresAt: null,
     loginMethod: 'local',

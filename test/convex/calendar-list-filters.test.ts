@@ -171,7 +171,7 @@ test('the situation filter keeps the order and fills the pages, alone or with ca
   expect((await readAll(admin, { status: 'rascunho', search: 'quimica' })).items).toEqual([]);
 });
 
-test('a campus only ever reaches its own calendars, whatever the filters ask for', async () => {
+test('a campus lists its own calendars unless it names another campus', async () => {
   const f = await createNativeFixture();
   const own = await insertCalendar(f, 'a', { courses: 'Enfermagem', status: 'vigente' });
   const foreign = await insertCalendar(f, 'b', { courses: 'Enfermagem', status: 'vigente' });
@@ -190,7 +190,7 @@ test('a campus only ever reaches its own calendars, whatever the filters ask for
     { campusId: f.ids.campuses.b, search: 'enfermagem' },
     { campusId: f.ids.campuses.b, status: 'vigente' as const },
   ])
-    await expect(readAll(campus, filters)).rejects.toThrow(/Registro não encontrado/);
+    expect((await readAll(campus, filters)).items.map((item) => item.id)).toEqual([foreign]);
   // Its own campus named explicitly is fine.
   expect(
     (await readAll(campus, { campusId: f.ids.campuses.a, search: 'enfermagem' })).items[0].id,

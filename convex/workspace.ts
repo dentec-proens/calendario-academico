@@ -22,8 +22,9 @@ export const bootstrap = query({
     if (members.length > 1000) fail('Use a consulta paginada de membros.');
     return {
       user: safeMember(user),
+      // Every profile reads the calendars of every campus; creating stays with one's own.
       campuses: rows
-        .filter((c) => !c.archived && (user.role !== 'CAMPUS' || c._id === user.campusId))
+        .filter((c) => !c.archived)
         .map(({ _id, name, archived }) => ({ id: _id, name, archived })),
       catalogue: await catalogue(ctx),
       calendars: includeCalendars === false ? [] : await calendarSummaries(ctx, user),

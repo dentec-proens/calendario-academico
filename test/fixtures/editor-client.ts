@@ -57,9 +57,14 @@ export const record: WireCalendarRecord = {
 record.state.rulesetVersion = rulesetVersion(record.state);
 record.institutionalSnapshot = structuredClone(record.institutionalEvents);
 export const calls = { saves: 0, transitions: 0, failTransition: false };
+/** Every query the screen watched, to tell which reads a profile never asks for. */
+const watched = new Set<string>();
 /** Feedback requests, apart from `calls`; no invitation unless a test asks for one. */
 const feedback = { invite: false, calls: [] as { name: string; args: Record<string, unknown> }[] };
-export const fixtureProfile: { role: Bootstrap['user']['role'] } = { role: 'ADMIN' };
+export const fixtureProfile: {
+  role: Bootstrap['user']['role'];
+  campusId: Bootstrap['user']['campusId'];
+} = { role: 'ADMIN', campusId: null };
 /** Other calendars of the campus, for the screen that copies their dates. */
 const copySources: WireCalendarRecord[] = [];
 export const functions = api;
@@ -128,6 +133,7 @@ export const convex = {
   subscribeToConnectionState: () => () => {},
   watchQuery(reference: FunctionReference<'query'>, args?: Record<string, unknown>) {
     const name = getFunctionName(reference);
+    watched.add(name);
     let cached = result(name, args);
     return {
       localQueryResult: () => cached,
@@ -230,6 +236,7 @@ window.editorTest = {
   record,
   calls,
   feedback,
+  watched: () => [...watched],
   addCopySource(source) {
     copySources.push({ ...structuredClone(record), ...source });
     publish();
@@ -245,6 +252,7 @@ declare global {
       record: typeof record;
       calls: typeof calls;
       feedback: typeof feedback;
+      watched: () => string[];
       addCopySource: (source: Partial<WireCalendarRecord>) => void;
     };
     publishReviewerCalendar: () => Promise<void>;

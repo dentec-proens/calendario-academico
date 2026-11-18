@@ -8,10 +8,18 @@ import { fail, iso } from '../lib/shared';
 import type { DomainState, ContentState } from '../validators';
 import { calendarAuthorship } from './authorship';
 
+/** A calendar of the person's own work: every change and every private record goes through it. */
 export async function calendarRow(ctx: Context, user: Member, id: Id<'calendars'>, trash = false) {
   const row = await ctx.db.get(id);
   if (!row || (!trash && row.deletedAt)) fail('Registro não encontrado.', 404);
   assertCampus(user, row.campusId);
+  return row;
+}
+
+/** Any live calendar, for reading: a campus follows how the others build theirs. */
+export async function readableCalendarRow(ctx: Context, id: Id<'calendars'>) {
+  const row = await ctx.db.get(id);
+  if (!row || row.deletedAt) fail('Registro não encontrado.', 404);
   return row;
 }
 
@@ -24,7 +32,13 @@ export async function contents(ctx: Context, id: Id<'calendars'>) {
   return row;
 }
 
-export async function summary(ctx: Context, row: Doc<'calendars'>, campus: Doc<'campuses'>) {
+/** `own`: the person works on this campus; another campus does not see who wrote the calendar. */
+export async function summary(
+  ctx: Context,
+  row: Doc<'calendars'>,
+  campus: Doc<'campuses'>,
+  own: boolean,
+) {
   const successor = row.supersededBy ? await ctx.db.get(row.supersededBy) : null;
   return {
     id: row._id,
@@ -48,7 +62,7 @@ export async function summary(ctx: Context, row: Doc<'calendars'>, campus: Doc<'
     shifts: row.shifts,
     version: row.version,
     updatedAt: iso(row.updatedAt),
-    ...(await calendarAuthorship(ctx, row)),
+    ...(own ? await calendarAuthorship(ctx, row) : {}),
     ...(row.deletedAt ? { deletedAt: iso(row.deletedAt) } : {}),
   };
 }

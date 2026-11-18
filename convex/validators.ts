@@ -282,7 +282,7 @@ export type ReviewFields = {
 };
 
 export const documentMetadata = v.object({
-  ...documentSnapshot.fields,
+  ...documentSnapshot.omit('createdBy', 'publishedBy').fields,
   createdAt: v.string(),
   publishedAt: v.optional(v.string()),
   archivedAt: v.optional(v.string()),

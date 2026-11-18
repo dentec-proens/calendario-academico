@@ -2,15 +2,25 @@ import { usePaginatedQuery } from 'convex/react';
 import { functions } from '../../../shared/convex/client.ts';
 import Pagination from '../../../shared/forms/Pagination.tsx';
 import AuditTable from '../../audit/AuditTable.tsx';
+import { Notice } from '../../../components/ui/Notice.tsx';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 
 export default function HistorySection() {
-  const { record } = useCalendarEditor();
+  const { record, foreign } = useCalendarEditor();
+  // Who did what stays with the calendar's own campus.
   const pagination = usePaginatedQuery(
     functions.calendars.history,
-    { id: record.id },
+    foreign ? 'skip' : { id: record.id },
     { initialNumItems: 50 },
   );
+  if (foreign)
+    return (
+      <section id="operations" className="view" aria-labelledby="editor-section-title">
+        <Notice id="operations-foreign">
+          O histórico fica disponível só para o campus do calendário e para a PROENS.
+        </Notice>
+      </section>
+    );
   return (
     <section id="operations" className="view" aria-labelledby="editor-section-title">
       <div className="panel audit-page">

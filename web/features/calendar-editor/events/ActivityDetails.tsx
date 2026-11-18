@@ -27,7 +27,7 @@ export default function ActivityDetails({
   item: ActivityPlanItem;
   detailOpen: boolean;
 }) {
-  const { state, removeDate, readOnly } = useCalendarEditor();
+  const { state, removeDate, readOnly, foreign } = useCalendarEditor();
   const editor = useEventEditor();
   const { rowsFor, statusFor, counts } = useActivityCoverage();
   // The activity is addressed by the key of its link, as in the list and the URL.
@@ -112,14 +112,17 @@ export default function ActivityDetails({
                 {row.events.length
                   ? ` · ${row.execution === 'planned' ? 'Publicação programada' : row.execution === 'published' ? 'Publicação realizada' : 'Execução a conferir'}`
                   : ''}
-                <small>
-                  Conferência da PROENS:{' '}
-                  {row.humanReview === 'reviewed'
-                    ? 'conferido nas regras em vigor'
-                    : row.humanReview === 'unmapped'
-                      ? 'sem critério do parecer vinculado'
-                      : 'será conferido após o envio'}
-                </small>
+                {/* The review of another campus's calendar is not shown to this one. */}
+                {foreign ? null : (
+                  <small>
+                    Conferência da PROENS:{' '}
+                    {row.humanReview === 'reviewed'
+                      ? 'conferido nas regras em vigor'
+                      : row.humanReview === 'unmapped'
+                        ? 'sem critério do parecer vinculado'
+                        : 'será conferido após o envio'}
+                  </small>
+                )}
                 {offerFor(state, row.offerId)?.kind === 'posgraduacao' && (
                   <small>
                     Depende de norma própria; não há afirmação automática de conformidade.

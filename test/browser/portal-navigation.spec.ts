@@ -132,6 +132,48 @@ test('whoever chooses among several campuses starts with none chosen', async ({
     .toMatchObject({ body: { campusId: 'campus-b' } });
 });
 
+test('a campus account opens the calendars of another campus only to read them, and creates in its own', async ({
+  page,
+  fixtureServer,
+}) => {
+  const origin = new URL(await fixtureServer('portal')).origin;
+  await page.goto(origin + '/calendarios?role=CAMPUS&two-campuses');
+  const filter = page.getByRole('combobox', { name: 'Campus', exact: true });
+  await expect(filter.locator('option')).toHaveText([
+    'Campus de teste (seu campus)',
+    'Outro campus',
+  ]);
+  const own = page.locator('[data-calendar-campus="campus-a"]');
+  await expect(own.getByRole('link', { name: 'Editar' })).toBeVisible();
+  await expect(own.locator('[data-delete-calendar]')).toBeVisible();
+  await expect(own).toContainText('Pessoa editora');
+
+  await filter.selectOption({ label: 'Outro campus' });
+  await expect(page).toHaveURL(/campus=campus-b/);
+  const foreign = page.locator('[data-calendar-campus="campus-b"]');
+  await expect(foreign.getByRole('link', { name: 'Editar' })).toHaveCount(0);
+  await expect(foreign.getByRole('link', { name: 'Abrir' })).toHaveAttribute(
+    'href',
+    '/calendarios/calendar-b/editar',
+  );
+  await expect(foreign.locator('[data-delete-calendar], [data-new-version]')).toHaveCount(0);
+  await expect(foreign.locator('.calendar-list-authorship')).toHaveText(/^Última alteração em /);
+
+  // Looking at another campus does not move where a new calendar goes.
+  await page.getByRole('button', { name: 'Novo calendário' }).click();
+  await page.getByLabel('Técnico integrado').check();
+  await page.getByRole('button', { name: 'Criar rascunho' }).click();
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          window.portalRouterTest.mutations.find(({ name }) => name === 'calendars:createCalendar')
+            ?.args,
+      ),
+    )
+    .toMatchObject({ body: { campusId: 'campus-a' } });
+});
+
 test('portal shares each subject across roles while preserving drafts, scoped controls, history and mobile menus', async ({
   page,
   fixtureServer,

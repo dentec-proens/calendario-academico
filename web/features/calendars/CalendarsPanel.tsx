@@ -29,6 +29,7 @@ import CalendarTable, { type CalendarColumn } from '../calendar-list/CalendarTab
 import CampusFilter from '../calendar-list/CampusFilter.tsx';
 import { ResultStatus, SearchField } from '../../shared/forms/SearchField.tsx';
 import { useRef } from 'react';
+import { ownsCampus } from '../../portal/permissions.ts';
 import './calendars.css';
 
 export default function CalendarsPanel({
@@ -103,6 +104,8 @@ export default function CalendarsPanel({
   }
 
   const view = canSelectCampus ? 'table' : 'gallery';
+  // Another campus's calendar only opens for reading.
+  const owns = (campusId: string) => ownsCampus(info.user, campusId);
   const actions = (calendar: CalendarSummary) => (
     <div className="calendar-list-actions">
       <Link
@@ -110,7 +113,7 @@ export default function CalendarsPanel({
         params={{ calendarId: calendar.id }}
         className={`ui-button ui-button--${view === 'table' ? 'secondary' : 'primary'}`}
       >
-        {isEditable(calendar.status) ? (
+        {owns(calendar.campusId) && isEditable(calendar.status) ? (
           <>
             <Pencil aria-hidden="true" size={18} />
             Editar
@@ -122,7 +125,7 @@ export default function CalendarsPanel({
           </>
         )}
       </Link>
-      {canCreateVersion(calendar.status, info.user.role) ? (
+      {owns(calendar.campusId) && canCreateVersion(calendar.status, info.user.role) ? (
         <Button
           type="button"
           variant="secondary"
@@ -135,7 +138,7 @@ export default function CalendarsPanel({
           {view === 'table' ? null : 'Nova versão'}
         </Button>
       ) : null}
-      {isDeletable(calendar.status) ? (
+      {owns(calendar.campusId) && isDeletable(calendar.status) ? (
         <Button
           type="button"
           variant="danger"
@@ -237,7 +240,8 @@ export default function CalendarsPanel({
           )
         }
         secondaryAction={
-          calendars.length || narrowed ? (
+          // The copy starts from the own campus, whichever campus the list is showing.
+          calendars.length || narrowed || (filter && !owns(filter)) ? (
             <Link
               id="new-calendar-from-copy"
               to={calendarCopyPath}
@@ -276,8 +280,14 @@ export default function CalendarsPanel({
                 ))}
               </select>
             </label>
-            {canSelectCampus ? (
-              <CampusFilter campuses={info.campuses} value={filter} onChange={onFilter} />
+            {/* A campus account chooses only when there is another campus to look at. */}
+            {canSelectCampus || info.campuses.length > 1 ? (
+              <CampusFilter
+                campuses={info.campuses}
+                ownCampusId={canSelectCampus ? undefined : info.user.campusId}
+                value={filter}
+                onChange={onFilter}
+              />
             ) : null}
             <Link
               to="/calendarios/lixeira"
@@ -323,11 +333,18 @@ export default function CalendarsPanel({
                     withOrigin
                   />
                   <div className="calendar-list-authorship">
-                    <small>Criado por: {c.createdByName || 'Autoria não registrada'}</small>
-                    <small>
-                      Última alteração por: {c.updatedByName || 'Autoria não registrada'} ·{' '}
-                      {updatedLabel(c.updatedAt)}
-                    </small>
+                    {/* Another campus sees when its calendar changed, not who changed it. */}
+                    {owns(c.campusId) ? (
+                      <>
+                        <small>Criado por: {c.createdByName || 'Autoria não registrada'}</small>
+                        <small>
+                          Última alteração por: {c.updatedByName || 'Autoria não registrada'} ·{' '}
+                          {updatedLabel(c.updatedAt)}
+                        </small>
+                      </>
+                    ) : (
+                      <small>Última alteração em {updatedLabel(c.updatedAt)}</small>
+                    )}
                   </div>
                   {actions(c)}
                 </li>

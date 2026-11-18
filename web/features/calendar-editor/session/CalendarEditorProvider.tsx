@@ -29,13 +29,16 @@ import { reportClientError } from '../../../shared/convex/report-error.ts';
 import type { CalendarRecord, CalendarState, EditorEvent } from '../types.ts';
 import EditorAccessNotice from './EditorAccessNotice.tsx';
 import { isEditable } from '#src/domain/calendar/lifecycle.ts';
+import { ownsCampus } from '../../../portal/permissions.ts';
 
 function useSession(record: CalendarRecord) {
   const { info, status, notify, registerEditor, editorRecovery, maintenance } = useAppSession();
   const drafts = useFormDrafts();
   // A locked calendar is read-only for everyone: autosave, flush and base sync never write to it.
   const locked = !isEditable(record.status);
-  const readOnly = info.user.role === 'PARECERISTA' || locked;
+  // A campus follows how another builds its calendar, without changing it.
+  const foreign = !ownsCampus(info.user, record.campusId);
+  const readOnly = info.user.role === 'PARECERISTA' || locked || foreign;
   const [session] = useState(() =>
     createEditorSession(
       record,
@@ -213,6 +216,7 @@ function useSession(record: CalendarRecord) {
     evaluation,
     readOnly: readOnly || suspended,
     locked,
+    foreign,
     role: info.user.role,
     isAdmin: info.user.role === 'ADMIN',
     connected: connection.isWebSocketConnected,

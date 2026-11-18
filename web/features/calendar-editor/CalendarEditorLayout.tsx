@@ -66,6 +66,7 @@ function EditorFrame() {
     evaluation,
     readOnly,
     locked,
+    foreign,
     role,
     notify,
     formEpoch,
@@ -75,6 +76,8 @@ function EditorFrame() {
   const { message } = useSessionState();
   const pageNotices = usePageNotices(message, undoable, useEventPanelOpen());
   const { permissions } = useAppSession();
+  // Submitting, withdrawing and the other transitions belong to the calendar's own campus.
+  const acts = permissions.editCalendars && !foreign;
   const currentContent = useMemo<DiffSide>(
     () => ({
       state,
@@ -222,7 +225,12 @@ function EditorFrame() {
         Ir para o conteúdo
       </a>
       {permissions.editCalendars ? (
-        <BackLink to="/calendarios" className="editor-back">
+        <BackLink
+          to="/calendarios"
+          // Another campus's calendar returns to that campus's list.
+          search={foreign ? { campus: record.campusId } : {}}
+          className="editor-back"
+        >
           Calendários
         </BackLink>
       ) : (
@@ -254,17 +262,19 @@ function EditorFrame() {
                 </li>
               ))}
             </ul>
-            {/* Rarely needed, so it sits with the record's data; it needs only read access. */}
-            <Link
-              className="editor-inline-action"
-              to={editorPages.operations.path}
-              params={{ calendarId: record.id }}
-              search={(previous) => previous}
-              aria-label="Histórico do calendário"
-              title="Consulte as operações registradas neste calendário e quem as fez."
-            >
-              <History aria-hidden="true" size={14} /> Histórico
-            </Link>
+            {/* Rarely needed, so it sits with the record's data; it stays with the own campus. */}
+            {foreign ? null : (
+              <Link
+                className="editor-inline-action"
+                to={editorPages.operations.path}
+                params={{ calendarId: record.id }}
+                search={(previous) => previous}
+                aria-label="Histórico do calendário"
+                title="Consulte as operações registradas neste calendário e quem as fez."
+              >
+                <History aria-hidden="true" size={14} /> Histórico
+              </Link>
+            )}
           </div>
           <IdentitySummary />
         </div>
@@ -280,11 +290,11 @@ function EditorFrame() {
             <Eye aria-hidden="true" /> <span>Visualizar</span>
           </Link>
         </div>
-        {permissions.editCalendars ? (
+        {acts ? (
           <LifecycleActions className="editor-lifecycle" visibleReasons={false} {...lifecycle} />
         ) : null}
       </div>
-      {locked && permissions.editCalendars ? (
+      {locked && acts ? (
         <p className="help" id="editor-locked">
           {record.status === 'vigente'
             ? 'Calendário publicado. Para alterá-lo, crie uma nova versão na lista de calendários.'
@@ -327,20 +337,22 @@ function EditorFrame() {
             data-state={status}
             hidden={!readOnly && connected && !error && (status === 'idle' || status === 'saved')}
           >
-            {readOnly
-              ? 'Consulta em modo somente leitura.'
-              : !connected
-                ? 'Conexão interrompida. Mantenha a página aberta até confirmar o salvamento.'
-                : error ||
-                  {
-                    idle: '',
-                    scheduled: 'As alterações ainda não foram salvas.',
-                    saving: 'Salvando calendário…',
-                    pending: 'Há alterações aplicadas aguardando salvamento.',
-                    saved: 'Calendário salvo e confirmado.',
-                    blocked: 'Salvamento bloqueado. Confira o conflito.',
-                    error: 'Não foi possível salvar.',
-                  }[status]}
+            {foreign
+              ? `Calendário de outro campus (${record.campusName}), aberto somente para consulta.`
+              : readOnly
+                ? 'Consulta em modo somente leitura.'
+                : !connected
+                  ? 'Conexão interrompida. Mantenha a página aberta até confirmar o salvamento.'
+                  : error ||
+                    {
+                      idle: '',
+                      scheduled: 'As alterações ainda não foram salvas.',
+                      saving: 'Salvando calendário…',
+                      pending: 'Há alterações aplicadas aguardando salvamento.',
+                      saved: 'Calendário salvo e confirmado.',
+                      blocked: 'Salvamento bloqueado. Confira o conflito.',
+                      error: 'Não foi possível salvar.',
+                    }[status]}
           </p>
           {!readOnly && (status === 'error' || status === 'blocked') && (
             <div className="actions">
@@ -542,7 +554,7 @@ function EditorFrame() {
                 >
                   <Eye aria-hidden="true" /> Visualizar calendário
                 </Link>
-                {permissions.editCalendars ? (
+                {acts ? (
                   <LifecycleActions
                     className="editor-footer-lifecycle"
                     placement="footer"

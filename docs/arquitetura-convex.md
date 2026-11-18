@@ -79,7 +79,7 @@ Nos estados publicados, a avaliação e a impressão usam só a base congelada n
 
 Convex Auth é a biblioteca `@convex-dev/auth`, configurada pela aplicação para autenticar no próprio backend; não é um serviço externo nem é ativada automaticamente ao criar o banco. O login Google está intencionalmente desabilitado até segundo aviso e só deve ser reativado mediante instrução explícita, conforme [Acesso e contas](recuperacao-de-senha.md#google-institucional).
 
-O backend deriva identidade, papel e campus da sessão. CAMPUS só atua na unidade autorizada; ADMIN gerencia o sistema; PARECERISTA revisa sem editar calendários. Guards organizam as telas, mas cada função Convex autoriza a operação.
+O backend deriva identidade, papel e campus da sessão. CAMPUS só atua na unidade autorizada e lê o conteúdo dos demais campi (`calendarRow` para o próprio trabalho, `readableCalendarRow` para a leitura alheia, sem autoria, envios, devoluções nem parecer); ADMIN gerencia o sistema; PARECERISTA revisa sem editar calendários. Guards organizam as telas, mas cada função Convex autoriza a operação.
 
 Salvar confere versão, status e base e preserva atributos protegidos; uma gravação sem mudança não cria versão artificial. Salvar só grava em rascunho e devolvido; o editor deriva o modo somente leitura do papel e do status e recria a sessão quando o status muda em outra aba. A revisão humana tem salvamento explícito e depende da versão do calendário, da base e da revisão do parecer.
 

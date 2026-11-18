@@ -72,17 +72,21 @@ test('calendar authorship distinguishes creation from content edits without expo
   await campus.mutation(api.calendars.restoreCalendar, { id: created.id, version: saved.version });
   assert.equal((await page()).page[0].updatedByName, 'Admin');
 
+  // Another campus starts with its own list; asked for this campus, it lists the calendar
+  // without the names of who wrote it.
   const foreign = await asClient('campus-b').query(api.calendars.calendarPage, {
     paginationOpts: { numItems: 10, cursor: null },
   });
   assert.equal(foreign.page.length, 0);
-  await assert.rejects(
-    asClient('campus-b').query(api.calendars.calendarPage, {
+  const [listed] = (
+    await asClient('campus-b').query(api.calendars.calendarPage, {
       campusId: ids.campuses.a,
       paginationOpts: { numItems: 10, cursor: null },
-    }),
-    /Registro não encontrado/,
-  );
+    })
+  ).page;
+  assert.equal(listed.id, created.id);
+  assert.equal(listed.createdByName, undefined);
+  assert.equal(listed.updatedByName, undefined);
 
   // Transitions keep the content version, so they never claim authorship of the content.
   await seedCourses({ client }, created.id);

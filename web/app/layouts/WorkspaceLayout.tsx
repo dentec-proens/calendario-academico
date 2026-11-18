@@ -151,7 +151,9 @@ export default function WorkspaceLayout() {
         <nav id="portal-navigation" aria-label="Seções do portal">
           <div className="navigation-group shared-navigation">
             <h2>Calendários e referências</h2>
-            {!permissions.selectCampus ? <p>{info.campuses[0]?.name}</p> : null}
+            {!permissions.selectCampus ? (
+              <p>{info.campuses.find((campus) => campus.id === info.user.campusId)?.name}</p>
+            ) : null}
             {links(navigation)}
           </div>
           {administrative.length ? (

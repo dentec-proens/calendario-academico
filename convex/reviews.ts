@@ -115,7 +115,8 @@ export const reviewQueue = query({
         ]);
         if (!campus) fail('Campus não encontrado.', 404);
         return {
-          ...(await summary(ctx, row, campus)),
+          // Only the administration and the reviewers reach the queue: every campus is theirs.
+          ...(await summary(ctx, row, campus, true)),
           assignee: reviewAssignee(row),
           submission: submission
             ? {

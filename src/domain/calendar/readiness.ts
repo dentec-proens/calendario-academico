@@ -448,6 +448,36 @@ export const baseOutdatedIssue = 'Salve o calendário com a base institucional a
 export const lockedBaseIssue =
   'A base institucional mudou depois do envio. Devolva o calendário para o campus reconciliar e reenviar.';
 
+type BaseReference = {
+  catalogue: { revision: number };
+  base?: { compatible: boolean; identity: string };
+  /** The calendar is locked: the campus cannot reconcile a changed base before a return. */
+  locked?: boolean;
+};
+
+/** The content and base pendencies, without the review: what any campus may see of a calendar. */
+export function contentReadiness(
+  record: ContentRecord & { catalogueRevision: number },
+  db: BaseReference,
+) {
+  const { issues, warnings } = baseAwareAssessment(record, db);
+  return { issues, warnings };
+}
+
+function baseAwareAssessment(
+  record: ContentRecord & { catalogueRevision: number },
+  db: BaseReference,
+) {
+  const assessment = contentAssessment(record);
+  const issues = assessment.issues.map((item) => item.message),
+    warnings = assessment.warnings;
+  if (!referenceIsCurrent(record.catalogueRevision, db.catalogue.revision, db.base)) {
+    issues.splice(assessment.baseIssueAt, 0, db.locked ? lockedBaseIssue : baseOutdatedIssue);
+    if (db.locked) warnings.push(lockedBaseIssue);
+  }
+  return { issues, warnings, events: assessment.events };
+}
+
 // Fail closed: machine checks never replace a current, evidenced human review.
 export function releaseReadiness(
   record: ContentRecord & {
@@ -455,25 +485,14 @@ export function releaseReadiness(
     version?: number;
     catalogueRevision: number;
   },
-  db: {
-    catalogue: { revision: number };
+  db: BaseReference & {
     reviews?: CalendarReview[];
-    base?: { compatible: boolean; identity: string };
     /** When given, a review counts only for this submission (`null`: no open submission). */
     submissionId?: string | null;
-    /** The calendar is locked: the campus cannot reconcile a changed base before a return. */
-    locked?: boolean;
   },
 ) {
-  const assessment = contentAssessment(record);
-  const issues = assessment.issues.map((item) => item.message),
-    warnings = assessment.warnings;
-  const events = assessment.events;
+  const { issues, warnings, events } = baseAwareAssessment(record, db);
   const policy = policyFor(record.state.year);
-  if (!referenceIsCurrent(record.catalogueRevision, db.catalogue.revision, db.base)) {
-    issues.splice(assessment.baseIssueAt, 0, db.locked ? lockedBaseIssue : baseOutdatedIssue);
-    if (db.locked) warnings.push(lockedBaseIssue);
-  }
   const review = (db.reviews || []).find((r) => r.calendarId === record.id);
   const current =
     reviewIsCurrent(review, record.version, {

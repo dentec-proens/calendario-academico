@@ -1,9 +1,9 @@
 import { useFeatureRoute } from '../../app/navigation.ts';
 import { useAppSession } from '../../app/session.tsx';
 
-/** The campus in the URL, when this profile may choose one and the campus exists for it. */
+/** The campus in the URL, when it exists. Every profile reads the calendars of every campus. */
 export function useSelectedCampus() {
-  const { info, permissions } = useAppSession();
+  const { info } = useAppSession();
   const { campus } = useFeatureRoute();
-  return permissions.selectCampus ? info.campuses.find((item) => item.id === campus) : undefined;
+  return info.campuses.find((item) => item.id === campus);
 }

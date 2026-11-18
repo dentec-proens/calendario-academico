@@ -11,7 +11,7 @@ import { useDraftForm } from '../../shared/forms/useDraftForm.ts';
 import { FormFeedback } from '../../shared/forms/FormFeedback.tsx';
 import { Notice } from '../../components/ui/Notice.tsx';
 import OfferChoices, { offersSummary, type CreationOffer } from './OfferChoices.tsx';
-import { chosenCampus } from './chosen-campus.ts';
+import { chosenCampus, creationCampuses } from './chosen-campus.ts';
 
 const otherYear = 'outro';
 const yearOptions = [
@@ -34,6 +34,7 @@ export default function CreateCalendarForm({
   canSelectCampus: boolean;
 }) {
   const navigate = useNavigate();
+  const campuses = creationCampuses(info);
   const defaults: {
     campusId: string;
     year: string;
@@ -49,8 +50,8 @@ export default function CreateCalendarForm({
     draftKey: `calendar:new:${info.user.id}`,
     defaultValues: defaults,
     onSubmit: async (value, { isCurrent }) => {
-      const selectedCampus = chosenCampus(info.campuses, value.campusId, canSelectCampus);
-      if (!info.campuses.length)
+      const selectedCampus = chosenCampus(campuses, value.campusId, canSelectCampus);
+      if (!campuses.length)
         throw new Error(
           'Nenhum campus ativo está disponível para esta conta. Solicite à administração PROENS a conferência do seu cadastro.',
         );
@@ -69,8 +70,8 @@ export default function CreateCalendarForm({
       });
     },
   });
-  const campus = chosenCampus(info.campuses, values.campusId, canSelectCampus);
-  const available = info.campuses.length > 0;
+  const campus = chosenCampus(campuses, values.campusId, canSelectCampus);
+  const available = campuses.length > 0;
   const configured = policyFor(values.year).configured;
   const summary = offersSummary(values.offers);
 
@@ -96,7 +97,7 @@ export default function CreateCalendarForm({
                   Selecione o campus
                 </option>
               )}
-              {info.campuses.map((item) => (
+              {campuses.map((item) => (
                 <option key={item.id} value={item.id}>
                   {item.name}
                 </option>

@@ -6,6 +6,7 @@ Este guia registra as regras de negócio e as decisões que o código sozinho n�
 
 - **ADMIN**: todos os campi, contas, base institucional, revisão e publicação.
 - **CAMPUS**: cria, altera, exporta, exclui e restaura calendários da unidade autorizada; consulta a base. Exige uma unidade ativa.
+  - Consulta, só para leitura, os calendários de outros campi em qualquer situação fora da lixeira: conteúdo, pendências de conteúdo e base e a situação. Não vê quem os criou ou alterou, o histórico, os envios, as devoluções nem o parecer, e não copia datas deles.
 - **PARECERISTA**: consulta calendários de todos os campi e as referências, registra revisões e pareceres; não altera calendários, base nem contas.
 - A autorização é sempre conferida no backend. Quem só consulta vê os detalhes com as ações de alteração desabilitadas.
 - Trocar o perfil de uma conta preserva a senha, fica registrado e encerra as sessões do usuário. Não é possível retirar o perfil do último ADMIN ativo.

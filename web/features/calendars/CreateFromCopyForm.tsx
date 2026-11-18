@@ -11,7 +11,7 @@ import { useDraftForm } from '../../shared/forms/useDraftForm.ts';
 import { editorPages } from '../calendar-editor/editor-steps.ts';
 import { copySourceLabel, useCopySources } from './copy-sources.ts';
 import OfferChoices, { offersSummary, type CreationOffer } from './OfferChoices.tsx';
-import { chosenCampus } from './chosen-campus.ts';
+import { chosenCampus, creationCampuses } from './chosen-campus.ts';
 
 /**
  * Creates the draft that receives the copied dates, which are chosen next in the editor. Campus and
@@ -25,6 +25,7 @@ export default function CreateFromCopyForm({
   canSelectCampus: boolean;
 }) {
   const navigate = useNavigate();
+  const campuses = creationCampuses(info);
   const { campus: selectedCampus } = useFeatureRoute();
   const defaults: {
     campusId: string;
@@ -36,8 +37,8 @@ export default function CreateFromCopyForm({
     draftKey: `calendar:new-from-copy:${info.user.id}`,
     defaultValues: defaults,
     onSubmit: async (value, { isCurrent }) => {
-      const campus = chosenCampus(info.campuses, value.campusId, canSelectCampus);
-      if (!info.campuses.length)
+      const campus = chosenCampus(campuses, value.campusId, canSelectCampus);
+      if (!campuses.length)
         throw new Error(
           'Nenhum campus ativo está disponível para esta conta. Solicite à administração PROENS a conferência do seu cadastro.',
         );
@@ -58,13 +59,13 @@ export default function CreateFromCopyForm({
       });
     },
   });
-  const campus = chosenCampus(info.campuses, values.campusId, canSelectCampus);
+  const campus = chosenCampus(campuses, values.campusId, canSelectCampus);
   const { sources, loading } = useCopySources(campus?.id);
   const source = sources.find((item) => item.id === values.sourceId);
   const summary = offersSummary(values.offers);
   return (
     <form id="create-calendar-from-copy" onSubmit={submit}>
-      <fieldset className="form-fields" disabled={pending || !info.campuses.length}>
+      <fieldset className="form-fields" disabled={pending || !campuses.length}>
         <p className="help">
           Crie o rascunho e escolha em seguida quais datas copiar. O ano vem do calendário de
           origem.
@@ -86,7 +87,7 @@ export default function CreateFromCopyForm({
                   Selecione o campus
                 </option>
               )}
-              {info.campuses.map((item) => (
+              {campuses.map((item) => (
                 <option key={item.id} value={item.id}>
                   {item.name}
                 </option>

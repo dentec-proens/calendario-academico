@@ -46,7 +46,7 @@ import * as contracts from './contracts';
 import { documentDto } from './documents/model';
 import { logEntry, readCalendarHistory } from './audit';
 import { appendAudit } from './lib/audit';
-import { calendarEditor, assertCampus, reviewer } from './lib/authorization';
+import { calendarEditor, assertCampus, ownsCampus, reviewer } from './lib/authorization';
 import { pageBound } from './lib/pagination';
 import { domainRule, fail, iso, clean } from './lib/shared';
 import type { Doc, Id } from './_generated/dataModel';
@@ -102,7 +102,9 @@ export const calendarPage = query({
       result.page.map(async (row) => {
         const campus = await readCampus(row.campusId);
         if (!campus) fail('Campus não encontrado.', 404);
-        return calendarMatchesSearch(row, campus, query) ? summary(ctx, row, campus) : null;
+        return calendarMatchesSearch(row, campus, query)
+          ? summary(ctx, row, campus, ownsCampus(user, row.campusId))
+          : null;
       }),
     );
     return { ...result, page: page.filter((item) => item !== null) };
@@ -123,19 +125,6 @@ export const history = query({
     const { user } = await requireNativeUser(ctx);
     await calendarRow(ctx, user, id);
     return readCalendarHistory(ctx, id, paginationOpts);
-  },
-});
-
-export const resolveCalendarId = query({
-  args: { reference: v.string() },
-  returns: v.id('calendars'),
-  handler: async (ctx, { reference }) => {
-    const { user } = await requireNativeUser(ctx);
-    if (!reference || reference.length > 200) fail('Registro não encontrado.', 404);
-    const id = ctx.db.normalizeId('calendars', reference);
-    if (!id) fail('Registro não encontrado.', 404);
-    await calendarRow(ctx, user, id);
-    return id;
   },
 });
 

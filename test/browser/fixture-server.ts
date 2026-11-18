@@ -13,6 +13,7 @@ type Fixture =
   | 'editor-confirmation'
   | 'editor-reviewer'
   | 'editor-reviewer-saturdays'
+  | 'editor-other-campus'
   | 'editor-mixed-offers'
   | 'editor-offer-without-periods'
   | 'editor-session'
@@ -60,6 +61,11 @@ const fixtures: Record<Fixture, FixtureDefinition> = {
     path: '/__editor',
     entry: 'editor',
     client: 'editor-reviewer-saturdays-client',
+  },
+  'editor-other-campus': {
+    path: '/__editor',
+    entry: 'editor',
+    client: 'editor-other-campus-client',
   },
   'editor-mixed-offers': {
     path: '/__editor',

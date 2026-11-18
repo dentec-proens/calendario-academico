@@ -62,15 +62,16 @@ test('native queries require a live Convex session and return safe campus scoped
     [a.id],
   );
   assert.deepEqual(bootstrap.users, []);
+  // Every campus is listed to read its calendars; the own calendars stay the only ones loaded.
   assert.deepEqual(
-    bootstrap.campuses.map((c: { id: string }) => c.id),
-    [ids.campuses.a],
+    new Set(bootstrap.campuses.map((c: { id: string }) => c.id)),
+    new Set([ids.campuses.a, ids.campuses.b]),
   );
   const admin = await as('admin').read('/api/bootstrap');
   assert.equal(admin.calendars.length, 2);
   assert.equal(admin.users.length, 3);
   assert(!JSON.stringify(admin).includes('private-'));
-  await assert.rejects(as('campus-b').read('/api/calendars/' + a.id), /Registro não encontrado/);
+  assert.equal((await as('campus-b').read('/api/calendars/' + a.id)).id, a.id);
   await assert.rejects(
     as('campus-b').write('/api/calendars', identifiedBody('a')),
     /Registro não encontrado/,
@@ -447,9 +448,11 @@ test('calendar pagination applies campus and trash scope before advancing its cu
     new Set(trash.page.map((record) => record.id)),
     new Set(created.slice(0, 2).map((record) => record.id)),
   );
+  // Another campus's live calendars can be listed; its trash cannot.
   await assert.rejects(
     campus.query(api.calendars.calendarPage, {
       campusId: ids.campuses.b,
+      deleted: true,
       paginationOpts: { numItems: 2, cursor: null },
     }),
     /Registro não encontrado/,

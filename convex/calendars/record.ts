@@ -9,31 +9,39 @@ import {
   officialApproval,
 } from '../../src/domain/calendar/lifecycle';
 import { lastReturn, outcome } from './lifecycle';
-import { releaseReadiness } from '../../src/domain/calendar/readiness';
+import { contentReadiness, releaseReadiness } from '../../src/domain/calendar/readiness';
 import type { Doc, Id } from '../_generated/dataModel';
 import type { Member } from '../access/contracts';
 import { catalogue } from '../catalogue/model';
 import type * as contracts from '../contracts';
 import { documentDto } from '../documents/model';
-import { assertCampus } from '../lib/authorization';
+import { assertCampus, ownsCampus } from '../lib/authorization';
 import type { Context } from '../lib/shared';
 import { fail, iso, clean } from '../lib/shared';
 import { reviewRow, reviewDto } from '../reviews/model';
-import { calendarRow, contents, summary, domainState } from './model';
+import { calendarRow, contents, domainState, readableCalendarRow, summary } from './model';
 import type { Infer } from 'convex/values';
 
 export async function baseRecord(ctx: Context, user: Member, id: Id<'calendars'>) {
-  const row = await calendarRow(ctx, user, id),
+  return loadRecord(ctx, await calendarRow(ctx, user, id), true);
+}
+
+/**
+ * The record and its readiness. For another campus (`own` false) the review stays out: neither
+ * the reviewer's progress nor the pendencies only the review resolves, just content and base.
+ */
+async function loadRecord(ctx: Context, row: Doc<'calendars'>, own: boolean) {
+  const id = row._id,
     status = row.status,
     [content, campus, base, review] = await Promise.all([
       contents(ctx, id),
       ctx.db.get(row.campusId),
       catalogue(ctx, row.year),
-      reviewRow(ctx, id),
+      own ? reviewRow(ctx, id) : null,
     ]);
   if (!campus) fail('Campus não encontrado.', 404);
   const record = {
-    ...(await summary(ctx, row, campus)),
+    ...(await summary(ctx, row, campus, own)),
     state: domainState(row, campus, content.state),
     catalogueRevision: content.catalogueRevision,
     documentSnapshot: content.documentSnapshot.map(documentDto),
@@ -43,20 +51,23 @@ export async function baseRecord(ctx: Context, user: Member, id: Id<'calendars'>
   const compatibility = isPublished(status)
     ? frozenBase(status, record.state, content)
     : inspectBase(status, record.state, content, base);
+  // While editing, pending issues follow the current base; a locked calendar keeps its own copy.
+  const assessed = isEditable(status)
+    ? { ...record, institutionalSnapshot: compatibility.snapshot.events }
+    : record;
+  const reference = {
+    base: compatibility,
+    catalogue: { revision: compatibility.snapshot.revision },
+    locked: isUnderReview(status),
+  };
   const readiness = {
-    // While editing, pending issues follow the current base; a locked calendar keeps its own copy.
-    ...releaseReadiness(
-      isEditable(status)
-        ? { ...record, institutionalSnapshot: compatibility.snapshot.events }
-        : record,
-      {
-        base: compatibility,
-        catalogue: { revision: compatibility.snapshot.revision },
-        reviews: review ? [reviewDto(review)] : [],
-        submissionId: row.currentSubmissionId ?? null,
-        locked: isUnderReview(status),
-      },
-    ),
+    ...(own
+      ? releaseReadiness(assessed, {
+          ...reference,
+          reviews: review ? [reviewDto(review)] : [],
+          submissionId: row.currentSubmissionId ?? null,
+        })
+      : contentReadiness(assessed, reference)),
     officialApproval: officialApproval(status),
   } as Infer<typeof contracts.readiness>;
   return { row, status, content, record, base, review, readiness, compatibility };
@@ -97,21 +108,25 @@ export async function submissionSummary(ctx: Context, user: Member, row: Doc<'ca
   };
 }
 
+/** The calendar as the editor reads it; another campus gets it without submissions or returns. */
 export async function fullRecord(
   ctx: Context,
   user: Member,
   id: Id<'calendars'>,
 ): Promise<Infer<typeof contracts.calendarDto>> {
-  const { row, record, readiness, compatibility } = await baseRecord(ctx, user, id);
+  const row = await readableCalendarRow(ctx, id);
+  const own = ownsCampus(user, row.campusId);
+  const { record, readiness, compatibility } = await loadRecord(ctx, row, own);
   return clean({
     ...record,
-    ...(await submissionSummary(ctx, user, row)),
+    ...(own ? await submissionSummary(ctx, user, row) : { submission: null, lastReturn: null }),
     readiness,
     institutionalEvents: compatibility.snapshot.events,
     currentCatalogueRevision: compatibility.snapshot.revision,
   });
 }
 
+/** The calendars of the person's work: a campus account's workspace and trash list only its own. */
 export async function calendarSummaries(ctx: Context, user: Member, deleted = false) {
   const rows = await calendarQuery(ctx, user, deleted).order('desc').take(100);
   return Promise.all(
@@ -120,7 +135,7 @@ export async function calendarSummaries(ctx: Context, user: Member, deleted = fa
       .map(async (row) => {
         const campus = await ctx.db.get(row.campusId);
         if (!campus) fail('Campus não encontrado.', 404);
-        return summary(ctx, row, campus);
+        return summary(ctx, row, campus, true);
       }),
   );
 }
@@ -135,8 +150,10 @@ export function calendarQuery(
   deleted: boolean,
   requestedCampus?: Id<'campuses'>,
 ) {
-  if (requestedCampus) assertCampus(user, requestedCampus);
-  const campusId = user.role === 'CAMPUS' ? user.campusId! : requestedCampus;
+  // A campus lists the live calendars of another campus it names; the trash stays its own.
+  if (requestedCampus && deleted) assertCampus(user, requestedCampus);
+  const campusId =
+    user.role === 'CAMPUS' && (deleted || !requestedCampus) ? user.campusId! : requestedCampus;
   return campusId
     ? ctx.db.query('calendars').withIndex('by_campusId_and_deletedAt_and_updatedAt', (q) => {
         const scoped = q.eq('campusId', campusId);

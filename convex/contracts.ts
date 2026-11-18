@@ -24,7 +24,8 @@ export const readiness = v.object({
       reviewedCriterionIds: v.array(v.string()),
     }),
   ),
-  ready: v.boolean(),
+  /** Omitted for another campus: being ready depends on the review, which only the owner sees. */
+  ready: v.optional(v.boolean()),
   issues: v.array(v.string()),
   warnings: v.array(v.string()),
   /** True only for a published calendar. */

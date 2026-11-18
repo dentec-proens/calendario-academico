@@ -1,12 +1,13 @@
 import { CatchBoundary, Link, type ErrorComponentProps } from '@tanstack/react-router';
 import type { PropsWithChildren } from 'react';
-import { useCalendarEditor } from './session/CalendarEditorProvider.tsx';
+import { useAppSession } from '../../app/session.tsx';
 import { Button } from '../../components/ui/Button.tsx';
 import { Notice } from '../../components/ui/Notice.tsx';
 import { reportClientError } from '../../shared/convex/report-error.ts';
 
 function EditorFailure({ reset }: ErrorComponentProps) {
-  const { readOnly } = useCalendarEditor();
+  // Reviewers leave to their queue; everyone else, including another campus, to the calendars.
+  const { permissions } = useAppSession();
   return (
     <section className="panel">
       <h2>Não foi possível exibir esta parte do editor</h2>
@@ -18,7 +19,9 @@ function EditorFailure({ reset }: ErrorComponentProps) {
         <Button type="button" onClick={reset}>
           Tentar novamente
         </Button>
-        <Link to={readOnly ? '/revisoes' : '/calendarios'}>Sair do calendário</Link>
+        <Link to={permissions.editCalendars ? '/calendarios' : '/revisoes'}>
+          Sair do calendário
+        </Link>
       </div>
     </section>
   );
