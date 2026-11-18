@@ -158,6 +158,18 @@ function publicationDetails(event: PrintEvent, year: number, includeSource = tru
   return labels.length ? `<small>${labels.map(esc).join(' · ')}</small>` : '';
 }
 
+/**
+ * Whether a date colors this day of the grid. A long stage marks only its first and last days; a
+ * commemoration of several days, such as a national month or week, marks none, since it occupies
+ * no day: it reads in the month's list.
+ */
+function paintsDay(e: PrintEvent, date: string) {
+  const category = eventCategory(e);
+  if (category === 'limite') return e.start === date || e.end === date;
+  if (category === 'comemorativo') return e.start === e.end;
+  return true;
+}
+
 /** Equal diagonal bands, one per category, for a date that belongs to several. */
 const splitBands = (keys: string[]) =>
   keys
@@ -269,9 +281,7 @@ export function proensLayout(
       const marks = [
         ...new Set([
           ...(boundary.has(date) ? ['limite'] : []),
-          ...list
-            .filter((e) => eventCategory(e) !== 'limite' || e.start === date || e.end === date)
-            .map(eventCategory),
+          ...list.filter((e) => paintsDay(e, date)).map(eventCategory),
         ]),
       ].filter((c) => colorKeys.includes(c));
       for (const c of marks) usedCategories.add(c);
@@ -313,6 +323,8 @@ export function proensLayout(
           b = untilYearEnd ? a : e.end.startsWith(prefix) ? Number(e.end.slice(8)) : length;
         const crossesYear = e.start < `${state.year}-01-01`;
         const scope = eventOffers(state, e);
+        // The key explains the colors of the lists too, such as a commemoration the grid omits.
+        if (colorKeys.includes(eventCategory(e))) usedCategories.add(eventCategory(e));
         return `<tr${printsAsInternal(e) ? ' class="internal-date"' : ''}><td class="cat-${eventCategory(e)}">${a === b ? a : a + ' a ' + b}</td><td>${esc(printedVacationName(e, state.year))}${internalLabel(e)}${crossesYear ? `<small>Intervalo integral: ${esc(fullInterval(e))}</small>` : ''}${publicationDetails(e, state.year)}${(state.offers || !e.institutional) && scope ? ' [' + esc(scope) + ']' : ''}</td></tr>`;
       });
     // Up to six dates, as many as the grid has weeks, fit one table beside it; more split

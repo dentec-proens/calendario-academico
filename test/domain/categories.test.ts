@@ -83,7 +83,7 @@ test('institutional and local scopes identify their actual offer in v4 printing'
   assert(both.includes('Feriado institucional</td>'));
 });
 
-test('the key lists only the categories the grid marks', () => {
+test('the key lists only the categories the calendar uses', () => {
   const state = { year: 2027, campus: 'Foz', periods: [], offers: [] };
   const html = proensLayout(state, [
     {
@@ -101,6 +101,31 @@ test('the key lists only the categories the grid marks', () => {
   assert(key.includes('cat-feriado'));
   assert(!key.includes('cat-ferias'));
   assert(!key.includes('cat-sabado'));
+});
+
+test('a commemoration of several days reads in the list and leaves the grid uncolored', () => {
+  const state = { year: 2027, campus: 'Foz', periods: [], offers: [] };
+  const commemoration = (id: string, start: string, end: string) => ({
+    id,
+    name: id,
+    start: civilDate(start),
+    end: civilDate(end),
+    effect: 'note' as const,
+    category: 'comemorativo',
+    offers: ['integrado'],
+  });
+  const grid = (html: string) => {
+    const october = html.indexOf('<h3>outubro</h3><table class="month-grid">');
+    return html.slice(october, html.indexOf('</table>', october));
+  };
+  const month = proensLayout(state, [commemoration('Mês da Ciência', '2027-10-01', '2027-10-31')]);
+  assert(!grid(month).includes('cat-comemorativo'));
+  assert(month.includes('<td class="cat-comemorativo">1 a 31</td><td>Mês da Ciência'));
+  // The key still explains the color the list shows.
+  assert(month.slice(month.indexOf('class="proens-key"')).includes('swatch cat-comemorativo'));
+  // A commemoration of one day still colors its day.
+  const day = proensLayout(state, [commemoration('Dia do Livro', '2027-10-29', '2027-10-29')]);
+  assert(grid(day).includes('class="cat-comemorativo" title="Dia do Livro">29</td>'));
 });
 
 test('dates of different offers with the same description print once, with their offers together', () => {
