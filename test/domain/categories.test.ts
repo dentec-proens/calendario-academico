@@ -11,11 +11,13 @@ test('PROENS palette matches reference and simultaneous classifications remain v
     'utf8',
   );
   assert.equal(categories.filter((c) => c[2]).length, 10);
-  for (const [key, , color] of categories.filter((c) => c[2]))
+  for (const [key, , color] of categories.filter((c) => c[2])) {
+    assert.match(css, new RegExp(`--cat-${key}:\\s*${color};`, 'u'));
     assert.match(
       css,
-      new RegExp(`\\.cat-${key}\\s*\\{\\s*background:\\s*${color}(?=[\\s;}])`, 'u'),
+      new RegExp(`\\.cat-${key}\\s*\\{\\s*background:\\s*var\\(--cat-${key}\\)`, 'u'),
     );
+  }
   assert.equal(eventCategory({ category: 'criacao' }), 'criacao');
   const events = categories
     .filter((c) => c[2])
@@ -35,9 +37,15 @@ test('PROENS palette matches reference and simultaneous classifications remain v
     null,
   );
   assert(html.includes('class="cat-feriado"'));
-  assert(html.includes('color-mark cat-formacao'));
-  assert(html.includes('color-mark cat-conselho'));
-  assert.equal((html.match(/class="event-columns"/g) || []).length, 12);
+  // Every category of the date shares the cell in equal diagonal bands, by priority.
+  assert(
+    html.includes(
+      '<td class="cat-split" style="--bands: var(--cat-feriado) 0% 10%, var(--cat-recesso) 10% 20%, var(--cat-ferias) 20% 30%, var(--cat-limite) 30% 40%, var(--cat-sabado) 40% 50%, var(--cat-formacao) 50% 60%, var(--cat-conselho) 60% 70%, var(--cat-criacao) 70% 80%, var(--cat-evento) 80% 90%, var(--cat-comemorativo) 90% 100%"',
+    ),
+  );
+  // February, with its ten dates, splits in two columns; the other months keep one.
+  assert.equal((html.match(/class="event-columns"/g) || []).length, 1);
+  assert.equal((html.match(/class="event-columns single"/g) || []).length, 11);
   assert(html.includes('ifpr-logo'));
   for (const [, label, color] of categories) if (color) assert(html.includes(label!));
 });
@@ -88,7 +96,8 @@ test('the key lists only the categories the grid marks', () => {
       offers: ['integrado'],
     },
   ]);
-  const key = html.slice(html.indexOf('class="proens-key"'), html.indexOf('</div><p>· Dia letivo'));
+  const start = html.indexOf('class="proens-key"');
+  const key = html.slice(start, html.indexOf('</section>', start));
   assert(key.includes('cat-feriado'));
   assert(!key.includes('cat-ferias'));
   assert(!key.includes('cat-sabado'));

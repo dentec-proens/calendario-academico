@@ -158,6 +158,15 @@ function publicationDetails(event: PrintEvent, year: number, includeSource = tru
   return labels.length ? `<small>${labels.map(esc).join(' · ')}</small>` : '';
 }
 
+/** Equal diagonal bands, one per category, for a date that belongs to several. */
+const splitBands = (keys: string[]) =>
+  keys
+    .map(
+      (key, i) =>
+        `var(--cat-${key}) ${Math.round((i * 100) / keys.length)}% ${Math.round(((i + 1) * 100) / keys.length)}%`,
+    )
+    .join(', ');
+
 function externalReferences(state: PrintState, events: PrintEvent[]) {
   const rows = events.filter((event) => event.start < `${state.year}-01-01`);
   if (!rows.length) return '';
@@ -278,18 +287,16 @@ export function proensLayout(
         'evento',
         'comemorativo',
       ];
-      const primary = priority.find((c) => marks.includes(c));
-      let cls = primary ? 'cat-' + primary : '';
+      // The color of highest priority fills the cell; a date of several categories splits it
+      // diagonally, in that order, and a school day prints its number in bold.
+      const ordered = priority.filter((c) => marks.includes(c));
+      const classes = [
+        ordered.length === 1 ? `cat-${ordered[0]}` : ordered.length ? 'cat-split' : '',
+        d?.counted ? 'school-day' : '',
+      ].filter(Boolean);
+      const bands = ordered.length > 1 ? ` style="--bands: ${splitBands(ordered)}"` : '';
       cells.push(
-        `<td class="${cls}" title="${esc(list.map((e) => e.name).join('; '))}">${day}${d?.counted ? '<b class="day-mark">·</b>' : ''}${marks
-          .filter((c) => c !== primary)
-          .map(
-            (c) =>
-              `<i class="color-mark cat-${c}" aria-label="${esc(categories.find((x) => x[0] === c)![1])}"></i>`,
-          )
-          .join(
-            '',
-          )}${list.some(printsAsInternal) ? '<i class="internal-day-mark" aria-label="Data interna"></i>' : ''}</td>`,
+        `<td class="${classes.join(' ')}"${bands} title="${esc(list.map((e) => e.name).join('; '))}">${day}${list.some(printsAsInternal) ? '<i class="internal-day-mark" aria-label="Data interna"></i>' : ''}</td>`,
       );
     }
     while (cells.length % 7) cells.push('<td></td>');
@@ -308,17 +315,14 @@ export function proensLayout(
         const scope = eventOffers(state, e);
         return `<tr${printsAsInternal(e) ? ' class="internal-date"' : ''}><td class="cat-${eventCategory(e)}">${a === b ? a : a + ' a ' + b}</td><td>${esc(printedVacationName(e, state.year))}${internalLabel(e)}${crossesYear ? `<small>Intervalo integral: ${esc(fullInterval(e))}</small>` : ''}${publicationDetails(e, state.year)}${(state.offers || !e.institutional) && scope ? ' [' + esc(scope) + ']' : ''}</td></tr>`;
       });
-    const middle = Math.max(6, Math.ceil(entries.length / 2)),
-      columns = [entries.slice(0, middle), entries.slice(middle)];
-    for (const column of columns)
-      while (column.length < middle) column.push('<tr><td>&nbsp;</td><td></td></tr>');
+    // Up to six dates, as many as the grid has weeks, fit one table beside it; more split
+    // evenly in two. No blank rows: the grid already sets the height of the month.
+    const half = Math.ceil(entries.length / 2),
+      columns = entries.length > 6 ? [entries.slice(0, half), entries.slice(half)] : [entries];
     const eventTables = columns
-      .map(
-        (column) =>
-          `<table class="event-grid"><thead><tr><th>Dia(s)</th><th>Descrição</th></tr></thead><tbody>${column.join('')}</tbody></table>`,
-      )
+      .map((column) => `<table class="event-grid"><tbody>${column.join('')}</tbody></table>`)
       .join('');
-    return `<section class="proens-month"><div><h3>${name}</h3><table class="month-grid"><thead><tr>${['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map((d) => '<th>' + d + '</th>').join('')}</tr></thead><tbody>${rows}</tbody></table><p class="monthly-total">${result ? total : '—'} dias letivos</p></div><div><h3>${name}</h3><div class="event-columns">${eventTables}</div></div></section>`;
+    return `<section class="proens-month"><div><h3>${name}</h3><table class="month-grid"><thead><tr>${['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map((d) => '<th>' + d + '</th>').join('')}</tr></thead><tbody>${rows}</tbody></table><p class="monthly-total">${result ? total : '—'} dias letivos</p></div><div><h3>${name}</h3><div class="event-columns${columns.length === 1 ? ' single' : ''}">${eventTables}</div></div></section>`;
   }).join('');
   // One table for every offer: a column per offer, a row per period, the annual total last.
   const countedOffers = byOffer ? offerIds(state).filter((m) => byOffer[m]) : [];
@@ -350,12 +354,12 @@ export function proensLayout(
   )}</p></div>${months}<section class="proens-legend">${
     // The grid marks the days of the first offer; with one offer the heading already names it.
     offerIds(state).length > 1
-      ? `<p>Os pontos de dia letivo seguem a contagem de ${esc(labelFor(state, offerIds(state)[0]))}.</p>`
+      ? `<p>Os dias letivos em negrito seguem a contagem de ${esc(labelFor(state, offerIds(state)[0]))}.</p>`
       : ''
-  }<div class="proens-key">${categories
+  }<div class="proens-key"><div><span class="swatch school-day-sample">15</span>Dia letivo</div>${categories
     .filter((c) => c[2] && usedCategories.has(c[0]))
     .map(([key, label]) => `<div><span class="swatch cat-${key}"></span>${esc(label)}</div>`)
     .join(
       '',
-    )}${showsInternal ? '<div><span class="swatch internal-swatch"></span>Data interna</div>' : ''}</div><p>· Dia letivo calculado; dia sem o ponto não conta como letivo. Faixas adicionais na data indicam categorias simultâneas.</p></section>${externalReferences(state, listed)}<section class="proens-summary"><h3>Contagem de dias letivos</h3><table class="period-count"><thead><tr><th>Período</th>${countHeads}</tr></thead><tbody>${countRows}<tr><th>Total anual</th>${annualCells.map((c) => `<th>${c}</th>`).join('')}</tr></tbody></table>${dayDistribution}</section></div>`;
+    )}${showsInternal ? '<div><span class="swatch internal-swatch"></span>Data interna</div>' : ''}</div></section>${externalReferences(state, listed)}<section class="proens-summary"><h3>Contagem de dias letivos</h3><table class="period-count"><thead><tr><th>Período</th>${countHeads}</tr></thead><tbody>${countRows}<tr><th>Total anual</th>${annualCells.map((c) => `<th>${c}</th>`).join('')}</tr></tbody></table>${dayDistribution}</section></div>`;
 }

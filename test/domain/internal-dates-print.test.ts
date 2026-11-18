@@ -70,9 +70,7 @@ const month = (html: string, name: string) => {
 };
 const day = (section: string, n: number) =>
   section.match(
-    new RegExp(
-      `<td class="[^"]*" title="[^"]*">${n}(?:<b class="day-mark">·</b>)?(?:<i [^>]*></i>)*</td>`,
-    ),
+    new RegExp(`<td class="[^"]*"(?: style="[^"]*")? title="[^"]*">${n}(?:<i [^>]*></i>)*</td>`),
   )![0];
 
 /** Every printed count: monthly totals, the totals by offer and by period, the distribution. */
@@ -115,7 +113,7 @@ test('the official version, the default, prints no internal date in the grid or 
   const march = month(html, 'março');
   expect(day(march, 10)).not.toContain('Ensaio');
   expect(day(march, 10)).toBe(
-    '<td class="" title="1ª etapa de avaliação — Técnico integrado; 1ª etapa de avaliação — Técnico subsequente">10<b class="day-mark">·</b></td>',
+    '<td class="school-day" title="1ª etapa de avaliação — Técnico integrado; 1ª etapa de avaliação — Técnico subsequente">10</td>',
   );
 });
 
@@ -142,7 +140,7 @@ test('the complete version marks internal dates, with its legend and heading', (
   expect(html.match(/class="internal-day-mark"/g)).toHaveLength(3);
   const march = month(html, 'março');
   for (const n of [10, 11]) {
-    expect(day(march, n)).toContain('class="cat-evento"');
+    expect(day(march, n)).toContain('class="cat-evento school-day"');
     expect(day(march, n)).toContain('; Ensaio interno da banda"');
     expect(day(march, n)).toContain('<i class="internal-day-mark" aria-label="Data interna"></i>');
   }
