@@ -2,8 +2,10 @@ import { spawn } from 'node:child_process';
 import type { ChildProcess } from 'node:child_process';
 import { root } from './environment.ts';
 
-// Independent fast steps run together; the browser suite runs alone afterwards because it
-// needs every core and its timing-sensitive tests degrade under contention.
+// Independent fast steps share a few slots, so the machine stays usable for other work while the
+// check runs; `CHECK_JOBS` changes how many run at once. The browser suite runs alone afterwards,
+// because its timing-sensitive tests degrade under contention.
+const jobs = Math.max(1, Number(process.env.CHECK_JOBS) || 3);
 const parallel = [
   'format:check',
   'lint',
@@ -62,13 +64,17 @@ process.once('SIGINT', () => {
 
 const start = performance.now();
 const failures: { script: string; output: string; time: string }[] = [];
+const queue = [...parallel];
 await Promise.all(
-  parallel.map(async (script) => {
-    const result = await run(script, true);
-    if (result.ok) console.log(`✓ ${script} ${result.time}`);
-    else if (!(stopped && result.killed)) {
-      failures.push({ script, ...result });
-      stop();
+  Array.from({ length: jobs }, async () => {
+    // A failure stops the steps running and leaves the queued ones unstarted.
+    for (let script = queue.shift(); script && !stopped; script = queue.shift()) {
+      const result = await run(script, true);
+      if (result.ok) console.log(`✓ ${script} ${result.time}`);
+      else if (!(stopped && result.killed)) {
+        failures.push({ script, ...result });
+        stop();
+      }
     }
   }),
 );

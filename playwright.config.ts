@@ -1,5 +1,5 @@
 import { defineConfig } from '@playwright/test';
-import { availableParallelism } from 'node:os';
+import { availableParallelism, totalmem } from 'node:os';
 
 // Measured: repeated runs differ by at most 0.006 per pixel, while a subtle token swap such as
 // #172b25 -> #1d2328 differs by 0.023; the default 0.2 let whole palette changes pass. The
@@ -24,9 +24,12 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: true,
   retries: 0,
-  // Measured: each worker runs Chromium plus a Vite server per fixture, so memory, not cores,
-  // bounds the useful count; see docs/verificacao.md.
-  workers: Math.min(8, availableParallelism()),
+  // Light by default, so the machine stays usable for other work: each worker runs Chromium plus a
+  // Vite server per fixture, so memory bounds the count, at most one per 4 GB and four in all.
+  // `PLAYWRIGHT_WORKERS` (or `--workers`) changes it; see docs/verificacao.md.
+  workers:
+    Number(process.env.PLAYWRIGHT_WORKERS) ||
+    Math.max(1, Math.min(4, availableParallelism(), Math.floor(totalmem() / 4 / 1024 ** 3))),
   reporter: [['list'], ['html', { open: 'never' }]],
   outputDir: process.env.DENTEC_TEST_OUTPUT_DIR ?? 'test-results',
   snapshotPathTemplate:

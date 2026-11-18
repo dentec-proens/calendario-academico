@@ -7,5 +7,7 @@ export default defineConfig({
     exclude: ['test/runtime/**', 'test/browser/**', 'test/e2e/**'],
     environment: 'node',
     testTimeout: 30_000,
+    // Half the cores by default, so other work keeps running; `VITEST_MAX_WORKERS` changes it.
+    maxWorkers: process.env.VITEST_MAX_WORKERS ?? '50%',
   },
 });
