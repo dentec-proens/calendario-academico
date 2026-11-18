@@ -77,11 +77,6 @@ h2[tabindex='-1']:focus,
 h3[tabindex='-1']:focus {
   outline: none;
 }
-.muted {
-  color: var(--ui-muted);
-  font-size: 0.875rem;
-  margin-top: 4px;
-}
 .header-logout {
   margin-left: auto;
 }
@@ -90,19 +85,6 @@ main {
   margin: auto;
   padding: 32px 4vw;
 }
-.intro {
-  display: flex;
-  justify-content: space-between;
-  gap: 24px;
-  align-items: center;
-}
-.eyebrow {
-  font-size: 0.8rem;
-  letter-spacing: 0.13em;
-  font-weight: 750;
-  color: var(--green);
-  margin: 0;
-}
 h1 {
   font-size: 2.1rem;
   letter-spacing: -0.04em;
@@ -110,10 +92,6 @@ h1 {
 }
 p {
   line-height: 1.6;
-}
-.intro p:last-child {
-  color: var(--ui-muted);
-  margin-top: 8px;
 }
 .actions {
   display: flex;
@@ -142,15 +120,6 @@ select:focus-visible {
 .secondary {
   background: white;
   color: var(--green);
-}
-.wide {
-  width: 100%;
-}
-.workspace {
-  display: grid;
-  grid-template-columns: 270px minmax(0, 1fr);
-  gap: 26px;
-  margin-top: 25px;
 }
 aside {
   background: white;
@@ -250,62 +219,11 @@ label small {
   font-size: 0.8rem;
   line-height: 1.5;
 }
-.metrics {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1.2fr;
-  gap: 14px;
-}
-.metrics article {
-  border: 1px solid var(--line);
-  border-top: 3px solid var(--green);
-  background: white;
-  padding: 20px;
-  border-radius: 9px;
-}
-.metrics span {
-  font-size: 0.875rem;
-  color: var(--ui-muted);
-}
-.metrics strong {
-  display: block;
-  font-size: 2.4rem;
-  margin: 10px 0;
-  font-weight: 700;
-}
-.metrics strong.status-title {
-  font-size: 1.2rem;
-  line-height: 1.6;
-  margin: 14px 0;
-}
-.metrics small {
-  font-size: 0.875rem;
-  color: var(--ui-muted);
-  line-height: 1.5;
-  display: block;
-}
 nav {
   display: flex;
   gap: 6px;
   border-bottom: 1px solid var(--line);
   margin: 22px 0;
-}
-.tab {
-  background: none;
-  border: 0;
-  border-radius: 0;
-  color: var(--ui-muted);
-  padding: 14px 12px;
-  border-bottom: 3px solid transparent;
-}
-.tab.active {
-  border-bottom-color: var(--green);
-  color: var(--green);
-}
-.tab span {
-  font-size: 0.8rem;
-  background: var(--ui-border-soft);
-  padding: 2px 6px;
-  border-radius: 4px;
 }
 .panel {
   background: white;
@@ -367,64 +285,6 @@ nav {
 .calendar-heading h2 {
   margin: 0;
 }
-.legend {
-  display: flex;
-  gap: 12px;
-  font-size: 0.875rem;
-  margin-bottom: 22px;
-  flex-wrap: wrap;
-}
-.legend span {
-  padding: 5px 8px;
-}
-.teaching {
-  background: #d7f0e3;
-  color: #154d35;
-}
-.excluded {
-  background: #ffecd1;
-  color: #744a0c;
-}
-#months {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 22px;
-}
-.month h3 {
-  font-size: 1rem;
-  text-transform: capitalize;
-  margin: 0 0 12px;
-}
-.days {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 3px;
-}
-.days > span {
-  font-size: 0.875rem;
-  text-align: center;
-  padding: 7px 0;
-  min-height: 31px;
-}
-.days .day-name {
-  font-size: 0.75rem;
-  color: var(--ui-muted);
-}
-.days .date {
-  border-radius: 4px;
-  font-size: 0.8rem;
-}
-.days .date i {
-  font-size: 0.65rem;
-  font-style: normal;
-  display: block;
-}
-.issue-mark {
-  font-weight: 650;
-  color: #865c14;
-  min-width: 70px;
-  font-size: 0.875rem;
-}
 .issue-item {
   align-items: start !important;
   justify-content: start !important;
@@ -449,31 +309,6 @@ footer {
 [hidden] {
   display: none !important;
 }
-@media (max-width: 1100px) {
-  .workspace {
-    grid-template-columns: 230px minmax(0, 1fr);
-  }
-  #months {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .metrics {
-    grid-template-columns: 1fr;
-  }
-  .metrics article {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    flex-wrap: wrap;
-  }
-  .metrics strong {
-    font-size: 1.6rem;
-    margin: 0;
-  }
-  .intro {
-    align-items: start;
-    flex-direction: column;
-  }
-}
 @media (max-width: 700px) {
   header {
     padding: 15px;
@@ -492,14 +327,8 @@ footer {
   .brand-copy strong {
     font-size: 1rem;
   }
-  .workspace {
-    grid-template-columns: 1fr;
-  }
   main {
     padding: 25px 16px;
-  }
-  .intro h1 {
-    font-size: 1.8rem;
   }
   nav {
     flex-wrap: wrap;
@@ -514,69 +343,31 @@ footer {
     flex-wrap: wrap;
   }
 }
-@media (max-width: 420px) {
-  #months {
-    grid-template-columns: 1fr;
-  }
-}
+/* Print: only the page's content; the preview prints its document (assets/printing/calendar.css). */
 @media print {
-  .header-logout,
-  .intro .actions,
+  header,
   aside,
   nav,
-  #message,
   footer,
-  #print,
+  #message,
   #edit,
   #issues {
     display: none !important;
   }
-  .workspace {
-    display: block;
-  }
   .view#calendar {
     display: block !important;
   }
+  body {
+    background: white;
+  }
   main {
+    max-width: none;
     padding: 0;
   }
   .panel {
     border: 0;
     padding: 0;
-  }
-  .metrics {
-    display: flex;
-    margin: 15px 0;
-  }
-  .metrics article {
-    flex: 1;
-  }
-  .intro h1 {
-    font-size: 20px;
-  }
-  .intro:after {
-    content: 'RASCUNHO — CONFERÊNCIA INSTITUCIONAL INCOMPLETA';
-    font-weight: bold;
-    font-size: 12px;
-  }
-  #months {
-    grid-template-columns: repeat(3, 1fr);
-  }
-  .month {
-    break-inside: avoid;
-  }
-  .date {
-    print-color-adjust: exact;
-  }
-  body {
-    background: white;
-  }
-  .days > span {
-    padding: 3px 0;
-    min-height: 22px;
-  }
-  .month {
-    margin-bottom: 8px;
+    margin: 0;
   }
 }
 
