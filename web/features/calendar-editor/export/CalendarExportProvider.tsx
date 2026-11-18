@@ -47,6 +47,8 @@ function useExportController() {
     run(async () => {
       const saved = await session.flush();
       await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+      // The print waits for the institutional font, or the first PDF would use the fallback.
+      await document.fonts.ready;
       if (!active.current) return;
       // The browser suggests the document title as the name of the saved PDF.
       const title = document.title;

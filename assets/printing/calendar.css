@@ -1,9 +1,15 @@
+/* Open Sans is the institutional typeface of the IFPR; it ships with the app so every machine prints the same pages. */
+@import '@fontsource-variable/open-sans/wdth.css';
+
 #months {
   display: block;
 }
 .proens-document {
   background: white;
   color: black;
+  font-family: 'Open Sans Variable', 'Open Sans', Arial, sans-serif;
+  /* Days and counts line up in their columns. */
+  font-variant-numeric: tabular-nums;
 }
 .proens-heading {
   text-align: center;
@@ -348,6 +354,11 @@
 }
 .proens-summary h3 {
   background: #052053;
+  /* Only month names, printed in lower case, take the capital. */
+  text-transform: none;
+}
+.period-count td:not(:first-child) {
+  text-align: center;
 }
 .month-grid th {
   background: #cfe2f3;
@@ -468,7 +479,7 @@
     margin-bottom: 3mm;
   }
   .proens-month h3 {
-    font-size: 6.5pt;
+    font-size: 7.5pt;
     padding: 2px;
   }
   .event-columns {
@@ -477,16 +488,16 @@
   }
   .proens-document td,
   .proens-document th {
-    font-size: 6pt;
+    font-size: 7pt;
     line-height: 1.2;
     padding: 1.5px;
   }
   .monthly-total {
-    font-size: 6pt;
+    font-size: 7pt;
     margin: 2px;
   }
   .day-mark {
-    font-size: 6pt;
+    font-size: 7pt;
   }
   .color-mark {
     width: 4px;
@@ -503,7 +514,7 @@
     margin: 4px 0;
   }
   .proens-key > div {
-    font-size: 6pt;
+    font-size: 7pt;
     gap: 3px;
   }
   .swatch {
@@ -512,7 +523,7 @@
   }
   .proens-summary p,
   .proens-legend p {
-    font-size: 6pt;
+    font-size: 7pt;
     margin: 4px 0;
   }
   .proens-summary table {
@@ -520,8 +531,12 @@
     max-width: 95mm;
   }
   .proens-summary h3 {
-    font-size: 7pt;
+    font-size: 8pt;
     padding: 2px;
+  }
+  /* A slightly narrower width keeps long descriptions on one line at the larger size. */
+  .event-grid td:last-child {
+    font-stretch: 87.5%;
   }
   .print-legend {
     display: none !important;
