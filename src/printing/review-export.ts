@@ -1,7 +1,3 @@
-import {
-  statusLabels as calendarStatusLabels,
-  type CalendarStatus,
-} from '../domain/calendar/lifecycle.ts';
 import type { AssessmentSettings, ReviewEntry } from '../domain/calendar/model.ts';
 import { calendarOffers, offerLabel } from '../domain/calendar/offers.ts';
 import { reviewNorm } from '../domain/reviews/citation.ts';
@@ -32,7 +28,6 @@ export function reviewDocument(
   record: {
     state: AssessmentSettings & { year: number; campus?: string };
     courses?: string;
-    status?: CalendarStatus;
     seiProcess?: string;
   },
   review: {
@@ -53,7 +48,6 @@ export function reviewDocument(
   const metadata = [
     ['Conjunto de regras', review.rulesetVersion ?? rulesetVersion(record.state)],
     ['Processo nº', record.seiProcess || review.processNumber || 'Não informado'],
-    ...(record.status ? [['Situação do calendário', calendarStatusLabels[record.status]]] : []),
     ['Assunto', `Calendário Acadêmico e Administrativo ${record.state.year}`],
     ['Campus', record.state.campus],
     [
@@ -65,14 +59,6 @@ export function reviewDocument(
       review.applicableNorm ||
         reviewNorm(record.state.year) ||
         'Não informada — conferir antes de concluir',
-    ],
-    [
-      'Modelo de referência',
-      `${reviewSource.id}; ${reviewSource.norm} (calendário ${reviewSource.year})`,
-    ],
-    [
-      'Registro da análise',
-      `${review.reviewer.name}; revisão ${review.revision}; base institucional ${review.catalogueRevision}`,
     ],
   ];
   const bodyRows = reviewCriteria.map((c) => {
