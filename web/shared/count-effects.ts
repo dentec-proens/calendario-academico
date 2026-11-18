@@ -5,18 +5,18 @@ export const countEffects: { value: EventEffect; title: string; description: str
   {
     value: 'exclude',
     title: 'Retira da contagem',
-    description: 'Feriados e recessos. Dias que seriam de aula deixam de contar.',
+    description: 'Nenhum dia da data conta como letivo, nem os que seriam de aula.',
   },
   {
     value: 'include',
     title: 'Acrescenta à contagem',
     description:
-      'Sábados letivos e reposições. Dias sem aula passam a contar, se estiverem em um período letivo.',
+      'Todos os dias da data contam como letivos, inclusive sábados e outros dias sem aula, se estiverem em um período letivo.',
   },
   {
     value: 'note',
     title: 'Não altera a contagem',
-    description: 'Datas comemorativas e avisos. Cada dia segue a semana normal de aulas.',
+    description: 'Cada dia conta ou não conforme a semana normal de aulas.',
   },
 ];
 
