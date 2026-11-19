@@ -1,11 +1,15 @@
-/* Open Sans is the institutional typeface of the IFPR; it ships with the app so every machine prints the same pages. */
-@import '@fontsource-variable/open-sans/wdth.css';
+/*
+ * Open Sans is the institutional typeface of the IFPR; it ships with the app so every machine
+ * prints the same pages. Its faces are static (scripts/build-print-fonts.ts): Chromium writes a
+ * variable font into the PDF as Type 3 glyphs, whose text readers do not let anyone select.
+ */
+@import './fonts/open-sans.css';
 
 /* Document */
 .proens-document {
   background: white;
   color: black;
-  font-family: 'Open Sans Variable', 'Open Sans', Arial, sans-serif;
+  font-family: 'Open Sans Print', Arial, sans-serif;
   /* Days and counts line up in their columns. */
   font-variant-numeric: tabular-nums;
   --cat-limite: #ffff00;

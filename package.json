@@ -57,7 +57,6 @@
     "@convex-dev/presence": "0.4.0",
     "@convex-dev/rate-limiter": "0.4.2",
     "@daypicker/react": "10.0.2",
-    "@fontsource-variable/open-sans": "^5.3.0",
     "@noble/hashes": "2.0.1",
     "@tanstack/react-form": "1.33.5",
     "@tanstack/react-router": "1.170.46",
@@ -67,6 +66,7 @@
     "react-dom": "19.3.1"
   },
   "devDependencies": {
+    "@fontsource-variable/open-sans": "^5.3.0",
     "@playwright/test": "1.64.1",
     "@tanstack/intent": "0.5.6",
     "@tanstack/react-devtools": "0.10.13",
