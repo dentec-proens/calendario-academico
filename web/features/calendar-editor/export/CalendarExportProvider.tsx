@@ -7,7 +7,7 @@ import {
   type PropsWithChildren,
 } from 'react';
 import { useFormDrafts } from '../../../shared/forms/drafts.tsx';
-import { fileNamePrefix } from '#src/domain/calendar/lifecycle.ts';
+import { printFileName } from '#src/domain/calendar/lifecycle.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import type { PrintVersion } from '#src/printing/calendar-layout.ts';
 
@@ -52,7 +52,13 @@ function useExportController() {
       if (!active.current) return;
       // The browser suggests the document title as the name of the saved PDF.
       const title = document.title;
-      document.title = `${fileNamePrefix(saved.status)}calendario-${saved.state.year}-v${saved.version}${version === 'complete' ? '-completo' : ''}`;
+      document.title = printFileName({
+        status: saved.status,
+        year: saved.state.year,
+        campusName: record.campusName,
+        version: saved.version,
+        complete: version === 'complete',
+      });
       window.addEventListener('afterprint', () => (document.title = title), { once: true });
       window.print();
     });

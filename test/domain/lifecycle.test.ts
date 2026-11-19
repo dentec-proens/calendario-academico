@@ -7,6 +7,7 @@ import {
   isDeletable,
   lifecycleActions,
   officialApproval,
+  printFileName,
   printMark,
   transition,
   validSei,
@@ -78,6 +79,19 @@ test('versions, deletion, approval, marks and file names depend only on status',
   expect(printMark('arquivado')).toBe('Arquivado');
   expect(fileNamePrefix('vigente')).toBe('');
   expect(fileNamePrefix('em_revisao')).toBe('em-revisao-');
+});
+
+test('the suggested PDF name tells the campus apart', () => {
+  const calendar = {
+    status: 'rascunho',
+    year: 2027,
+    campusName: 'Foz do Iguaçu',
+    version: 129,
+  } as const;
+  expect(printFileName(calendar)).toBe('rascunho-calendario-2027-foz-do-iguacu-v129');
+  expect(printFileName({ ...calendar, status: 'vigente', complete: true })).toBe(
+    'calendario-2027-foz-do-iguacu-v129-completo',
+  );
 });
 
 test('the SEI process follows the institutional format', () => {

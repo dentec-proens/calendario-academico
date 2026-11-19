@@ -169,6 +169,33 @@ export function fileNamePrefix(status: CalendarStatus) {
       : `${status.replace('_', '-')}-`;
 }
 
+/**
+ * Suggested PDF file name: status, year, campus and version, so files saved from several campuses
+ * stay apart. The campus is folded to plain ASCII words joined by hyphens.
+ */
+export function printFileName(calendar: {
+  status: CalendarStatus;
+  year: number;
+  campusName: string;
+  version: number;
+  complete?: boolean;
+}) {
+  const campus = calendar.campusName
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+  return [
+    `${fileNamePrefix(calendar.status)}calendario-${calendar.year}`,
+    campus,
+    `v${calendar.version}`,
+    calendar.complete ? 'completo' : '',
+  ]
+    .filter(Boolean)
+    .join('-');
+}
+
 export const seiPattern = /^\d{5}\.\d{6}\/\d{4}-\d{2}$/;
 export function validSei(value: string) {
   const sei = value.trim();

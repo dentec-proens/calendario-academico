@@ -201,7 +201,7 @@ for (const width of [1440, 390]) {
     await page.locator('#print').click();
     await expect(page.locator('body')).toHaveAttribute(
       'data-print-title',
-      /^rascunho-calendario-2027-v\d+-completo$/,
+      /^rascunho-calendario-2027-[a-z0-9-]+-v\d+-completo$/,
     );
     await page.evaluate(() => window.dispatchEvent(new Event('afterprint')));
     await page.emulateMedia({ media: 'print' });
@@ -217,7 +217,7 @@ for (const width of [1440, 390]) {
     await page.locator('#print').click();
     await expect(page.locator('body')).toHaveAttribute(
       'data-print-title',
-      /^rascunho-calendario-2027-v\d+$/,
+      /^rascunho-calendario-2027-[a-z0-9-]+-v\d+$/,
     );
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
       true,
@@ -242,6 +242,6 @@ test('without internal dates the preview offers no choice and ignores `impressao
   await page.locator('#print').click();
   await expect(page.locator('body')).toHaveAttribute(
     'data-print-title',
-    /^rascunho-calendario-2027-v\d+$/,
+    /^rascunho-calendario-2027-[a-z0-9-]+-v\d+$/,
   );
 });

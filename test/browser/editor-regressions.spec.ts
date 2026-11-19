@@ -176,7 +176,7 @@ test('printing suggests the calendar file name and restores the page title after
   await page.locator('#print').click();
   await expect(page.locator('body')).toHaveAttribute(
     'data-print-title',
-    /^(rascunho-|enviado-|em-revisao-|devolvido-|revisado-|arquivado-)?calendario-\d{4}-v\d+$/,
+    /^(rascunho-|enviado-|em-revisao-|devolvido-|revisado-|arquivado-)?calendario-\d{4}-[a-z0-9-]+-v\d+$/,
   );
   await page.evaluate(() => window.dispatchEvent(new Event('afterprint')));
   await expect(page).toHaveTitle(title);

@@ -233,7 +233,7 @@ test('native Convex preserves invitations, password recovery, PDFs and human rev
   await page.locator('#print').click();
   await expect(page.locator('body')).toHaveAttribute(
     'data-print-title',
-    `rascunho-calendario-${year}-v1`,
+    new RegExp(`^rascunho-calendario-${year}-[a-z0-9-]+-v1$`),
   );
   // The browser's print engine produces the PDF the user saves from the print dialog.
   const generatedPdf = await page.pdf({ printBackground: true, preferCSSPageSize: true });
