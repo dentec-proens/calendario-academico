@@ -30,6 +30,7 @@ async function stored() {
       body: {
         campusId: native.ids.campuses.a,
         year: 2027,
+        label: 'Cursos integrados',
         offers: fixture.offers.map(({ kind }) => ({
           kind,
           organization: 'anual' as const,

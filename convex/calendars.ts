@@ -29,11 +29,11 @@ import {
   fullRecord,
 } from './calendars/record';
 import {
-  assertUniqueInFlow,
+  assertLabel,
+  campusYearCalendars,
   decisionsFor,
   lifecycleRole,
   lineage,
-  overlapping,
 } from './calendars/lifecycle';
 import {
   canCreateVersion,
@@ -166,12 +166,14 @@ export const createCalendar = mutation({
         events: [],
       }),
     ) as validators.DomainState;
+    const label = domainRule(() => normalizeLabel(body.label));
     const id = await ctx.db.insert('calendars', {
       campusId: campus._id,
       year: body.year,
       offerKinds: kinds(state),
       status: 'rascunho',
       statusRevision: 0,
+      label,
       // Identity is filled in the editor; courses are required only to submit.
       courses: '',
       classes: '',
@@ -180,6 +182,8 @@ export const createCalendar = mutation({
       updatedAt: now,
       statusAt: now,
     });
+    // Checked against the inserted row, which the rule leaves out; a refusal rolls back the insert.
+    await assertLabel(ctx, (await ctx.db.get(id))!);
     const base = await catalogue(ctx, body.year);
     await ctx.db.insert('calendarContents', {
       calendarId: id,
@@ -221,10 +225,6 @@ export const saveCalendar = mutation({
         'O conjunto de regras mudou. Atualize a aplicação e confira o preenchimento antes de salvar.',
         409,
       );
-    // Only a draft drops an offer: a returned calendar keeps the kinds its submission covered.
-    const proposedKinds = kinds(body.state);
-    if (status === 'devolvido' && proposedKinds.some((kind) => !row.offerKinds.includes(kind)))
-      await assertUniqueInFlow(ctx, row, proposedKinds);
     // What differs from the stored copy is recorded here: the base was already live in the editor.
     const baseChanged = compatibility.kind !== 'current' && compatibility.kind !== 'equivalent';
     const savedContent = clean(content.state);
@@ -233,6 +233,7 @@ export const saveCalendar = mutation({
       prepareOfferCalendarSave(record.state, proposedState, {
         storedContent: savedContent,
         catalogue: base,
+        // Only a draft drops an offer: a returned calendar keeps the offers its submission covered.
         allowOfferRemoval: status === 'rascunho',
       }),
     );
@@ -330,7 +331,8 @@ export const updateCalendarIdentity = mutation({
  * Year and campus stay fixed in the name; only its label changes, with the concurrency check of
  * the identity and without a new content version. The name is not part of what a submission
  * fixes or the review judges, so the administration may correct it in any state; the campus
- * renames only while it edits.
+ * renames only while it edits. It is required and tells the calendar apart from the others of
+ * its campus and year.
  */
 export const renameCalendar = mutation({
   args: { ...idArgs, expected: v.string(), label: v.string() },
@@ -349,8 +351,8 @@ export const renameCalendar = mutation({
         'O nome foi alterado em outra sessão. Descarte as alterações para ver o nome atual e edite novamente.',
         409,
       );
-    // An empty label is stored as an absent field, so the name falls back to campus and year.
-    await ctx.db.patch(id, { label: next || undefined, updatedAt: Date.now() });
+    await assertLabel(ctx, row, next);
+    await ctx.db.patch(id, { label: next, updatedAt: Date.now() });
     await appendAudit(
       ctx,
       user,
@@ -379,7 +381,7 @@ export const deleteCalendar = mutation({
         `Um calendário ${statusLabels[status].toLowerCase()} não pode ir para a lixeira. Somente rascunhos e calendários devolvidos podem ser excluídos.`,
         409,
       );
-    // A deleted returned calendar becomes a draft and frees its in-flow place; submissions stay.
+    // A deleted returned calendar becomes a draft; its submissions stay.
     await ctx.db.patch(id, {
       deletedAt: now,
       deletedBy: user.id,
@@ -416,7 +418,7 @@ export const restoreCalendar = mutation({
     if (!row.deletedAt) fail('Calendário já está ativo.', 409);
     if (row.version !== version)
       fail('O calendário foi alterado. Atualize a lixeira antes de restaurar.', 409);
-    // Always a draft, which takes no in-flow place, even for a row not deleted by this app.
+    // Always a draft, even for a row not deleted by this app.
     await ctx.db.patch(id, {
       deletedAt: undefined,
       deletedBy: undefined,
@@ -452,7 +454,8 @@ export const transitionCalendar = mutation({
     baseIdentity: v.optional(v.string()),
     note: v.optional(v.string()),
     sei: v.optional(v.string()),
-    partial: v.optional(v.boolean()),
+    /** Other calendars in force of the campus and year that a publication replaces. */
+    replaces: v.optional(v.array(v.id('calendars'))),
   },
   returns: v.object({ status: validators.calendarStatus, statusRevision: v.number() }),
   handler: async (ctx, args) => {
@@ -540,8 +543,8 @@ function submissionItem(user: Member, row: Doc<'calendarSubmissions'>) {
 
 /**
  * The submissions of a calendar, metadata only, and the default comparison bases: the last
- * returned submission on a resubmission, or the published submissions of the calendars that a
- * first submission of a new version would replace, when they share its `derivedFrom` chain.
+ * returned submission on a resubmission, or the published submission of its origin on the first
+ * submission of a new version, whether or not the origin is still in force.
  */
 export const calendarSubmissions = query({
   args: { ...idArgs, paginationOpts: paginationOptsValidator },
@@ -581,13 +584,8 @@ export const calendarSubmissions = query({
     let defaultBases: Doc<'calendarSubmissions'>['_id'][] = [];
     if (row.status === 'devolvido' && current) defaultBases = [current._id];
     else if (current?.previousSubmissionId) defaultBases = [current.previousSubmissionId];
-    else if (current) {
-      const ancestors = new Set(chain.slice(1).map((ancestor) => ancestor._id));
-      const replaced = await overlapping(ctx, row, ['vigente']);
-      defaultBases = replaced
-        .filter((other) => ancestors.has(other._id) && other.publishedSubmissionId)
-        .map((other) => other.publishedSubmissionId!);
-    }
+    else if (current && chain[1]?.publishedSubmissionId)
+      defaultBases = [chain[1].publishedSubmissionId];
     return {
       page: result.page.map((submission) => submissionItem(user, submission)),
       isDone: result.isDone,
@@ -622,16 +620,29 @@ export const submissionContent = query({
   },
 });
 
-/** What a publication would replace, for the administration to confirm before publishing. */
+/**
+ * What a publication replaces, for the administration to decide before publishing: the origin of
+ * a new version, replaced while still in force, and every other calendar in force of the campus
+ * and year, each of which the administration replaces or keeps.
+ */
 export const replacementPreview = query({
   args: idArgs,
   returns: v.object({
-    replaced: v.array(
+    origin: v.union(
+      v.null(),
+      v.object({
+        id: v.id('calendars'),
+        name: v.string(),
+        status: validators.calendarStatus,
+        successorName: v.optional(v.string()),
+      }),
+    ),
+    others: v.array(
       v.object({
         id: v.id('calendars'),
         name: v.string(),
         offerKinds: v.array(validators.modality),
-        uncovered: v.array(validators.modality),
+        courses: v.string(),
       }),
     ),
     suggestedSei: v.string(),
@@ -645,13 +656,33 @@ export const replacementPreview = query({
       .query('reviews')
       .withIndex('by_calendarId', (q) => q.eq('calendarId', id))
       .unique();
+    const all = await campusYearCalendars(ctx, row);
+    const name = (other: Doc<'calendars'>) => calendarName(other.year, campus, other.label);
+    const origin = row.derivedFrom ? await ctx.db.get(row.derivedFrom) : null;
+    const successor = origin?.supersededBy ? await ctx.db.get(origin.supersededBy) : null;
     return {
-      replaced: (await overlapping(ctx, row, ['vigente'])).map((other) => ({
-        id: other._id,
-        name: calendarName(other.year, campus, other.label),
-        offerKinds: other.offerKinds,
-        uncovered: other.offerKinds.filter((kind) => !row.offerKinds.includes(kind)),
-      })),
+      origin:
+        origin && !origin.deletedAt
+          ? {
+              id: origin._id,
+              name: name(origin),
+              status: origin.status,
+              ...(origin.status !== 'vigente' && successor
+                ? { successorName: name(successor) }
+                : {}),
+            }
+          : null,
+      others: all
+        .filter(
+          (other) =>
+            other.status === 'vigente' && other._id !== row._id && other._id !== row.derivedFrom,
+        )
+        .map((other) => ({
+          id: other._id,
+          name: name(other),
+          offerKinds: other.offerKinds,
+          courses: other.courses,
+        })),
       suggestedSei: row.seiProcess ?? review?.processNumber ?? '',
     };
   },

@@ -59,6 +59,7 @@ test('reviewer consults the complete calendar and live changes without editing o
     saves: 0,
     transitions: 0,
     failTransition: false,
+    lastTransition: null,
   });
   expect(errors).toEqual([]);
 });

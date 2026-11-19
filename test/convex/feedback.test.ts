@@ -27,12 +27,15 @@ async function fixture() {
     });
     return { userId, subject: `${userId}|${sessionId}` };
   });
+  // Calendars of the same campus and year need distinct labels.
+  let created = 0;
   const create = async (campusKey: 'a' | 'b' = 'a') => {
     const author = campusKey === 'a' ? campus : f.asClient('campus-b');
     const record = await author.mutation(api.calendars.createCalendar, {
       body: {
         campusId: f.ids.campuses[campusKey]!,
         year: 2027,
+        label: `Proposta ${++created}`,
         offers: [{ kind: 'integrado', organization: 'anual' }],
       },
     });

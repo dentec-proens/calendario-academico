@@ -82,6 +82,7 @@ test('calendar creation asks for year and offers and previews the draft name', a
   await expect(page.locator('#calendar-year-other')).toHaveCount(0);
   await expect(name).toHaveText('Calendário 2027 - Campus Campus de teste');
   await expect(page.locator('#calendar-year-help')).toHaveCount(0);
+  await page.getByLabel('Complemento do nome').fill('Cursos integrados');
   const summary = page.locator('#calendar-offer-summary');
   await expect(summary).toHaveText('Nenhuma oferta marcada · começa como rascunho');
   await page.getByRole('button', { name: 'Criar rascunho' }).click();
@@ -103,6 +104,39 @@ test('calendar creation asks for year and offers and previews the draft name', a
   await page.locator('[data-page="accounts"]').click();
 });
 
+test('creation requires the label, which completes the previewed name', async ({
+  page,
+  fixtureServer,
+}) => {
+  const origin = new URL(await fixtureServer('portal')).origin;
+  await page.goto(origin + '/calendarios/novo');
+  const label = page.getByLabel('Complemento do nome');
+  const name = page.getByLabel('Nome do calendário', { exact: true });
+  const create = page.getByRole('button', { name: 'Criar rascunho' });
+  const created = () =>
+    page.evaluate(
+      () =>
+        window.portalRouterTest.mutations.find(({ name }) => name === 'calendars:createCalendar')
+          ?.args,
+    );
+  await page.getByLabel('Técnico integrado').check();
+  await create.click();
+  await expect(label).toHaveJSProperty('validity.valueMissing', true);
+  // Blank is not a label: the name keeps only year and campus, and nothing is created.
+  await label.fill('   ');
+  await expect(name).toHaveText('Calendário 2027 - Campus Campus de teste');
+  await create.click();
+  await expect(page.locator('#create-calendar .form-feedback')).toContainText(
+    'Informe o complemento do nome para distinguir este calendário dos demais do campus.',
+  );
+  expect(await created()).toBeUndefined();
+
+  await label.fill('Cursos bimestrais');
+  await expect(name).toHaveText('Calendário 2027 - Campus Campus de teste — Cursos bimestrais');
+  await create.click();
+  await expect.poll(created).toMatchObject({ body: { label: 'Cursos bimestrais' } });
+});
+
 test('whoever chooses among several campuses starts with none chosen', async ({
   page,
   fixtureServer,
@@ -120,6 +154,7 @@ test('whoever chooses among several campuses starts with none chosen', async ({
   await expect(page).toHaveURL(/\/calendarios\/novo/);
   await campus.selectOption({ label: 'Outro campus' });
   await expect(name).toHaveText('Calendário 2027 - Campus Outro campus');
+  await page.getByLabel('Complemento do nome').fill('Cursos integrados');
   await page.getByRole('button', { name: 'Criar rascunho' }).click();
   await expect
     .poll(() =>
@@ -161,6 +196,7 @@ test('a campus account opens the calendars of another campus only to read them, 
 
   // Looking at another campus does not move where a new calendar goes.
   await page.getByRole('button', { name: 'Novo calendário' }).click();
+  await page.getByLabel('Complemento do nome').fill('Cursos integrados');
   await page.getByLabel('Técnico integrado').check();
   await page.getByRole('button', { name: 'Criar rascunho' }).click();
   await expect

@@ -50,6 +50,8 @@ test('native Convex portal synchronizes two sessions and preserves unapplied edi
   await editor.locator('#calendar-year [data-choice="outro"]').click();
   await editor.locator('#calendar-year-other').fill(String(year));
   if (campusId) await editor.locator('#calendar-campus').selectOption(campusId);
+  // Distinct in the campus and year across runs against the same deployment.
+  await editor.locator('#calendar-create-label').fill('Sessões sincronizadas ' + Date.now());
   await editor.locator('#calendar-offer-integrado').check();
   await Promise.all([
     editor.waitForURL('**/calendarios/*/editar'),
@@ -214,6 +216,7 @@ test('native Convex preserves invitations, password recovery, PDFs and human rev
   await page.locator('#calendar-year [data-choice="outro"]').click();
   await page.locator('#calendar-year-other').fill(String(year));
   if (campusId) await page.locator('#calendar-campus').selectOption(campusId);
+  await page.locator('#calendar-create-label').fill('Fluxo completo ' + Date.now());
   await page.locator('#calendar-offer-integrado').check();
   await Promise.all([
     page.waitForURL('**/calendarios/*/editar'),

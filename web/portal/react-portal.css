@@ -31,6 +31,10 @@
 #create-calendar .calendar-create-year .ui-choice-group {
   grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
 }
+.calendar-create-label {
+  max-width: 32rem;
+  margin-bottom: var(--ui-space-5);
+}
 .calendar-create-other-year {
   max-width: 10rem;
   margin-top: calc(-1 * var(--ui-space-3));

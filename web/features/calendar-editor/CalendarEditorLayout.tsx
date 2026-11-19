@@ -47,8 +47,9 @@ import { scrollIntoView, trackScrollInset } from '../../scroll.ts';
 import { useFormDrafts } from '../../shared/forms/drafts.tsx';
 import { Notice } from '../../components/ui/Notice.tsx';
 import { IdentityPanelProvider, IdentitySummary } from './identity/CalendarIdentity.tsx';
-import { CalendarTitle } from './identity/CalendarName.tsx';
+import { CalendarTitle, NamePanelProvider } from './identity/CalendarName.tsx';
 import { missingCoursesIssue } from '#src/domain/calendar/identity.ts';
+import { missingLabelIssue } from '#src/domain/calendar/label.ts';
 
 function EditorFrame() {
   const {
@@ -176,8 +177,12 @@ function EditorFrame() {
       </Link>
     ) : null;
   };
-  // The missing courses count as one more pending item, in the header as in the steps.
-  const issueCount = pendencies.length + (record.courses ? 0 : 1);
+  // A missing label or missing courses count as more pending items, in the header as in the steps.
+  const identityIssues = [
+    ...(record.label?.trim() ? [] : [missingLabelIssue]),
+    ...(record.courses ? [] : [missingCoursesIssue]),
+  ];
+  const issueCount = pendencies.length + identityIssues.length;
   // The backend refuses these submissions too; saying why beats an error after confirming.
   const submitUnavailable = !connected
     ? 'Sem conexão. O envio volta a ficar disponível quando a conexão for restabelecida.'
@@ -185,11 +190,14 @@ function EditorFrame() {
       ? 'O calendário mudou em outra sessão. Reabra-o antes de enviar.'
       : status === 'error' || status === 'blocked'
         ? 'Resolva o salvamento das alterações antes de enviar.'
-        : !record.courses && !pendencies.length
-          ? missingCoursesIssue
+        : identityIssues.length && !pendencies.length
+          ? identityIssues.join(' ')
           : issueCount
-            ? // The same total as the steps; the courses, when missing, are named first.
-              `Corrija ${issueCount === 1 ? 'a pendência' : `as ${issueCount} pendências`} antes de enviar.${record.courses ? '' : ` ${missingCoursesIssue}`}`
+            ? // The same total as the steps; the label and the courses, when missing, are named.
+              [
+                `Corrija ${issueCount === 1 ? 'a pendência' : `as ${issueCount} pendências`} antes de enviar.`,
+                ...identityIssues,
+              ].join(' ')
             : undefined;
   // Shared by the header and by the review step's footer, which repeats only the submission.
   const lifecycle = {
@@ -585,9 +593,11 @@ export default function CalendarEditorLayout({ calendarId }: { calendarId: strin
       <CalendarExportProvider>
         <EventEditorProvider>
           <IdentityPanelProvider>
-            <EditorErrorBoundary>
-              <EditorFrame />
-            </EditorErrorBoundary>
+            <NamePanelProvider>
+              <EditorErrorBoundary>
+                <EditorFrame />
+              </EditorErrorBoundary>
+            </NamePanelProvider>
           </IdentityPanelProvider>
         </EventEditorProvider>
       </CalendarExportProvider>

@@ -182,6 +182,8 @@ export const bootstrapDto = v.object({
 export const createInput = v.object({
   campusId: v.id('campuses'),
   year: v.number(),
+  /** The label that tells the calendar apart from the others of its campus and year. */
+  label: v.string(),
   offers: v.array(v.object({ kind: modality, organization, label: v.optional(v.string()) })),
 });
 export const identityInput = v.object({

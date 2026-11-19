@@ -21,6 +21,7 @@ async function calendar() {
     body: {
       campusId: fixture.ids.campuses.a,
       year: 2027,
+      label: 'Cursos integrados',
       offers: [{ kind: 'integrado', organization: 'anual' }],
     },
   });

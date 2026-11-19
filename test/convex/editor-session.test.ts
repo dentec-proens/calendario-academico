@@ -134,6 +134,7 @@ async function opened(withPeriod = true): Promise<CalendarRecord> {
       body: {
         campusId: fixture.ids.campuses.a,
         year: 2027,
+        label: 'Cursos integrados',
         offers: [{ kind: 'integrado', organization: 'anual' }],
       },
     })
@@ -165,6 +166,7 @@ test('removing the last period is saved and leaves the unchanged stages to revie
       body: {
         campusId: fixture.ids.campuses.a,
         year: 2027,
+        label: 'Cursos integrados',
         offers: [{ kind: 'integrado', organization: 'anual' }],
       },
     })

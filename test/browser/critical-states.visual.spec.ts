@@ -40,6 +40,7 @@ test('calendar creation form', async ({ page, fixtureServer }) => {
   await expect(page.locator('#calendar-list')).toBeVisible();
   await page.locator('#calendars .collection-heading button').click();
   await expect(page.locator('#calendars .collection-form > h2')).toBeFocused();
+  await page.locator('#calendar-create-label').fill('Cursos integrados e subsequentes');
   await page.locator('#calendar-offer-integrado').check();
   await page.locator('#calendar-offer-subsequente').check();
   await page.locator('#calendar-offer-subsequente-organization [data-choice="semestral"]').click();

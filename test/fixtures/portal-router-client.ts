@@ -139,11 +139,12 @@ export const convex = {
     window.portalRouterTest.mutations.push({ name, args: structuredClone(args) });
     switch (name) {
       case 'calendars:createCalendar': {
-        const body = args.body as { year: number; campusId: string };
+        const body = args.body as { year: number; campusId: string; label: string };
         return finishMutation('createCalendar', {
           id: 'calendar-new',
           campusId: body.campusId,
           year: body.year,
+          label: body.label.trim(),
           state: {
             schemaVersion: 7,
             year: body.year,

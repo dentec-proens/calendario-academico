@@ -28,12 +28,13 @@ Este guia registra as regras de negócio e as decisões que o código sozinho n�
 - **Envio bloqueado** enquanto houver qualquer pendência de conteúdo (decisão de 12/11/2026), inclusive no reenvio de um devolvido, e quando há campos não aplicados ou a base mudou desde o que a pessoa conferiu. O servidor confere sobre a base vigente, a mesma que o envio grava.
 - Cada verificação declara quem a resolve (`src/domain/calendar/checks.ts`): o **campus** corrige ou declara; a **base** (base institucional ou erro do sistema) pede a administração; a **DENTEC/PROENS** julga no critério do parecer, sem impedir o envio (instrução de revisão, ano letivo fora da referência); o resto só informa. Só o que o campus ou a base resolvem impede o envio; a publicação espera, além disso, todos os critérios avaliados.
 - Sem mínimo de dias a verificar (ano sem norma configurada ou oferta fora da norma), a falta de mínimo é aviso, não pendência.
-- Um único calendário em análise (enviado, em revisão, devolvido ou revisado) por campus, ano e tipo de oferta.
-- Se já existe vigente para algum tipo de oferta, o novo calendário precisa incluir todos os tipos dele; a ADMIN pode confirmar substituição parcial.
-- Publicar arquiva os vigentes que compartilham tipos de oferta.
-- O nome do calendário (ano e campus fixos, mais um complemento opcional) não faz parte do envio nem do parecer: o campus o muda só em edição; a ADMIN, em qualquer situação, com registro no histórico.
+- Calendários do mesmo campus e ano são independentes, quaisquer que sejam as ofertas: o campus os organiza como quiser (por regime de etapas, nível, turno ou num só), e vários podem estar em análise e vigentes ao mesmo tempo.
+- Publicar substitui (arquiva, com **Substituído por …**) a origem de uma nova versão, se ela ainda estiver vigente. Cada outro vigente do campus e ano é decidido pela ADMIN no diálogo de publicar, sem resposta pré-marcada: **Substituído por este** ou **Continua vigente**. Uma escolha que deixou de ser vigente recusa a publicação.
+- **Restabelecer** um arquivado é recusado se o calendário que o substituiu (ou o seguinte na cadeia) ou uma nova versão dele estiver vigente.
+- O nome do calendário (ano e campus fixos, mais um complemento) não faz parte do envio nem do parecer: o campus o muda só em edição; a ADMIN, em qualquer situação, com registro no histórico.
+- O complemento do nome é obrigatório e distinto entre os calendários não arquivados do mesmo campus e ano (sem diferenciar maiúsculas e acentos), exceto entre uma nova versão e a origem dela. É pedido na criação (inclusive na criação a partir de cópia) e conferido ao criar, renomear, enviar, publicar e restabelecer; o editor mostra a falta como pendência, ao lado dos cursos. Calendários antigos sem complemento continuam válidos até o próximo envio ou publicação.
 - Vigente nunca é editado no lugar: **Nova versão** cria um rascunho com o conteúdo e a base dele, sem o parecer; o original segue vigente até a nova versão ser publicada.
-- Só rascunhos e devolvidos vão para a lixeira. Excluir um devolvido o torna rascunho e libera a vaga em análise; restaurar sempre devolve um rascunho. Não há descarte físico automático.
+- Só rascunhos e devolvidos vão para a lixeira. Excluir um devolvido o torna rascunho; restaurar sempre devolve um rascunho. Não há descarte físico automático.
 - Identificação (cursos, turmas, turnos) e complemento do nome (até 120 caracteres) são editáveis em rascunho e devolvido e não alteram a versão do conteúdo. Campus e ano são fixos no nome.
 
 ## Ofertas e organização
@@ -105,7 +106,7 @@ Este guia registra as regras de negócio e as decisões que o código sozinho n�
 - **Concluir revisão** exige parecer deste envio salvo, atual, com todos os critérios avaliados, nenhum não atendido e base inalterada desde o envio.
 - A busca de candidatos no parecer só localiza; não comprova atendimento nem ausência.
 - A devolução registra os critérios não atendidos com as observações (sem autor nem revisão do parecer); se as observações não couberem, a devolução é recusada.
-- Comparação: reenvio compara com o último devolvido; o primeiro envio de uma nova versão compara com o vigente que substituiria. O efeito recalculado ajuda, mas não comprova que a devolução foi atendida.
+- Comparação: reenvio compara com o último devolvido; o primeiro envio de uma nova versão compara com a publicação da origem, ainda vigente ou não. O efeito recalculado ajuda, mas não comprova que a devolução foi atendida.
 - Copiar e baixar o parecer ficam na visualização, que só existe com revisão salva e atual e se fecha a qualquer nova edição; o texto copiado vai para a área de transferência, para colar no SEI. Assinatura e tramitação ocorrem fora da aplicação.
 
 ## Impressão

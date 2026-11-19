@@ -1,7 +1,7 @@
 import { useNavigate } from '@tanstack/react-router';
 import { useFeatureRoute } from '../../app/navigation.ts';
 import { MapPin } from 'lucide-react';
-import { calendarName } from '#src/domain/calendar/label.ts';
+import { calendarName, missingLabelIssue } from '#src/domain/calendar/label.ts';
 import { Button } from '../../components/ui/Button.tsx';
 import { Notice } from '../../components/ui/Notice.tsx';
 import { calendars as calendarClient } from '../../shared/convex/calendars.ts';
@@ -10,6 +10,7 @@ import { FormFeedback } from '../../shared/forms/FormFeedback.tsx';
 import { useDraftForm } from '../../shared/forms/useDraftForm.ts';
 import { editorPages } from '../calendar-editor/editor-steps.ts';
 import { copySourceLabel, useCopySources } from './copy-sources.ts';
+import CreationLabelField from './CreationLabelField.tsx';
 import OfferChoices, { offersSummary, type CreationOffer } from './OfferChoices.tsx';
 import { chosenCampus, creationCampuses } from './chosen-campus.ts';
 
@@ -31,8 +32,9 @@ export default function CreateFromCopyForm({
     campusId: string;
     sourceId: string;
     year: number;
+    label: string;
     offers: CreationOffer[];
-  } = { campusId: selectedCampus, sourceId: '', year: 0, offers: [] };
+  } = { campusId: selectedCampus, sourceId: '', year: 0, label: '', offers: [] };
   const { form, values, submit, pending, error, clearDraft } = useDraftForm({
     draftKey: `calendar:new-from-copy:${info.user.id}`,
     defaultValues: defaults,
@@ -44,10 +46,12 @@ export default function CreateFromCopyForm({
         );
       if (!campus) throw new Error('Escolha o campus.');
       if (!value.sourceId) throw new Error('Escolha o calendário de origem.');
+      if (!value.label.trim()) throw new Error(missingLabelIssue);
       if (!value.offers.length) throw new Error('Marque ao menos uma oferta.');
       const calendar = await calendarClient.create({
         campusId: campus.id,
         year: value.year,
+        label: value.label,
         offers: value.offers,
       });
       if (!isCurrent()) return;
@@ -126,6 +130,10 @@ export default function CreateFromCopyForm({
             </select>
           </label>
         )}
+        <CreationLabelField
+          value={values.label}
+          onChange={(label) => form.setFieldValue('label', label)}
+        />
         <OfferChoices
           offers={values.offers}
           onChange={(offers) => form.setFieldValue('offers', offers)}
@@ -134,7 +142,7 @@ export default function CreateFromCopyForm({
           <div className="calendar-create-preview">
             <output id="calendar-name" aria-label="Nome do calendário">
               {campus && source
-                ? calendarName(source.year, campus.name)
+                ? calendarName(source.year, campus.name, values.label)
                 : 'Escolha o calendário de origem'}
             </output>
             <small id="calendar-offer-summary">

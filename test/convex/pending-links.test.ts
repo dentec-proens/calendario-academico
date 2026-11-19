@@ -34,6 +34,7 @@ async function stored(fixture: PendingLinksFixture) {
       body: {
         campusId: native.ids.campuses.a,
         year: 2027,
+        label: 'Proposta sintética',
         offers: fixture.offers.map(({ kind }) => ({
           kind,
           organization: 'anual' as const,

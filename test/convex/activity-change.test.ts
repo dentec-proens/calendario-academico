@@ -35,6 +35,7 @@ async function stored(content: CalendarContent & { year: number }, kinds: string
       body: {
         campusId: native.ids.campuses.a,
         year: 2027,
+        label: 'Proposta sintética',
         offers: kinds.map((kind) => ({
           kind: kind as 'integrado',
           organization: 'anual' as const,

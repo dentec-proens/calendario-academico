@@ -5,11 +5,12 @@ import { Button } from '../../components/ui/Button.tsx';
 import { ChoiceGroup } from '../../components/ui/ChoiceGroup.tsx';
 import type { Bootstrap } from '../../shared/convex/types.ts';
 import { calendars as calendarClient } from '../../shared/convex/calendars.ts';
-import { calendarName } from '#src/domain/calendar/label.ts';
+import { calendarName, missingLabelIssue } from '#src/domain/calendar/label.ts';
 import { calendarLimits } from '#src/domain/calendar/config.ts';
 import { useDraftForm } from '../../shared/forms/useDraftForm.ts';
 import { FormFeedback } from '../../shared/forms/FormFeedback.tsx';
 import { Notice } from '../../components/ui/Notice.tsx';
+import CreationLabelField from './CreationLabelField.tsx';
 import OfferChoices, { offersSummary, type CreationOffer } from './OfferChoices.tsx';
 import { chosenCampus, creationCampuses } from './chosen-campus.ts';
 
@@ -23,8 +24,9 @@ const yearOptions = [
 ];
 
 /**
- * Creation asks only what opens the editor: campus, year and one offer per kind. Courses, classes,
- * shifts, a label and repeated kinds are filled in the editor, where they remain editable.
+ * Creation asks what opens the editor and names the calendar: campus, year, label and one offer per
+ * kind. Courses, classes, shifts and repeated kinds are filled in the editor, where everything
+ * remains editable.
  */
 export default function CreateCalendarForm({
   info,
@@ -39,11 +41,13 @@ export default function CreateCalendarForm({
     campusId: string;
     year: string;
     otherYear: boolean;
+    label: string;
     offers: CreationOffer[];
   } = {
     campusId: '',
     year: String(defaultCalendarYear),
     otherYear: false,
+    label: '',
     offers: [],
   };
   const { form, values, submit, pending, error, clearDraft } = useDraftForm({
@@ -56,10 +60,12 @@ export default function CreateCalendarForm({
           'Nenhum campus ativo está disponível para esta conta. Solicite à administração PROENS a conferência do seu cadastro.',
         );
       if (!selectedCampus) throw new Error('Escolha o campus.');
+      if (!value.label.trim()) throw new Error(missingLabelIssue);
       if (!value.offers.length) throw new Error('Marque ao menos uma oferta.');
       const calendar = await calendarClient.create({
         campusId: selectedCampus.id,
         year: Number(value.year),
+        label: value.label,
         offers: value.offers,
       });
       if (!isCurrent()) return;
@@ -141,6 +147,10 @@ export default function CreateCalendarForm({
             confere o atendimento às regras.
           </p>
         )}
+        <CreationLabelField
+          value={values.label}
+          onChange={(label) => form.setFieldValue('label', label)}
+        />
         <OfferChoices
           offers={values.offers}
           onChange={(offers) => form.setFieldValue('offers', offers)}
@@ -153,7 +163,7 @@ export default function CreateCalendarForm({
               aria-label="Nome do calendário"
             >
               {campus
-                ? calendarName(values.year, campus.name)
+                ? calendarName(values.year, campus.name, values.label)
                 : available
                   ? 'Escolha o campus'
                   : 'Nenhum campus disponível'}

@@ -18,6 +18,7 @@ test('server saves Servidor choices in snapshots, rejects other dates and protec
       body: {
         campusId: fixture.ids.campuses.a,
         year: 2027,
+        label: 'Cursos integrados',
         offers: [{ kind: 'integrado', organization: 'anual' }],
       },
     })

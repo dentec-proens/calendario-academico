@@ -179,13 +179,17 @@ for (const width of [1440, 390]) {
     const source = page.locator('#calendar-source');
     const sourceId = await source.locator('option').nth(1).getAttribute('value');
     await source.selectOption(sourceId!);
+    await page.locator('#calendar-create-label').fill('Graduação semestral');
     await page.locator('#create-calendar-from-copy button[type="submit"]').click();
     await expect(page).toHaveURL(
       new RegExp(`/calendarios/calendar-new/copiar-datas\\?.*origem=${sourceId}`),
     );
     const mutations = await page.evaluate(() => window.portalRouterTest.mutations);
     expect(mutations.find(({ name }) => name === 'calendars:createCalendar')?.args).toMatchObject({
-      body: { offers: [{ kind: 'graduacao', organization: 'semestral' }] },
+      body: {
+        label: 'Graduação semestral',
+        offers: [{ kind: 'graduacao', organization: 'semestral' }],
+      },
     });
   });
 }

@@ -409,14 +409,14 @@ test('calendar pagination applies campus and trash scope before advancing its cu
     created.push(
       await admin
         .mutation(api.calendars.createCalendar, {
-          body: { ...createBody(), campusId: ids.campuses.a },
+          body: { ...createBody(), campusId: ids.campuses.a, label: `Proposta ${index + 1}` },
         })
         .then(calendarRecordDates),
     );
   for (let index = 0; index < 3; index++)
     await admin
       .mutation(api.calendars.createCalendar, {
-        body: { ...createBody(), campusId: ids.campuses.b },
+        body: { ...createBody(), campusId: ids.campuses.b, label: `Proposta ${index + 1}` },
       })
       .then(calendarRecordDates);
   await admin.mutation(api.calendars.deleteCalendar, { id: created[0].id, version: 1 });
@@ -465,7 +465,7 @@ test('domain rule violations reach the client as ConvexError with their status a
   await assert.rejects(
     admin
       .mutation(api.calendars.createCalendar, {
-        body: { ...createBody(), campusId: ids.campuses.a, year: 2027.5 },
+        body: { ...createBody(), campusId: ids.campuses.a, year: 2027.5, label: 'Proposta A' },
       })
       .then(calendarRecordDates),
     (error: unknown) =>

@@ -1,5 +1,6 @@
 import { reviewIsCurrent } from '../../src/domain/calendar/base';
 import { missingCoursesIssue } from '../../src/domain/calendar/identity';
+import { calendarName } from '../../src/domain/calendar/label';
 import {
   maximumNoteLength,
   transition,
@@ -21,7 +22,7 @@ import { contentIssues, submitRefusal } from '../../src/domain/calendar/readines
 import { baseRecord } from './record';
 import {
   appendDecision,
-  assertUniqueInFlow,
+  assertLabel,
   jsonBytes,
   lastReturn,
   contentHash,
@@ -30,8 +31,8 @@ import {
   maximumSubmissionBytes,
   maximumSubmissionDocumentBytes,
   nextSequence,
-  overlapping,
-  replacedCalendars,
+  publicationTargets,
+  reinstateBlocker,
   submissionRow,
 } from './lifecycle';
 
@@ -56,7 +57,8 @@ export interface TransitionRequest {
   baseIdentity?: string;
   note?: string;
   sei?: string;
-  partial?: boolean;
+  /** Other calendars in force of the campus and year that the publication replaces. */
+  replaces?: Id<'calendars'>[];
 }
 
 const actor = (user: Member) => ({ id: user.id, name: user.name });
@@ -100,8 +102,8 @@ async function recordCurrentBase(
 }
 
 /**
- * Reads the competitors, validates and writes in one mutation: Convex's serializable
- * transaction keeps uniqueness against simultaneous submissions and publications.
+ * Reads the other calendars of the campus and year, validates and writes in one mutation:
+ * Convex's serializable transaction keeps labels and replacements against simultaneous changes.
  */
 export async function applyTransition(ctx: MutationCtx, user: Member, request: TransitionRequest) {
   const loaded = await baseRecord(ctx, user, request.id);
@@ -147,12 +149,7 @@ export async function applyTransition(ctx: MutationCtx, user: Member, request: T
           'A base institucional mudou enquanto você preenchia. Confira o calendário e envie novamente.',
           409,
         );
-      await assertUniqueInFlow(ctx, row);
-      // Checked here so the error does not surface only after the review.
-      await replacedCalendars(ctx, row, {
-        allowed: user.role === 'ADMIN',
-        confirmed: request.partial === true,
-      });
+      await assertLabel(ctx, row);
       submitted = await recordCurrentBase(ctx, user, loaded);
       scope.version = submitted.version;
       const campus = await campusName(ctx, row);
@@ -258,11 +255,9 @@ export async function applyTransition(ctx: MutationCtx, user: Member, request: T
       )
         fail('O conteúdo do calendário difere do envio revisado.', 409);
       if (!readiness.ready) fail('Resolva as pendências da conferência antes de publicar.', 409);
-      // The published calendars may have changed since the submission.
-      const { replaced } = await replacedCalendars(ctx, row, {
-        allowed: true,
-        confirmed: request.partial === true,
-      });
+      await assertLabel(ctx, row);
+      // Read now: the calendars in force may have changed since the submission.
+      const replaced = await publicationTargets(ctx, row, request.replaces ?? []);
       for (const other of replaced) {
         await ctx.db.patch(other._id, {
           status: 'arquivado',
@@ -302,9 +297,13 @@ export async function applyTransition(ctx: MutationCtx, user: Member, request: T
       patch.archivedAt = now;
       break;
     case 'reinstate': {
-      const competitors = await overlapping(ctx, row, ['vigente']);
-      if (competitors.length)
-        fail('Há outro calendário vigente para os mesmos tipos de oferta neste campus e ano.', 409);
+      const blocker = await reinstateBlocker(ctx, row);
+      if (blocker)
+        fail(
+          `${calendarName(blocker.year, await campusName(ctx, row), blocker.label)} está vigente no lugar deste calendário.`,
+          409,
+        );
+      await assertLabel(ctx, row, row.label, { required: false });
       patch.archivedAt = undefined;
       patch.supersededBy = undefined;
       break;

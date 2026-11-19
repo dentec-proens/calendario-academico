@@ -27,6 +27,8 @@ async function fixture() {
     return { subject: `${userId}|${sessionId}` };
   });
   const campus = f.asClient('campus-a');
+  // Calendars of the same campus and year need distinct labels.
+  let created = 0;
   const create = async (
     kinds: ('integrado' | 'subsequente')[] = ['integrado'],
     options: { ready?: boolean; label?: string } = {},
@@ -36,17 +38,13 @@ async function fixture() {
         body: {
           campusId: f.ids.campuses.a,
           year: 2027,
+          label: options.label ?? `Proposta ${++created}`,
           offers: kinds.map((kind) => ({ kind, organization: 'anual' as const })),
         },
       })
       .then(calendarRecordDates);
     // Courses are required to submit; the identity mutation has its own tests.
-    await f.client.run((ctx) =>
-      ctx.db.patch(record.id, {
-        courses: 'Curso sintético',
-        ...(options.label ? { label: options.label } : {}),
-      }),
-    );
+    await f.client.run((ctx) => ctx.db.patch(record.id, { courses: 'Curso sintético' }));
     if (options.ready)
       await f.client.run(async (ctx) => {
         const content = await ctx.db
@@ -199,8 +197,8 @@ test('the review queue filters by campus across pages and keeps each tab apart',
   const reviewing = await f.create(['integrado'], { label: 'Em análise' });
   const concluded = await f.create(['integrado'], { label: 'Concluído antes' });
   const latest = await f.create(['integrado'], { label: 'Concluído depois' });
-  // The submission rules refuse overlapping calendars; this test is only about listing them. The
-  // times run against creation, so the order cannot come from it.
+  // Set directly: this test is only about listing them, and the times run against creation, so
+  // the order cannot come from it.
   await f.client.run(async (ctx) => {
     await ctx.db.patch(first, { status: 'enviado', statusAt: 2_000 });
     await ctx.db.patch(second, { status: 'enviado', statusAt: 1_000 });
@@ -363,71 +361,54 @@ test('returns, conclusions and reopenings accumulate decisions; the campus reads
   });
 });
 
-test('one calendar per campus, year and offer kind in flow, even when an offer is added later', async () => {
+test('calendars of the same campus, year and offer kind are under review and in force together', async () => {
   const f = await fixture();
-  const first = await f.create(['integrado', 'subsequente']);
-  const second = await f.create(['subsequente']);
-  const third = await f.create(['integrado']);
-  await act(f.campus, first, 'submit');
-  const before = await f.client.run((ctx) => ctx.db.query('calendarSubmissions').collect());
-  await expect(act(f.campus, second, 'submit')).rejects.toThrow(/Já há calendário em análise/);
-  expect(
-    await f.client.run((ctx) => ctx.db.query('calendarSubmissions').collect()),
-    'a refusal writes nothing',
-  ).toEqual(before);
-  await act(f.campus, first, 'withdraw');
-  await act(f.campus, third, 'submit');
-  await act(f.reviewer, third, 'return', { note: 'Ajuste.' });
-  await act(f.campus, second, 'submit');
-  const record = (await calendarStatus(f.campus, third)).record;
-  await expect(
-    f.campus.mutation(api.calendars.saveCalendar, {
-      id: third,
-      body: {
-        version: record.version,
-        catalogueRevision: record.currentCatalogueRevision,
-        state: {
-          ...record.state,
-          offers: [
-            ...record.state.offers,
-            {
-              id: 'subsequente',
-              kind: 'subsequente',
-              delivery: 'presencial',
-              organization: 'anual',
-            },
-          ],
-        },
-      },
-    }),
-  ).rejects.toThrow(/Já há calendário em análise/);
-  // Deleting a returned calendar demotes it to a draft and frees its place.
-  await f.campus.mutation(api.calendars.deleteCalendar, { id: third, version: record.version });
-  await f.campus.mutation(api.calendars.restoreCalendar, { id: third, version: record.version });
-  const restored = await calendarStatus(f.campus, third);
+  const bimestral = await f.create(['integrado'], { ready: true, label: 'Cursos bimestrais' });
+  const trimestral = await f.create(['integrado'], { ready: true, label: 'Cursos trimestrais' });
+  await act(f.campus, bimestral, 'submit');
+  await act(f.campus, trimestral, 'submit');
+  for (const id of [bimestral, trimestral]) {
+    expect((await calendarStatus(f.campus, id)).status).toBe('enviado');
+    await saveReview(f.reviewer, id);
+    await act(f.reviewer, id, 'conclude');
+  }
+  await act(f.admin, bimestral, 'publish', { sei });
+  await act(f.admin, trimestral, 'publish', { sei });
+  for (const id of [bimestral, trimestral])
+    expect((await calendarStatus(f.campus, id)).status).toBe('vigente');
+});
+
+test('a returned calendar restored from the trash is a draft that still answers the return', async () => {
+  const f = await fixture();
+  const id = await f.create();
+  await act(f.campus, id, 'submit');
+  await act(f.reviewer, id, 'return', { note: 'Ajuste.' });
+  const { record } = await calendarStatus(f.campus, id);
+  await f.campus.mutation(api.calendars.deleteCalendar, { id, version: record.version });
+  await f.campus.mutation(api.calendars.restoreCalendar, { id, version: record.version });
+  const restored = await calendarStatus(f.campus, id);
   expect(restored.status).toBe('rascunho');
   expect(restored.record.submission).toBeNull();
   expect(restored.record.lastReturn?.note).toBe('Ajuste.');
-  expect(await f.submissions(third)).toHaveLength(1);
+  expect(await f.submissions(id)).toHaveLength(1);
   // The next submission still answers that return, and withdrawing leaves no pointer in a draft.
-  await act(f.campus, second, 'withdraw');
-  await act(f.campus, third, 'submit');
-  const [returned, resent] = await f.submissions(third);
+  await act(f.campus, id, 'submit');
+  const [returned, resent] = await f.submissions(id);
   expect(resent.previousSubmissionId).toBe(returned._id);
   const listing = await f.reviewer.query(api.calendars.calendarSubmissions, {
-    id: third,
+    id,
     paginationOpts: { numItems: 10, cursor: null },
   });
   expect(listing.defaultBases).toEqual([returned._id]);
-  await act(f.campus, third, 'withdraw');
-  const withdrawn = await calendarStatus(f.campus, third);
+  await act(f.campus, id, 'withdraw');
+  const withdrawn = await calendarStatus(f.campus, id);
   expect(withdrawn.status).toBe('rascunho');
   expect(withdrawn.record.submission).toBeNull();
 });
 
 test('publication checks the SEI, the review and the content, and archives what it replaces', async () => {
   const f = await fixture();
-  const old = await f.create(['integrado'], { ready: true });
+  const old = await f.create(['integrado'], { ready: true, label: 'Cursos integrados' });
   await publish(f, old);
   const published = await calendarStatus(f.campus, old);
   expect(published.status).toBe('vigente');
@@ -489,34 +470,183 @@ test('publication checks the SEI, the review and the content, and archives what 
       state: { ...content.state, weekdays: [1, 2, 3, 4, 5] },
     });
   });
+  // The version keeps the label of its origin and replaces it while in force.
+  expect((await f.admin.query(api.calendars.replacementPreview, { id: next.id })).origin).toEqual({
+    id: old,
+    name: 'Calendário 2027 - Campus A — Cursos integrados',
+    status: 'vigente',
+  });
   await act(f.admin, next.id, 'publish', { sei: '23411.000002/2027-22' });
   const archived = await calendarStatus(f.campus, old);
   expect(archived.status).toBe('arquivado');
-  expect(archived.record.supersededByName).toBe('Calendário 2027 - Campus A');
-  await expect(act(f.admin, old, 'reinstate')).rejects.toThrow(/outro calendário vigente/);
+  expect(archived.record.supersededByName).toBe('Calendário 2027 - Campus A — Cursos integrados');
+  await expect(act(f.admin, old, 'reinstate')).rejects.toThrow(
+    'Calendário 2027 - Campus A — Cursos integrados está vigente no lugar deste calendário.',
+  );
   await act(f.admin, next.id, 'archive');
   await act(f.admin, old, 'reinstate');
   expect((await calendarStatus(f.campus, old)).record.supersededByName).toBeUndefined();
 });
 
-test('coverage of the published calendars is checked on submission and again on publication', async () => {
+test('sibling versions go through review together; the later one leaves the replaced origin as it is', async () => {
   const f = await fixture();
-  const combined = await f.create(['integrado', 'subsequente'], { ready: true });
-  await f.client.run(async (ctx) => {
-    await ctx.db.patch(combined, { status: 'vigente', statusRevision: 1 });
-  });
-  const narrower = await f.create(['integrado'], { ready: true });
-  await expect(act(f.campus, narrower, 'submit')).rejects.toThrow(
-    /precisa incluir Técnico subsequente/,
+  const name = (label: string) => `Calendário 2027 - Campus A — ${label}`;
+  const origin = await f.create(['integrado'], { ready: true, label: 'Todos os cursos' });
+  await publish(f, origin);
+  const published = (await calendarStatus(f.campus, origin)).record.submission!.id;
+  const version = () =>
+    f.campus.mutation(api.calendars.createCalendarVersion, { id: origin }).then((row) => row.id);
+  const bimestral = await version();
+  const trimestral = await version();
+  // Both inherit the label of the origin; sibling versions, which do not replace each other, differ.
+  await expect(act(f.campus, bimestral, 'submit')).rejects.toThrow(
+    `Já há ${name('Todos os cursos')} neste campus e ano. Escolha outro complemento do nome.`,
   );
-  // The administration can submit and publish a partial replacement with explicit confirmation.
-  await expect(act(f.admin, narrower, 'submit')).rejects.toThrow(/Confirme a substituição parcial/);
-  await act(f.admin, narrower, 'submit', { partial: true });
-  await saveReview(f.reviewer, narrower);
-  await act(f.reviewer, narrower, 'conclude');
-  await expect(act(f.admin, narrower, 'publish', { sei })).rejects.toThrow(/substituição parcial/);
-  await act(f.admin, narrower, 'publish', { sei, partial: true });
-  expect((await calendarStatus(f.campus, combined)).status).toBe('arquivado');
+  for (const [id, label] of [
+    [bimestral, 'Cursos bimestrais'],
+    [trimestral, 'Cursos trimestrais'],
+  ] as const)
+    await f.campus.mutation(api.calendars.renameCalendar, {
+      id,
+      expected: 'Todos os cursos',
+      label,
+    });
+  await act(f.campus, bimestral, 'submit');
+  await act(f.campus, trimestral, 'submit');
+  for (const id of [bimestral, trimestral]) {
+    await saveReview(f.reviewer, id);
+    await act(f.reviewer, id, 'conclude');
+  }
+  expect(await f.admin.query(api.calendars.replacementPreview, { id: bimestral })).toEqual({
+    origin: { id: origin, name: name('Todos os cursos'), status: 'vigente' },
+    others: [],
+    suggestedSei: sei,
+  });
+  await act(f.admin, bimestral, 'publish', { sei });
+  expect((await calendarStatus(f.campus, origin)).record).toMatchObject({
+    status: 'arquivado',
+    supersededByName: name('Cursos bimestrais'),
+  });
+
+  // The other version still compares with the origin, and the dialog tells what replaced it.
+  const listing = await f.reviewer.query(api.calendars.calendarSubmissions, {
+    id: trimestral,
+    paginationOpts: { numItems: 10, cursor: null },
+  });
+  expect(listing.defaultBases).toEqual([published]);
+  expect(await f.admin.query(api.calendars.replacementPreview, { id: trimestral })).toEqual({
+    origin: {
+      id: origin,
+      name: name('Todos os cursos'),
+      status: 'arquivado',
+      successorName: name('Cursos bimestrais'),
+    },
+    others: [
+      {
+        id: bimestral,
+        name: name('Cursos bimestrais'),
+        offerKinds: ['integrado'],
+        courses: 'Curso sintético',
+      },
+    ],
+    suggestedSei: sei,
+  });
+  await act(f.admin, trimestral, 'publish', { sei });
+  for (const id of [bimestral, trimestral])
+    expect((await calendarStatus(f.campus, id)).status).toBe('vigente');
+  expect((await calendarStatus(f.campus, origin)).record).toMatchObject({
+    status: 'arquivado',
+    supersededByName: name('Cursos bimestrais'),
+  });
+});
+
+test('submission and publication require a label distinct in the campus and year', async () => {
+  const f = await fixture();
+  const name = (label: string) => `Calendário 2027 - Campus A — ${label}`;
+  const rename = async (
+    client: typeof f.campus,
+    id: Id<'calendars'>,
+    label: string,
+    expected = '',
+  ) => client.mutation(api.calendars.renameCalendar, { id, expected, label });
+  const id = await f.create(['integrado'], { ready: true });
+  // A calendar created before the rule may have no label.
+  await f.client.run((ctx) => ctx.db.patch(id, { label: undefined }));
+  await expect(actAsIs(f.campus, id, 'submit')).rejects.toThrow(
+    'Informe o complemento do nome para distinguir este calendário dos demais do campus.',
+  );
+  expect(await f.submissions(id)).toEqual([]);
+  // A calendar restored from the trash may repeat a label taken meanwhile.
+  await rename(f.campus, id, 'Cursos integrados');
+  const { record } = await calendarStatus(f.campus, id);
+  await f.campus.mutation(api.calendars.deleteCalendar, { id, version: record.version });
+  const other = await f.create(['integrado'], { ready: true, label: 'Cursos Integrados' });
+  await f.campus.mutation(api.calendars.restoreCalendar, { id, version: record.version });
+  await expect(actAsIs(f.campus, id, 'submit')).rejects.toThrow(
+    `Já há ${name('Cursos Integrados')} neste campus e ano. Escolha outro complemento do nome.`,
+  );
+  expect(await f.submissions(id)).toEqual([]);
+  await rename(f.campus, id, 'Integrado noturno', 'Cursos integrados');
+  await act(f.campus, id, 'submit');
+  await saveReview(f.reviewer, id);
+  await act(f.reviewer, id, 'conclude');
+  // A label stored before the rule, repeated or missing, is checked again on publication.
+  await f.client.run((ctx) =>
+    ctx.db.patch(other, { status: 'vigente', label: 'INTEGRADO NOTURNO' }),
+  );
+  await expect(act(f.admin, id, 'publish', { sei })).rejects.toThrow(
+    `Já há ${name('INTEGRADO NOTURNO')} neste campus e ano.`,
+  );
+  await f.client.run((ctx) => ctx.db.patch(id, { label: undefined }));
+  await expect(act(f.admin, id, 'publish', { sei })).rejects.toThrow(
+    'Informe o complemento do nome para distinguir este calendário dos demais do campus.',
+  );
+  expect((await calendarStatus(f.campus, id)).status).toBe('revisado');
+  await rename(f.admin, id, 'Integrado diurno');
+  await act(f.admin, id, 'publish', { sei });
+  expect((await calendarStatus(f.campus, id)).status).toBe('vigente');
+});
+
+test('reinstating is refused while a successor or a version is in force, or the label is taken', async () => {
+  const f = await fixture();
+  const name = (label: string) => `Calendário 2027 - Campus A — ${label}`;
+  const [first, second, third] = [
+    await f.create(['integrado'], { label: 'Versão 1' }),
+    await f.create(['integrado'], { label: 'Versão 2' }),
+    await f.create(['integrado'], { label: 'Versão 3' }),
+  ];
+  await f.client.run(async (ctx) => {
+    await ctx.db.patch(first, { status: 'arquivado', statusRevision: 2, supersededBy: second });
+    await ctx.db.patch(second, { status: 'arquivado', statusRevision: 2, supersededBy: third });
+    await ctx.db.patch(third, { status: 'vigente', statusRevision: 1 });
+  });
+  // Down the chain of successors, not only the direct one.
+  await expect(act(f.admin, first, 'reinstate')).rejects.toThrow(
+    `${name('Versão 3')} está vigente no lugar deste calendário.`,
+  );
+  await act(f.admin, third, 'archive');
+  await act(f.admin, first, 'reinstate');
+  expect((await calendarStatus(f.campus, first)).record).toMatchObject({ status: 'vigente' });
+  expect((await calendarStatus(f.campus, first)).record.supersededByName).toBeUndefined();
+
+  // Archived by hand, a calendar is still replaced by its version in force.
+  const origin = await f.create(['integrado'], { label: 'Origem' });
+  const version = await f.create(['integrado'], { label: 'Nova versão' });
+  await f.client.run(async (ctx) => {
+    await ctx.db.patch(origin, { status: 'arquivado', statusRevision: 2 });
+    await ctx.db.patch(version, { status: 'vigente', statusRevision: 1, derivedFrom: origin });
+  });
+  await expect(act(f.admin, origin, 'reinstate')).rejects.toThrow(
+    `${name('Nova versão')} está vigente no lugar deste calendário.`,
+  );
+
+  // An archived calendar left the current names, so another may have taken its label.
+  const archived = await f.create(['integrado'], { label: 'Cursos técnicos' });
+  await f.client.run((ctx) => ctx.db.patch(archived, { status: 'arquivado', statusRevision: 2 }));
+  await f.create(['integrado'], { label: 'Cursos tecnicos' });
+  await expect(act(f.admin, archived, 'reinstate')).rejects.toThrow(
+    `Já há ${name('Cursos tecnicos')} neste campus e ano. Escolha outro complemento do nome.`,
+  );
 });
 
 test('a base change warns in review and refuses publication, but never alters a published one', async () => {
@@ -655,27 +785,72 @@ test('a submission above 900 KiB is refused with its own message and writes noth
   expect((await calendarStatus(f.campus, id)).status).toBe('rascunho');
 });
 
-test('one publication replaces every published calendar it covers', async () => {
+test('publication replaces the calendars in force that the administration chose, and only them', async () => {
   const f = await fixture();
-  const integrated = await f.create(['integrado']);
-  const subsequent = await f.create(['subsequente']);
+  const name = (label: string) => `Calendário 2027 - Campus A — ${label}`;
+  const integrated = await f.create(['integrado'], { label: 'Integrados' });
+  const subsequent = await f.create(['subsequente'], { label: 'Subsequentes' });
+  const kept = await f.create(['integrado'], { label: 'Integrados noturnos' });
+  const archived = await f.create(['integrado'], { label: 'Anterior' });
+  const foreign = (
+    await f.otherCampus.mutation(api.calendars.createCalendar, {
+      body: {
+        campusId: f.ids.campuses.b,
+        year: 2027,
+        label: 'Integrados',
+        offers: [{ kind: 'integrado', organization: 'anual' }],
+      },
+    })
+  ).id;
   await f.client.run(async (ctx) => {
-    for (const id of [integrated, subsequent])
+    for (const id of [integrated, subsequent, kept, foreign])
       await ctx.db.patch(id, { status: 'vigente', statusRevision: 1 });
+    await ctx.db.patch(archived, { status: 'arquivado', statusRevision: 2 });
   });
-  const combined = await f.create(['integrado', 'subsequente'], { ready: true });
+  const combined = await f.create(['integrado', 'subsequente'], {
+    ready: true,
+    label: 'Todos os cursos',
+  });
   await act(f.campus, combined, 'submit');
-  const preview = await f.admin.query(api.calendars.replacementPreview, { id: combined });
-  expect(preview.replaced.map((item) => item.id).sort()).toEqual([integrated, subsequent].sort());
-  expect(preview.replaced.every((item) => item.uncovered.length === 0)).toBe(true);
+  const other = (id: Id<'calendars'>, label: string, kind: 'integrado' | 'subsequente') => ({
+    id,
+    name: name(label),
+    offerKinds: [kind],
+    courses: 'Curso sintético',
+  });
+  expect(await f.admin.query(api.calendars.replacementPreview, { id: combined })).toEqual({
+    origin: null,
+    others: [
+      other(integrated, 'Integrados', 'integrado'),
+      other(subsequent, 'Subsequentes', 'subsequente'),
+      other(kept, 'Integrados noturnos', 'integrado'),
+    ],
+    suggestedSei: '',
+  });
   await saveReview(f.reviewer, combined);
   await act(f.reviewer, combined, 'conclude');
-  await act(f.admin, combined, 'publish', { sei });
+
+  await expect(act(f.admin, combined, 'publish', { sei, replaces: [combined] })).rejects.toThrow(
+    'Um calendário não substitui a si mesmo.',
+  );
+  // A choice outside the calendars in force of the campus and year is reviewed, not skipped.
+  for (const chosen of [archived, foreign])
+    await expect(
+      act(f.admin, combined, 'publish', { sei, replaces: [integrated, chosen] }),
+    ).rejects.toThrow(/não está mais vigente neste campus e ano\. Reveja a escolha/);
+  expect((await calendarStatus(f.campus, integrated)).status).toBe('vigente');
+  expect((await calendarStatus(f.campus, combined)).status).toBe('revisado');
+
+  await act(f.admin, combined, 'publish', { sei, replaces: [integrated, subsequent, integrated] });
+  expect((await calendarStatus(f.campus, combined)).status).toBe('vigente');
   for (const id of [integrated, subsequent])
     expect((await calendarStatus(f.campus, id)).record).toMatchObject({
       status: 'arquivado',
-      supersededByName: 'Calendário 2027 - Campus A',
+      supersededByName: name('Todos os cursos'),
     });
+  const left = (await calendarStatus(f.campus, kept)).record;
+  expect(left.status).toBe('vigente');
+  expect(left.supersededByName).toBeUndefined();
 });
 
 test('the review starts only by saving, and a changed base blocks conclusion before the review check', async () => {

@@ -68,7 +68,7 @@ const confirmations: Partial<
     description: 'O calendário deixa de ser vigente e fica disponível apenas para consulta.',
     intent: 'warning',
   },
-  reinstate: { description: 'O calendário volta a ser o vigente para seus tipos de oferta.' },
+  reinstate: { description: 'O calendário volta a ser vigente.' },
 };
 
 const icons: Partial<Record<LifecycleAction, typeof Send>> = {
@@ -146,22 +146,12 @@ export default function LifecycleActions({
   );
   // The footer copy has its own ids, so the header keeps the attributes tests and links use.
   const idPrefix = placement === 'footer' ? 'footer-' : '';
-  // The administration may submit a partial replacement, confirmed explicitly as at publication.
-  const preview = useQuery(
-    functions.calendars.replacementPreview,
-    role === 'ADMIN' && actions.includes('submit')
-      ? { id: calendar.id as Id<'calendars'> }
-      : 'skip',
-  );
   if (!actions.length) return null;
   const inMenu = actions.filter((action) => menuActions.includes(action));
-  const uncovered = [...new Set(preview?.replaced.flatMap((item) => item.uncovered) ?? [])].map(
-    (kind) => modalityLabels[kind],
-  );
 
   async function perform(
     action: LifecycleAction,
-    extra: { note?: string; sei?: string; partial?: boolean } = {},
+    extra: { note?: string; sei?: string; replaces?: Id<'calendars'>[] } = {},
   ) {
     const submitted = action === 'submit' && prepare ? await prepare() : {};
     await calendars.transition(calendar.id, {
@@ -181,18 +171,6 @@ export default function LifecycleActions({
     const refusal = guard?.();
     if (refusal) {
       notify(refusal, true);
-      return;
-    }
-    if (action === 'submit' && uncovered.length) {
-      void confirmAction({
-        title: 'Enviar com substituição parcial?',
-        description: `Este calendário não inclui ${uncovered.join(', ')}, atendidos pelo calendário vigente que ele substituirá.`,
-        consequence: 'Ao publicá-lo, esses tipos de oferta ficarão sem calendário vigente.',
-        intent: 'warning',
-        confirmLabel: 'Confirmar substituição parcial e enviar',
-        pendingLabel: 'Registrando…',
-        onConfirm: () => perform('submit', { partial: true }),
-      });
       return;
     }
     if (action === 'return' || action === 'publish') {
@@ -304,7 +282,7 @@ export default function LifecycleActions({
           calendarId={calendar.id}
           pending={pending}
           onCancel={() => setForm(null)}
-          onSubmit={(sei, partial) => void run(() => perform('publish', { sei, partial }))}
+          onSubmit={(sei, replaces) => void run(() => perform('publish', { sei, replaces }))}
         />
       ) : null}
     </div>
@@ -386,6 +364,13 @@ function ReturnForm({
   );
 }
 
+type Replacement = 'replace' | 'keep';
+
+/**
+ * The SEI process and, for every other calendar in force of the campus and year, whether this one
+ * replaces it. No answer is preselected: a forgotten one would leave two calendars in force for
+ * the same courses, or archive one that should stay.
+ */
 function PublishForm({
   calendarId,
   pending,
@@ -394,23 +379,28 @@ function PublishForm({
 }: {
   calendarId: string;
   pending: boolean;
-  onSubmit: (sei: string, partial: boolean) => void;
+  onSubmit: (sei: string, replaces: Id<'calendars'>[]) => void;
   onCancel: () => void;
 }) {
   const preview = useQuery(functions.calendars.replacementPreview, {
     id: calendarId as Id<'calendars'>,
   });
   const [sei, setSei] = useState<string | null>(null);
-  const [partial, setPartial] = useState(false);
+  const [choices, setChoices] = useState<Partial<Record<string, Replacement>>>({});
   if (!preview) return <p className="help">Carregando a publicação…</p>;
-  const uncovered = preview.replaced.filter((item) => item.uncovered.length);
+  const { origin, others } = preview;
+  const unanswered = others.filter((other) => !choices[other.id]).length;
   return (
     <form
       className="lifecycle-form"
       aria-label="Publicar calendário"
       onSubmit={(event: FormEvent) => {
         event.preventDefault();
-        onSubmit(sei ?? preview.suggestedSei, partial);
+        if (unanswered) return;
+        onSubmit(
+          sei ?? preview.suggestedSei,
+          others.filter((other) => choices[other.id] === 'replace').map((other) => other.id),
+        );
       }}
     >
       <TextField
@@ -423,43 +413,67 @@ function PublishForm({
         disabled={pending}
         onValueChange={(value) => setSei(String(value))}
       />
-      {preview.replaced.length ? (
+      {origin ? (
+        <p id="lifecycle-origin" className="lifecycle-origin">
+          {origin.status === 'vigente'
+            ? `Substitui ${origin.name}.`
+            : `A origem, ${origin.name}, já foi substituída${origin.successorName ? ` por ${origin.successorName}` : ''}.`}
+        </p>
+      ) : null}
+      {others.length ? (
         <div className="lifecycle-replaced">
-          <p>A publicação arquivará os calendários vigentes que compartilham ofertas:</p>
-          <ul>
-            {preview.replaced.map((item) => (
-              <li key={item.id}>
-                {item.name} ({item.offerKinds.map((kind) => modalityLabels[kind]).join(', ')})
+          <p>
+            Outros calendários vigentes neste campus e ano. Indique o que acontece com cada um ao
+            publicar.
+          </p>
+          <ul className="lifecycle-others">
+            {others.map((other) => (
+              <li key={other.id} data-replacement={other.id}>
+                <fieldset disabled={pending}>
+                  <legend>{other.name}</legend>
+                  <p className="lifecycle-other-details">
+                    {other.offerKinds.map((kind) => modalityLabels[kind]).join(', ')}
+                    {' · '}
+                    {other.courses || 'Cursos não informados'}
+                  </p>
+                  {(
+                    [
+                      ['replace', 'Substituído por este'],
+                      ['keep', 'Continua vigente'],
+                    ] as const
+                  ).map(([value, label]) => (
+                    <label className="check" key={value}>
+                      <input
+                        type="radio"
+                        name={`lifecycle-replacement-${other.id}`}
+                        value={value}
+                        required
+                        checked={choices[other.id] === value}
+                        onChange={() => setChoices({ ...choices, [other.id]: value })}
+                      />
+                      {label}
+                    </label>
+                  ))}
+                </fieldset>
               </li>
             ))}
           </ul>
+          {unanswered ? (
+            <p className="help" id="lifecycle-publish-unanswered">
+              Responda{' '}
+              {unanswered === 1 ? 'o calendário vigente' : `os ${unanswered} calendários vigentes`}{' '}
+              acima para publicar.
+            </p>
+          ) : null}
         </div>
       ) : (
-        <p className="help">Nenhum calendário vigente será substituído.</p>
+        <p className="help">Nenhum outro calendário vigente neste campus e ano.</p>
       )}
-      {uncovered.length ? (
-        <Notice tone="warning">
-          Este calendário não inclui{' '}
-          {[...new Set(uncovered.flatMap((item) => item.uncovered))]
-            .map((kind) => modalityLabels[kind])
-            .join(', ')}
-          . Esses tipos de oferta ficarão sem calendário vigente.
-          <label className="check">
-            <input
-              id="lifecycle-partial"
-              type="checkbox"
-              checked={partial}
-              disabled={pending}
-              onChange={(event) => setPartial(event.target.checked)}
-            />
-            Confirmo a substituição parcial.
-          </label>
-        </Notice>
-      ) : null}
       <FormButtons
         pending={pending}
         label="Publicar"
-        disabled={uncovered.length > 0 && !partial}
+        disabled={unanswered > 0}
+        describedBy={unanswered ? 'lifecycle-publish-unanswered' : undefined}
         onCancel={onCancel}
       />
     </form>
@@ -470,16 +484,25 @@ function FormButtons({
   pending,
   label,
   disabled,
+  describedBy,
   onCancel,
 }: {
   pending: boolean;
   label: string;
   disabled?: boolean;
+  /** Why the submission is disabled, when it is. */
+  describedBy?: string;
   onCancel: () => void;
 }) {
   return (
     <div className="actions">
-      <Button type="submit" pending={pending} disabled={disabled} loadingLabel="Registrando…">
+      <Button
+        type="submit"
+        pending={pending}
+        disabled={disabled}
+        aria-describedby={describedBy}
+        loadingLabel="Registrando…"
+      >
         {label}
       </Button>
       <Button type="button" variant="secondary" disabled={pending} onClick={onCancel}>

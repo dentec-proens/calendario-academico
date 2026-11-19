@@ -136,7 +136,7 @@ export async function actAsIs(
   extra: {
     note?: string;
     sei?: string;
-    partial?: boolean;
+    replaces?: Id<'calendars'>[];
     version?: number;
     baseIdentity?: string;
   } = {},

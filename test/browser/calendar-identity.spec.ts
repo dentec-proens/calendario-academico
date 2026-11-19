@@ -13,7 +13,7 @@ for (const width of [1440, 390]) {
     await rename.click();
     const panel = page.getByRole('dialog', { name: 'Nome do calendário' });
     await expect(panel).toContainText('O ano letivo e o campus fazem parte do nome e não mudam.');
-    await panel.getByLabel('Complemento do nome (opcional)').fill('Proposta A');
+    await panel.getByLabel('Complemento do nome').fill('Proposta A');
     await expect(panel.locator('.editor-name-preview')).toHaveText(
       'O nome fica: Calendário 2027 - Campus Campus de teste — Proposta A',
     );
@@ -91,6 +91,40 @@ test('missing courses block the submission and are filled from the review issues
   await expect(submit).toBeEnabled();
 });
 
+test('a missing label blocks the submission and is filled from the review issues', async ({
+  page,
+  fixtureServer,
+}) => {
+  const missingLabel =
+    'Informe o complemento do nome para distinguir este calendário dos demais do campus.';
+  await page.goto(await fixtureServer('editor'));
+  await page.evaluate(() => {
+    delete window.editorTest.record.label;
+    return window.publishReviewerCalendar();
+  });
+  await completeForSubmission(page);
+  const submit = page.locator('[data-lifecycle-action="submit"]');
+  await expect(submit).toBeDisabled();
+  await expect(page.locator('#lifecycle-submit-unavailable')).toHaveText(missingLabel);
+
+  await selectEditorSection(page, 'issues');
+  const issue = page.locator('#issue-list [data-issue="name"]');
+  await expect(issue).toContainText(missingLabel);
+  await issue.getByRole('button', { name: 'Informar complemento' }).click();
+  const panel = page.getByRole('dialog', { name: 'Nome do calendário' });
+  const label = panel.getByLabel('Complemento do nome');
+  await expect(label).toHaveValue('');
+  // An empty label is not sent: the field asks for it.
+  await panel.getByRole('button', { name: 'Salvar nome' }).click();
+  await expect(panel).toBeVisible();
+  expect(await label.evaluate((input: HTMLInputElement) => input.validity.valueMissing)).toBe(true);
+  await label.fill('Cursos bimestrais');
+  await panel.getByRole('button', { name: 'Salvar nome' }).click();
+  await expect(panel).toBeHidden();
+  await expect(issue).toHaveCount(0);
+  await expect(submit).toBeEnabled();
+});
+
 test('missing courses join the other pendencies in one total, the same in the header and the steps', async ({
   page,
   fixtureServer,
@@ -106,6 +140,15 @@ test('missing courses join the other pendencies in one total, the same in the he
   expect(total).toBeGreaterThan(1);
   await expect(page.locator('#lifecycle-submit-unavailable')).toHaveText(
     `Corrija as ${total} pendências antes de enviar. Informe os cursos do calendário na identificação.`,
+  );
+  // A missing label counts too, and is named before the courses.
+  await page.evaluate(() => {
+    delete window.editorTest.record.label;
+    return window.publishReviewerCalendar();
+  });
+  await expect(note).toHaveText(`${total + 1} pendências no total`);
+  await expect(page.locator('#lifecycle-submit-unavailable')).toHaveText(
+    `Corrija as ${total + 1} pendências antes de enviar. Informe o complemento do nome para distinguir este calendário dos demais do campus. Informe os cursos do calendário na identificação.`,
   );
 });
 
@@ -141,15 +184,13 @@ test('an unsaved name left in the closed panel counts as unapplied work', async 
   const rename = page.getByRole('button', { name: 'Renomear calendário' });
   await rename.click();
   const panel = page.getByRole('dialog', { name: 'Nome do calendário' });
-  await panel.getByLabel('Complemento do nome (opcional)').fill('Proposta em preenchimento');
+  await panel.getByLabel('Complemento do nome').fill('Proposta em preenchimento');
   await page.keyboard.press('Escape');
   await expect(panel).toBeHidden();
   await expect(page.locator('#unapplied-status')).toBeVisible();
   await expect(page.locator('.editor-save-indicator')).toHaveText('Alterações ainda não incluídas');
   await rename.click();
-  await expect(panel.getByLabel('Complemento do nome (opcional)')).toHaveValue(
-    'Proposta em preenchimento',
-  );
+  await expect(panel.getByLabel('Complemento do nome')).toHaveValue('Proposta em preenchimento');
   await panel.getByRole('button', { name: 'Descartar alterações' }).click();
   await page.keyboard.press('Escape');
   await expect(page.locator('#unapplied-status')).toBeHidden();

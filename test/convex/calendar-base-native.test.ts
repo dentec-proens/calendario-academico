@@ -34,6 +34,7 @@ async function opened() {
       body: {
         campusId: fixture.ids.campuses.a!,
         year: 2027,
+        label: 'Cursos integrados',
         offers: [{ kind: 'integrado', organization: 'anual' }],
       },
     })
@@ -239,6 +240,7 @@ test('removing Teacher Day leaves its local adjustment inspectable and permits e
       body: {
         campusId: fixture.ids.campuses.a!,
         year: 2027,
+        label: 'Cursos integrados',
         offers: [{ kind: 'integrado', organization: 'anual' }],
       },
     })

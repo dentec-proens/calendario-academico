@@ -16,8 +16,10 @@ import { labelFor, offerIds } from '#src/domain/calendar/offers.ts';
 import { rulesetVersion } from '#src/domain/policies/registry.ts';
 import { isAssessmentStage } from '#src/domain/calendar/activities/activity-ref.ts';
 import { missingCoursesIssue } from '#src/domain/calendar/identity.ts';
+import { missingLabelIssue } from '#src/domain/calendar/label.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useIdentityPanel } from '../identity/CalendarIdentity.tsx';
+import { useNamePanel } from '../identity/CalendarName.tsx';
 import ScopeForm from '../forms/ScopeForm.tsx';
 import OfferBadges from '../OfferBadges.tsx';
 import { focusPendingScope, issueDestination } from '../editor-steps.ts';
@@ -43,6 +45,7 @@ const reminders = [
 ];
 
 const identityKey = 'identity';
+const nameKey = 'name';
 
 const plural = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`;
 
@@ -58,6 +61,7 @@ function IssueRow({
 }) {
   const { state, record, readOnly } = useCalendarEditor();
   const openIdentity = useIdentityPanel();
+  const namePanel = useNamePanel();
   const body = (
     <>
       <span
@@ -98,6 +102,16 @@ function IssueRow({
         <span className="review-row-action">Informar cursos</span>
         {chevron}
       </button>
+    );
+  if (issue.key === nameKey)
+    return namePanel.renames ? (
+      <button type="button" className="review-row" onClick={namePanel.show}>
+        {body}
+        <span className="review-row-action">Informar complemento</span>
+        {chevron}
+      </button>
+    ) : (
+      <div className="review-row">{body}</div>
     );
   if (target?.area === 'scope')
     return (
@@ -159,9 +173,21 @@ export default function IssuesSection() {
     title: 'Identificação',
     detail: missingCoursesIssue,
   };
+  const name: ContentIssue = {
+    check: 'identity',
+    key: nameKey,
+    message: missingLabelIssue,
+    group: 'structure',
+    title: 'Nome do calendário',
+    detail: missingLabelIssue,
+  };
   const issues = groupPendencies(
-    // The backend refuses the submission without courses.
-    record.courses ? assessment.issues : [identity, ...assessment.issues],
+    // The backend refuses the submission without a label or courses.
+    [
+      ...(record.label?.trim() ? [] : [name]),
+      ...(record.courses ? [] : [identity]),
+      ...assessment.issues,
+    ],
     state,
   );
   const notes = groupPendencies(assessment.notes, state);

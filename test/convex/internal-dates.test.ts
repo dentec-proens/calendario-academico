@@ -46,6 +46,7 @@ async function fixture() {
       body: {
         campusId: f.ids.campuses.a,
         year: 2027,
+        label: 'Cursos integrados',
         offers: [{ kind: 'integrado' as const, organization: 'anual' as const }],
       },
     })

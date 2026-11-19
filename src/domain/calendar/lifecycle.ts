@@ -73,13 +73,6 @@ export const actionLabels: Record<LifecycleAction, string> = {
 
 /** Statuses whose content the campus still edits. */
 export const editableStatuses: readonly CalendarStatus[] = ['rascunho', 'devolvido'];
-/** Statuses between submission and publication: one per campus, year and offer kind. */
-export const inFlowStatuses: readonly CalendarStatus[] = [
-  'enviado',
-  'em_revisao',
-  'devolvido',
-  'revisado',
-];
 /** Statuses with an open submission for the reviewer. */
 export const underReviewStatuses: readonly CalendarStatus[] = ['enviado', 'em_revisao', 'revisado'];
 /** Published statuses read only the institutional base frozen with the content. */
@@ -205,8 +198,3 @@ export function validSei(value: string) {
 }
 
 export const maximumNoteLength = 4000;
-
-/** Offer kinds two calendars share: the unit of uniqueness. */
-export function sharedKinds<T extends string>(a: readonly T[], b: readonly T[]) {
-  return a.filter((kind) => b.includes(kind));
-}

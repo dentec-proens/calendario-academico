@@ -40,6 +40,7 @@ import type * as devSetup from "../devSetup.js";
 import type * as documents_model from "../documents/model.js";
 import type * as feedback from "../feedback.js";
 import type * as http from "../http.js";
+import type * as labelReview from "../labelReview.js";
 import type * as lib_audit from "../lib/audit.js";
 import type * as lib_authorization from "../lib/authorization.js";
 import type * as lib_maintenance from "../lib/maintenance.js";
@@ -92,6 +93,7 @@ declare const fullApi: ApiFromModules<{
   "documents/model": typeof documents_model;
   feedback: typeof feedback;
   http: typeof http;
+  labelReview: typeof labelReview;
   "lib/audit": typeof lib_audit;
   "lib/authorization": typeof lib_authorization;
   "lib/maintenance": typeof lib_maintenance;

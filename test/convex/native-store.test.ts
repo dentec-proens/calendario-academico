@@ -8,6 +8,7 @@ import { reviewCriteriaFor } from '../../src/domain/reviews/criteria.ts';
 
 const createBody = {
   year: 2027,
+  label: 'Cursos integrados',
   offers: [{ kind: 'integrado' as const, organization: 'anual' as const }],
 };
 

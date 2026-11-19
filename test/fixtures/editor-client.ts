@@ -8,6 +8,7 @@ import { api } from '../../convex/_generated/api.js';
 import { getFunctionName, type FunctionReference } from 'convex/server';
 import { teacherDayId } from './observances.ts';
 import { kinds } from '../../src/domain/calendar/offers.ts';
+import { missingLabelIssue } from '../../src/domain/calendar/label.ts';
 import { rulesetVersion } from '../../src/domain/policies/registry.ts';
 
 export const record: WireCalendarRecord = {
@@ -15,6 +16,8 @@ export const record: WireCalendarRecord = {
   campusId: 'campus-a' as Id<'campuses'>,
   campusName: 'Campus de teste',
   name: '2027 — Campus de teste',
+  // The name keeps a short synthetic form; the label exists, as every submission requires.
+  label: 'Cursos integrados',
   year: 2027,
   offerKinds: ['integrado'],
   state: {
@@ -56,7 +59,15 @@ export const record: WireCalendarRecord = {
 };
 record.state.rulesetVersion = rulesetVersion(record.state);
 record.institutionalSnapshot = structuredClone(record.institutionalEvents);
-export const calls = { saves: 0, transitions: 0, failTransition: false };
+export const calls = {
+  saves: 0,
+  transitions: 0,
+  failTransition: false,
+  lastTransition: null as Record<string, unknown> | null,
+};
+type ReplacementPreview = FunctionReturnType<typeof api.calendars.replacementPreview>;
+/** What the publication dialog shows; tests set the origin and the other calendars in force. */
+const replacement: ReplacementPreview = { origin: null, others: [], suggestedSei: '' };
 /** Every query the screen watched, to tell which reads a profile never asks for. */
 const watched = new Set<string>();
 /** Feedback requests, apart from `calls`; no invitation unless a test asks for one. */
@@ -120,7 +131,7 @@ function result(name: string, args?: Record<string, unknown>) {
         catalogueRevision: record.catalogueRevision,
       };
     case 'calendars:replacementPreview':
-      return { replaced: [], suggestedSei: '' };
+      return structuredClone(replacement);
     case 'calendars:calendarSubmissions':
       return { page: [], isDone: true, continueCursor: '', defaultBases: [], related: [] };
     default:
@@ -192,19 +203,21 @@ export const convex = {
       }
       case 'calendars:renameCalendar': {
         const label = (args.label as string).trim();
+        // The server requires the label; this fixture does not model the repeated ones.
+        if (!label)
+          return Promise.reject(Object.assign(new Error(missingLabelIssue), { status: 409 }));
         const base = record.name.split(' — ').slice(0, 2).join(' — ');
-        Object.assign(record, {
-          label: label || undefined,
-          name: label ? `${base} — ${label}` : base,
-        });
+        Object.assign(record, { label, name: `${base} — ${label}` });
         publish();
         return Promise.resolve({ ok: true });
       }
       case 'calendars:transitionCalendar': {
         calls.transitions++;
         if (calls.failTransition) return Promise.reject(new Error('Falha sintética ao enviar.'));
+        calls.lastTransition = structuredClone(args);
         const { action } = args as { action: string };
-        record.status = action === 'submit' ? 'enviado' : 'rascunho';
+        record.status =
+          action === 'submit' ? 'enviado' : action === 'publish' ? 'vigente' : 'rascunho';
         record.statusRevision++;
         publish();
         return Promise.resolve({ status: record.status, statusRevision: record.statusRevision });
@@ -235,6 +248,7 @@ export const convex = {
 window.editorTest = {
   record,
   calls,
+  replacement,
   feedback,
   watched: () => [...watched],
   addCopySource(source) {
@@ -251,6 +265,7 @@ declare global {
     editorTest: {
       record: typeof record;
       calls: typeof calls;
+      replacement: ReplacementPreview;
       feedback: typeof feedback;
       watched: () => string[];
       addCopySource: (source: Partial<WireCalendarRecord>) => void;

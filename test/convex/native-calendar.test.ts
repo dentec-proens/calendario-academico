@@ -22,6 +22,7 @@ async function setup() {
       body: {
         campusId: fixture.ids.campuses.a,
         year: 2027,
+        label: 'Cursos integrados e graduação',
         offers: [
           { kind: 'integrado', organization: 'anual' },
           { kind: 'graduacao', organization: 'anual' },
@@ -42,6 +43,7 @@ test.each(['anual', 'semestral'] as const)(
         body: {
           campusId: ids.campuses.a,
           year: 2027,
+          label: 'Cursos integrados e graduação',
           offers: [
             { kind: 'integrado', organization },
             { kind: 'graduacao', organization },
@@ -436,6 +438,7 @@ test.each(['annual', 'semester', 'trimester', 'three'] as const)(
         body: {
           campusId: fixture.ids.campuses.a,
           year: 2027,
+          label: 'Proposta sintética',
           offers: reference.offers.map(({ kind, organization, label }) => ({
             kind,
             organization,
@@ -483,6 +486,7 @@ test('backend rejects a newly moved stage in the wrong semester but preserves un
       body: {
         campusId: fixture.ids.campuses.a,
         year: 2027,
+        label: 'Graduação',
         offers: [{ kind: 'graduacao', organization: 'semestral' }],
       },
     })
@@ -575,7 +579,7 @@ test('creation enforces labels and the twelve-offer limit before creating any re
     await expect(
       actor
         .mutation(api.calendars.createCalendar, {
-          body: { campusId: fixture.ids.campuses.a, year: 2027, offers },
+          body: { campusId: fixture.ids.campuses.a, year: 2027, label: 'Graduação', offers },
         })
         .then(calendarRecordDates),
     ).rejects.toThrow();
@@ -585,6 +589,7 @@ test('creation enforces labels and the twelve-offer limit before creating any re
       body: {
         campusId: fixture.ids.campuses.a,
         year: 2027,
+        label: 'Graduação',
         offers: repeated.slice(0, 12),
       },
     })
@@ -606,6 +611,7 @@ test('removing the observance choice restores the institutional date', async () 
       body: {
         campusId: fixture.ids.campuses.a,
         year: 2027,
+        label: 'Cursos integrados',
         offers: [{ kind: 'integrado', organization: 'anual' }],
       },
     })

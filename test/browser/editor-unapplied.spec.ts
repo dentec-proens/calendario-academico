@@ -75,6 +75,7 @@ test('a refusal leaves the form when the value that caused it changes', async ({
 }) => {
   const origin = new URL(await fixtureServer('portal')).origin;
   await page.goto(origin + '/calendarios/novo');
+  await page.locator('#calendar-create-label').fill('Cursos integrados');
   await page.locator('#create-calendar button[type="submit"]').click();
   await expect(page.locator('#create-calendar')).toContainText('Marque ao menos uma oferta.');
   await page.locator('#calendar-offer-integrado').check();

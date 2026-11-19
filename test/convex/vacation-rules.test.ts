@@ -24,6 +24,7 @@ async function fixture(change: (state: CalendarContent) => CalendarContent = (st
       body: {
         campusId: f.ids.campuses.a,
         year: 2027,
+        label: 'Cursos integrados',
         offers: [{ kind: 'integrado', organization: 'anual' as const }],
       },
     })

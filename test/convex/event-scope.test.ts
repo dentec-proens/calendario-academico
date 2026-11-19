@@ -36,6 +36,7 @@ async function stored(item: StoredCase) {
       body: {
         campusId: fixture.ids.campuses.a,
         year: item.year,
+        label: 'Proposta sintética',
         offers: offers.map(({ kind, organization, label }) => ({
           kind,
           organization,

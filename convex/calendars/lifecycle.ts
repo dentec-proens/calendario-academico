@@ -1,18 +1,13 @@
 import { sha256 } from '@noble/hashes/sha2.js';
 import { bytesToHex } from '@noble/hashes/utils.js';
-import {
-  inFlowStatuses,
-  sharedKinds,
-  statusLabels,
-  type CalendarStatus,
-  type LifecycleRole,
-} from '../../src/domain/calendar/lifecycle';
-import { modalityLabels } from '../../src/domain/calendar/modalities';
+import { calendarName, missingLabelIssue, repeatedLabel } from '../../src/domain/calendar/label';
+import type { LifecycleRole } from '../../src/domain/calendar/lifecycle';
 import type { Doc, Id } from '../_generated/dataModel';
 import type { MutationCtx } from '../_generated/server';
 import type { Member } from '../access/contracts';
 import type { Context } from '../lib/shared';
 import { fail } from '../lib/shared';
+import { campusName } from './model';
 
 export const lifecycleRole = (user: Member): LifecycleRole => user.role;
 
@@ -61,75 +56,102 @@ export const maximumSubmissionDocumentBytes = 1000 * 1024;
 export const jsonBytes = (value: unknown) => new TextEncoder().encode(JSON.stringify(value)).length;
 
 /**
- * Calendars of the same campus and year in the given statuses that share an offer kind.
- * An index cannot filter array elements: each status is read in full and compared in memory.
+ * The calendars of a campus and year outside the trash. Bounded by campus and year, which every
+ * version inherits; the rules below read them all and decide in memory.
  */
-export async function overlapping(
+export async function campusYearCalendars(
   ctx: Context,
-  row: Pick<Doc<'calendars'>, '_id' | 'campusId' | 'year' | 'offerKinds'>,
-  statuses: readonly CalendarStatus[],
-  kinds: readonly Doc<'calendars'>['offerKinds'][number][] = row.offerKinds,
+  row: Pick<Doc<'calendars'>, 'campusId' | 'year'>,
 ) {
-  const rows: Doc<'calendars'>[] = [];
-  for (const status of statuses)
-    rows.push(
-      // Bounded by campus, year and status; truncating would let an overlap slip through.
-      ...(await ctx.db
-        .query('calendars')
-        .withIndex('by_campusId_and_year_and_status', (q) =>
-          q.eq('campusId', row.campusId).eq('year', row.year).eq('status', status),
-        )
-        .collect()),
-    );
-  return rows.filter(
-    (other) =>
-      other._id !== row._id && !other.deletedAt && sharedKinds(other.offerKinds, kinds).length,
-  );
+  const rows = await ctx.db
+    .query('calendars')
+    .withIndex('by_campusId_and_year_and_status', (q) =>
+      q.eq('campusId', row.campusId).eq('year', row.year),
+    )
+    .collect();
+  return rows.filter((other) => !other.deletedAt);
 }
 
-const kindList = (kinds: readonly string[]) =>
-  kinds.map((kind) => modalityLabels[kind] ?? kind).join(', ');
+const labelled = (row: Doc<'calendars'>) => ({
+  id: row._id,
+  status: row.status,
+  label: row.label,
+  derivedFrom: row.derivedFrom,
+  row,
+});
 
-/** One calendar per campus, year and offer kind between submission and publication. */
-export async function assertUniqueInFlow(
+/**
+ * The label names the calendar among the others of its campus and year: required, and distinct
+ * from every calendar still current except its origin, which a version keeps the label of.
+ */
+export async function assertLabel(
   ctx: Context,
-  row: Pick<Doc<'calendars'>, '_id' | 'campusId' | 'year' | 'offerKinds'>,
-  kinds: readonly Doc<'calendars'>['offerKinds'][number][] = row.offerKinds,
+  row: Doc<'calendars'>,
+  label: string | undefined = row.label,
+  { required = true }: { required?: boolean } = {},
 ) {
-  const others = await overlapping(ctx, row, inFlowStatuses, kinds);
-  if (others.length)
+  if (required && !label?.trim()) fail(missingLabelIssue, 409);
+  const repeated = repeatedLabel(
+    labelled(row),
+    label,
+    (await campusYearCalendars(ctx, row)).map(labelled),
+  );
+  if (repeated)
     fail(
-      `Já há calendário em análise para ${kindList(
-        sharedKinds(
-          others.flatMap((other) => other.offerKinds),
-          kinds,
-        ),
-      )} neste campus e ano (${others.map((other) => statusLabels[other.status].toLowerCase()).join(', ')}). Recolha ou conclua o outro envio antes de continuar.`,
+      `Já há ${calendarName(repeated.row.year, await campusName(ctx, row), repeated.row.label)} neste campus e ano. Escolha outro complemento do nome.`,
       409,
     );
+}
+
+/** At most this many calendars chosen for replacement in one publication. */
+export const maximumReplaced = 24;
+
+/**
+ * The published calendars a publication archives: its origin while still in force, and the other
+ * calendars in force of the campus and year that the administration chose. A choice no longer in
+ * force refuses the publication, so the administration reviews it.
+ */
+export async function publicationTargets(
+  ctx: Context,
+  row: Doc<'calendars'>,
+  chosen: readonly Id<'calendars'>[],
+) {
+  if (chosen.length > maximumReplaced) fail('Calendários demais escolhidos para substituição.');
+  const inForce = (await campusYearCalendars(ctx, row)).filter(
+    (other) => other.status === 'vigente' && other._id !== row._id,
+  );
+  const origin = inForce.find((other) => other._id === row.derivedFrom);
+  const replaced = origin ? [origin] : [];
+  for (const id of new Set(chosen)) {
+    if (id === row._id) fail('Um calendário não substitui a si mesmo.');
+    if (id === row.derivedFrom) continue;
+    const other = inForce.find((item) => item._id === id);
+    if (!other)
+      fail(
+        'Um dos calendários escolhidos para substituição não está mais vigente neste campus e ano. Reveja a escolha.',
+        409,
+      );
+    replaced.push(other);
+  }
+  return replaced;
 }
 
 /**
- * The published calendars a publication replaces. Each must have every offer kind covered by the
- * new calendar, unless the administration explicitly confirms a partial replacement.
+ * The calendar in force in place of an archived one: down its chain of successors, or a version
+ * derived from it. Restoring it would leave two calendars in force for the same courses.
  */
-export async function replacedCalendars(
-  ctx: Context,
-  row: Pick<Doc<'calendars'>, '_id' | 'campusId' | 'year' | 'offerKinds'>,
-  partial: { allowed: boolean; confirmed: boolean },
-) {
-  const replaced = await overlapping(ctx, row, ['vigente']);
-  const uncovered = replaced.flatMap((other) =>
-    other.offerKinds.filter((kind) => !row.offerKinds.includes(kind)),
-  );
-  if (uncovered.length && !(partial.allowed && partial.confirmed))
-    fail(
-      partial.allowed
-        ? `A publicação substitui calendários vigentes que também atendem ${kindList([...new Set(uncovered)])}. Confirme a substituição parcial: esses tipos ficarão sem calendário vigente.`
-        : `O calendário precisa incluir ${kindList([...new Set(uncovered)])}, atendidos pelo calendário vigente que ele substituirá. A administração pode confirmar uma substituição parcial.`,
-      409,
-    );
-  return { replaced, uncovered: [...new Set(uncovered)] };
+export async function reinstateBlocker(ctx: Context, row: Doc<'calendars'>) {
+  const others = await campusYearCalendars(ctx, row);
+  const byId = new Map(others.map((other) => [other._id, other]));
+  const seen = new Set<Id<'calendars'>>([row._id]);
+  for (let next = row.supersededBy; next && !seen.has(next) && seen.size <= 20;) {
+    seen.add(next);
+    const successor = byId.get(next);
+    if (!successor) break;
+    if (successor.status === 'vigente') return successor;
+    next = successor.supersededBy;
+  }
+  return others.find((other) => other.derivedFrom === row._id && other.status === 'vigente');
 }
 
 export async function submissionRow(ctx: Context, id: Id<'calendarSubmissions'> | undefined) {

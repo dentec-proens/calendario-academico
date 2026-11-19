@@ -14,6 +14,7 @@ test('Convex includes a complete new offer atomically and preserves the earlier 
       body: {
         campusId: fixture.ids.campuses.a,
         year: 2027,
+        label: 'Pós-graduação',
         offers: [{ kind: 'posgraduacao', organization: 'anual' }],
       },
     })

@@ -150,6 +150,8 @@ export async function createNativeFixture(overrides: Seed = {}) {
     if (!account) throw new Error('Unknown synthetic fixture user.');
     return account;
   };
+  /** Default labels of the calendars the dispatcher creates, distinct in the fixture. */
+  let labels = 0;
   const as = (id: string) => {
     const account = asClient(id);
     const query = (reference: FunctionReference<'query', 'public' | 'internal'>, args: Entity) =>
@@ -180,16 +182,20 @@ export async function createNativeFixture(overrides: Seed = {}) {
           // The identity is seeded like stored data: its own mutation is tested apart.
           const { courses, classes, shifts, label, ...draft } = body;
           const created = await mutation(api.calendars.createCalendar, {
-            body: { ...draft, campusId: ids.campuses[String(body.campusId)] ?? body.campusId },
+            body: {
+              ...draft,
+              campusId: ids.campuses[String(body.campusId)] ?? body.campusId,
+              // Creation requires a label distinct in the campus and year.
+              label: typeof label === 'string' ? label : `Proposta ${++labels}`,
+            },
           });
-          if (courses === undefined && label === undefined) return created;
+          if (courses === undefined) return created;
           const text = (value: unknown) => (typeof value === 'string' ? value : '');
           await client.run((ctx) =>
             ctx.db.patch(created.id, {
               courses: text(courses),
               classes: text(classes),
               shifts: text(shifts),
-              ...(text(label) ? { label: text(label) } : {}),
             }),
           );
           return query(api.calendars.calendar, { id: created.id });

@@ -40,10 +40,49 @@
   border-radius: var(--ui-radius-panel);
   background: var(--ui-surface-subtle);
 }
-.lifecycle-replaced ul,
 .submission-history ol {
   margin: 0;
   padding-left: 20px;
+}
+.lifecycle-origin,
+.lifecycle-replaced > p {
+  margin: 0;
+}
+.lifecycle-replaced {
+  display: grid;
+  gap: 8px;
+}
+.lifecycle-others {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+/* Each calendar in force is one question: its name, what it covers and the two answers. */
+.lifecycle-others fieldset {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 8px 12px;
+  border: 1px solid var(--ui-border-soft);
+  border-radius: var(--ui-radius-panel);
+  background: var(--ui-surface);
+}
+.lifecycle-others legend {
+  float: left;
+  width: 100%;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.lifecycle-others .check {
+  margin: 0;
+}
+.lifecycle-other-details {
+  margin: 0;
+  color: var(--ui-muted);
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
 }
 .return-note-text {
   white-space: pre-wrap;

@@ -27,6 +27,7 @@ test('reviewer reads across campuses and issues reviews but cannot modify calend
       body: {
         campusId: ids.campuses.a,
         year: 2027,
+        label: 'Cursos integrados',
         offers: [{ kind: 'integrado', organization: 'anual' }],
       },
     })
@@ -72,6 +73,7 @@ test('reviewer reads across campuses and issues reviews but cannot modify calend
         body: {
           campusId: ids.campuses.b,
           year: 2027,
+          label: 'Cursos integrados',
           offers: [{ kind: 'integrado', organization: 'anual' }],
         },
       })
@@ -231,6 +233,7 @@ test('campus reads the live calendars of another campus but changes none of them
   const body = {
     campusId: ids.campuses.b,
     year: 2027,
+    label: 'Cursos integrados',
     offers: [{ kind: 'integrado' as const, organization: 'anual' as const }],
   };
   const other = await admin
@@ -356,6 +359,7 @@ test('the review queue reports each parecer state without exposing it to campus 
       body: {
         campusId: ids.campuses.a,
         year: 2027,
+        label: 'Cursos integrados',
         offers: [{ kind: 'integrado', organization: 'anual' }],
       },
     })

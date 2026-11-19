@@ -27,12 +27,15 @@ async function fixture() {
   const ana = await member('Ana', 'ana@ifpr.edu.br');
   const bruno = await member('Bruno', 'bruno@ifpr.edu.br');
   const campus = f.asClient('campus-a');
+  // Calendars of the same campus and year need distinct labels.
+  let created = 0;
   const drafted = async () => {
     const { id } = await campus
       .mutation(api.calendars.createCalendar, {
         body: {
           campusId: f.ids.campuses.a,
           year: 2027,
+          label: `Proposta ${++created}`,
           offers: [{ kind: 'integrado', organization: 'anual' }],
         },
       })
@@ -197,7 +200,7 @@ test('the holder filter continues across pages', async () => {
 test('the queue filters by holder, alone and within a campus', async () => {
   const f = await fixture();
   const [mine, theirs, free] = [await f.drafted(), await f.drafted(), await f.drafted()];
-  // The submission rules refuse overlapping calendars; this test is only about listing them.
+  // Set directly: this test is only about listing them.
   await f.client.run(async (ctx) => {
     for (const id of [mine, theirs, free]) await ctx.db.patch(id, { status: 'enviado' });
   });

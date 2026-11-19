@@ -12,6 +12,7 @@ test('calendar authorship distinguishes creation from content edits without expo
     body: {
       campusId: ids.campuses.a,
       year: 2027,
+      label: 'Cursos integrados',
       offers: [{ kind: 'integrado', organization: 'anual' }],
     },
   });
