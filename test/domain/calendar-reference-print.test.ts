@@ -68,6 +68,9 @@ const events: CalendarEvent[] = [
 test('print keeps full dates and execution outside the annual grid without manual source labels', () => {
   const html = proensLayout(state, events, null, null, '');
   expect(html).toContain('Atividades e referências de outros anos');
+  expect(html).toContain(
+    'Datas fora de 2027, registradas para referência: não contam como dias letivos.',
+  );
   expect(html).toContain('Publicações programadas');
   expect(html).toContain('Fatos anteriores registrados');
   expect(html).toContain('01/12/2026');

@@ -135,11 +135,19 @@ function printedVacationName(event: PrintEvent, year: number) {
     : `Início: ${event.name}`;
 }
 
-function publicationDetails(event: PrintEvent, year: number, includeSource = true) {
+/**
+ * Execution, admission and source of a notice. Outside the annual grid the group heading already
+ * states the execution and the row prints its own source, so both can be left out.
+ */
+function publicationDetails(
+  event: PrintEvent,
+  year: number,
+  { execution = true, source: includeSource = true } = {},
+) {
   const labels = [];
   const publication = event.notice?.publication;
   const admission = event.notice?.admission;
-  if (publication) labels.push(executionLabels[publication]);
+  if (execution && publication) labels.push(executionLabels[publication]);
   if (admission) {
     const term = {
       annual: 'ciclo anual',
@@ -184,9 +192,9 @@ function externalReferences(state: PrintState, events: PrintEvent[]) {
   if (!rows.length) return '';
   const table = (title: string, items: PrintEvent[]) =>
     items.length
-      ? `<h4>${esc(title)}</h4><table class="external-references"><thead><tr><th>Datas completas</th><th>Atividade e finalidade</th></tr></thead><tbody>${items.map((event) => `<tr><td>${esc(fullInterval(event))}</td><td>${esc(event.name)}${internalLabel(event)}${publicationDetails(event, state.year, false)}<small>${esc(eventOffers(state, event))}</small>${automaticEventSource(event) ? `<small>Fonte: ${esc(automaticEventSource(event))}</small>` : ''}</td></tr>`).join('')}</tbody></table>`
+      ? `<h4>${esc(title)}</h4><table class="external-references"><thead><tr><th>Datas completas</th><th>Atividade e finalidade</th></tr></thead><tbody>${items.map((event) => `<tr><td>${esc(fullInterval(event))}</td><td>${esc(event.name)}${internalLabel(event)}${publicationDetails(event, state.year, { execution: false, source: false })}<small>${esc(eventOffers(state, event))}</small>${automaticEventSource(event) ? `<small>Fonte: ${esc(automaticEventSource(event))}</small>` : ''}</td></tr>`).join('')}</tbody></table>`
       : '';
-  return `<section class="proens-external-references"><h3>Atividades e referências de outros anos</h3><p>As datas integrais são preservadas. Estes registros informativos não alteram a contagem de dias letivos.</p>${table(
+  return `<section class="proens-external-references"><h3>Atividades e referências de outros anos</h3><p>Datas fora de ${state.year}, registradas para referência: não contam como dias letivos.</p>${table(
     'Publicações programadas',
     rows.filter((event) => event.notice?.publication === 'planned'),
   )}${table(
