@@ -75,7 +75,7 @@
     "@types/node": "26.6.5",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
-    "convex-test": "0.0.71",
+    "convex-test": "0.0.72",
     "fflate": "0.8.3",
     "oxfmt": "0.77.0",
     "oxlint": "1.89.0",

@@ -240,8 +240,8 @@ importers:
         specifier: 19.3.0
         version: 19.3.0(@types/react@19.3.0)
       convex-test:
-        specifier: 0.0.71
-        version: 0.0.71(convex@1.51.0(react@19.3.1))
+        specifier: 0.0.72
+        version: 0.0.72(convex@1.51.0(react@19.3.1))
       fflate:
         specifier: 0.8.3
         version: 0.8.3
@@ -1570,10 +1570,10 @@ packages:
       zod:
         optional: true
 
-  convex-test@0.0.71:
-    resolution: {integrity: sha512-sHptDSWL0b2Og6to5R9/GoCHF7XGNXIAxQDJnA8UYYZa8yym9mfC03h3C47LS3Bj2BIO9lD0pKIv2H7dP+VKPA==}
+  convex-test@0.0.72:
+    resolution: {integrity: sha512-yeI8w2PKT/TO3VnXLWJPz2CDCwaKx8sIcy8HaFJDvcqwdXZBKY+EtD2MOU+iIih+O87Saudx2SVl/1sJZmZyOA==}
     peerDependencies:
-      convex: ^1.43.0
+      convex: ^1.46.0
 
   convex@1.51.0:
     resolution: {integrity: sha512-Y5gS+JmT2JBq76S3CrQDrdL/Ijs4ZRKsvz3cu5EmHf/QxW18QrHunb5j9WC6lAbWbWc/gvmqpa5lvXzLXFQVJA==}
@@ -2894,7 +2894,7 @@ snapshots:
       react: 19.3.1
       typescript: 7.0.2
 
-  convex-test@0.0.71(convex@1.51.0(react@19.3.1)):
+  convex-test@0.0.72(convex@1.51.0(react@19.3.1)):
     dependencies:
       convex: 1.51.0(react@19.3.1)
 
