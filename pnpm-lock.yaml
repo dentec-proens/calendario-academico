@@ -177,16 +177,16 @@ importers:
         version: 1.9.0(@date-fns/tz@1.5.0)(@types/react@19.3.0)(date-fns@4.4.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@convex-dev/auth':
         specifier: 0.0.96
-        version: 0.0.96(patch_hash=2912b0cfcbffbe4eff734ea15315fab487703a8c3113649a1c9b50a04da38f5d)(@auth/core@0.41.3)(convex@1.50.0(react@19.3.1))(react@19.3.1)
+        version: 0.0.96(patch_hash=2912b0cfcbffbe4eff734ea15315fab487703a8c3113649a1c9b50a04da38f5d)(@auth/core@0.41.3)(convex@1.51.0(react@19.3.1))(react@19.3.1)
       '@convex-dev/migrations':
         specifier: 0.3.7
-        version: 0.3.7(convex-helpers@0.1.129(convex@1.50.0(react@19.3.1))(react@19.3.1)(typescript@7.0.2))(convex@1.50.0(react@19.3.1))
+        version: 0.3.7(convex-helpers@0.1.129(convex@1.51.0(react@19.3.1))(react@19.3.1)(typescript@7.0.2))(convex@1.51.0(react@19.3.1))
       '@convex-dev/presence':
         specifier: 0.4.0
-        version: 0.4.0(convex@1.50.0(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+        version: 0.4.0(convex@1.51.0(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@convex-dev/rate-limiter':
         specifier: 0.4.2
-        version: 0.4.2(convex@1.50.0(react@19.3.1))(react@19.3.1)(typescript@7.0.2)
+        version: 0.4.2(convex@1.51.0(react@19.3.1))(react@19.3.1)(typescript@7.0.2)
       '@daypicker/react':
         specifier: 10.0.2
         version: 10.0.2(@types/react@19.3.0)(react@19.3.1)
@@ -200,8 +200,8 @@ importers:
         specifier: 1.170.46
         version: 1.170.46(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       convex:
-        specifier: 1.50.0
-        version: 1.50.0(react@19.3.1)
+        specifier: 1.51.0
+        version: 1.51.0(react@19.3.1)
       lucide-react:
         specifier: 1.61.0
         version: 1.61.0(@types/react@19.3.0)(react@19.3.1)
@@ -241,7 +241,7 @@ importers:
         version: 19.3.0(@types/react@19.3.0)
       convex-test:
         specifier: 0.0.71
-        version: 0.0.71(convex@1.50.0(react@19.3.1))
+        version: 0.0.71(convex@1.51.0(react@19.3.1))
       fflate:
         specifier: 0.8.3
         version: 0.8.3
@@ -1575,8 +1575,8 @@ packages:
     peerDependencies:
       convex: ^1.43.0
 
-  convex@1.50.0:
-    resolution: {integrity: sha512-WzzCad5hyzU4zzW0ChyUGB3Mil4LgRYMYii9cyQtC24WQnfaRgkZB0IKyhIIgRm1a2IXiGJoZnVYYSfttiap3Q==}
+  convex@1.51.0:
+    resolution: {integrity: sha512-Y5gS+JmT2JBq76S3CrQDrdL/Ijs4ZRKsvz3cu5EmHf/QxW18QrHunb5j9WC6lAbWbWc/gvmqpa5lvXzLXFQVJA==}
     engines: {node: '>=22.0.0', npm: '>=7.0.0'}
     hasBin: true
     peerDependencies:
@@ -2085,12 +2085,12 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.3.0
 
-  '@convex-dev/auth@0.0.96(patch_hash=2912b0cfcbffbe4eff734ea15315fab487703a8c3113649a1c9b50a04da38f5d)(@auth/core@0.41.3)(convex@1.50.0(react@19.3.1))(react@19.3.1)':
+  '@convex-dev/auth@0.0.96(patch_hash=2912b0cfcbffbe4eff734ea15315fab487703a8c3113649a1c9b50a04da38f5d)(@auth/core@0.41.3)(convex@1.51.0(react@19.3.1))(react@19.3.1)':
     dependencies:
       '@auth/core': 0.41.3
       '@oslojs/crypto': 1.0.1
       '@oslojs/encoding': 1.1.0
-      convex: 1.50.0(react@19.3.1)
+      convex: 1.51.0(react@19.3.1)
       cookie: 1.1.1
       is-network-error: 1.3.2
       jose: 5.10.0
@@ -2102,15 +2102,15 @@ snapshots:
     optionalDependencies:
       react: 19.3.1
 
-  '@convex-dev/batch-worker@0.2.2(convex@1.50.0(react@19.3.1))(react@19.3.1)':
+  '@convex-dev/batch-worker@0.2.2(convex@1.51.0(react@19.3.1))(react@19.3.1)':
     dependencies:
-      convex: 1.50.0(react@19.3.1)
+      convex: 1.51.0(react@19.3.1)
       react: 19.3.1
 
-  '@convex-dev/batch-worker@0.3.5(convex@1.50.0(react@19.3.1))(react@19.3.1)(typescript@7.0.2)':
+  '@convex-dev/batch-worker@0.3.5(convex@1.51.0(react@19.3.1))(react@19.3.1)(typescript@7.0.2)':
     dependencies:
-      convex: 1.50.0(react@19.3.1)
-      convex-helpers: 0.1.129(convex@1.50.0(react@19.3.1))(react@19.3.1)(typescript@7.0.2)
+      convex: 1.51.0(react@19.3.1)
+      convex-helpers: 0.1.129(convex@1.51.0(react@19.3.1))(react@19.3.1)(typescript@7.0.2)
     transitivePeerDependencies:
       - '@standard-schema/spec'
       - hono
@@ -2118,22 +2118,22 @@ snapshots:
       - typescript
       - zod
 
-  '@convex-dev/migrations@0.3.7(convex-helpers@0.1.129(convex@1.50.0(react@19.3.1))(react@19.3.1)(typescript@7.0.2))(convex@1.50.0(react@19.3.1))':
+  '@convex-dev/migrations@0.3.7(convex-helpers@0.1.129(convex@1.51.0(react@19.3.1))(react@19.3.1)(typescript@7.0.2))(convex@1.51.0(react@19.3.1))':
     dependencies:
-      convex: 1.50.0(react@19.3.1)
-      convex-helpers: 0.1.129(convex@1.50.0(react@19.3.1))(react@19.3.1)(typescript@7.0.2)
+      convex: 1.51.0(react@19.3.1)
+      convex-helpers: 0.1.129(convex@1.51.0(react@19.3.1))(react@19.3.1)(typescript@7.0.2)
 
-  '@convex-dev/presence@0.4.0(convex@1.50.0(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
+  '@convex-dev/presence@0.4.0(convex@1.51.0(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
     dependencies:
-      '@convex-dev/batch-worker': 0.2.2(convex@1.50.0(react@19.3.1))(react@19.3.1)
-      convex: 1.50.0(react@19.3.1)
+      '@convex-dev/batch-worker': 0.2.2(convex@1.51.0(react@19.3.1))(react@19.3.1)
+      convex: 1.51.0(react@19.3.1)
       react: 19.3.1
       react-dom: 19.3.1(react@19.3.1)
 
-  '@convex-dev/rate-limiter@0.4.2(convex@1.50.0(react@19.3.1))(react@19.3.1)(typescript@7.0.2)':
+  '@convex-dev/rate-limiter@0.4.2(convex@1.51.0(react@19.3.1))(react@19.3.1)(typescript@7.0.2)':
     dependencies:
-      '@convex-dev/batch-worker': 0.3.5(convex@1.50.0(react@19.3.1))(react@19.3.1)(typescript@7.0.2)
-      convex: 1.50.0(react@19.3.1)
+      '@convex-dev/batch-worker': 0.3.5(convex@1.51.0(react@19.3.1))(react@19.3.1)(typescript@7.0.2)
+      convex: 1.51.0(react@19.3.1)
     optionalDependencies:
       react: 19.3.1
     transitivePeerDependencies:
@@ -2887,18 +2887,18 @@ snapshots:
 
   clsx@2.1.1: {}
 
-  convex-helpers@0.1.129(convex@1.50.0(react@19.3.1))(react@19.3.1)(typescript@7.0.2):
+  convex-helpers@0.1.129(convex@1.51.0(react@19.3.1))(react@19.3.1)(typescript@7.0.2):
     dependencies:
-      convex: 1.50.0(react@19.3.1)
+      convex: 1.51.0(react@19.3.1)
     optionalDependencies:
       react: 19.3.1
       typescript: 7.0.2
 
-  convex-test@0.0.71(convex@1.50.0(react@19.3.1)):
+  convex-test@0.0.71(convex@1.51.0(react@19.3.1)):
     dependencies:
-      convex: 1.50.0(react@19.3.1)
+      convex: 1.51.0(react@19.3.1)
 
-  convex@1.50.0(react@19.3.1):
+  convex@1.51.0(react@19.3.1):
     dependencies:
       esbuild: 0.27.0
       prettier: 3.9.10
