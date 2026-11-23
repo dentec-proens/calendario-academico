@@ -312,6 +312,33 @@ test('the review list states each parecer and names the next step', async ({
   await expect(row.locator('[data-review-assignee]')).toHaveText('Sem responsável');
 });
 
+test('"Meus pareceres" comes first and gathers the person\'s pareceres by situation', async ({
+  page,
+  fixtureServer,
+}) => {
+  await page.goto(await fixtureServer('review'));
+  const tabs = page.getByRole('tab');
+  await expect(tabs.first()).toHaveText('Meus pareceres');
+  // Without a choice in the address, the list opens on what awaits review.
+  await expect(page.getByRole('tab', { name: 'Aguardando análise' })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+  await tabs.first().click();
+  await expect(page.locator('#review-message')).toContainText('Nenhum parecer com você');
+  await page.getByRole('tab', { name: 'Aguardando análise' }).click();
+  await page.locator('[data-assume-review="synthetic-review"]').click();
+  await expect(page.locator('#review-assignee')).toHaveText('Você');
+  await page.getByRole('navigation', { name: 'Trilha de navegação' }).getByRole('link').click();
+  await tabs.first().click();
+  const group = page.getByRole('region', { name: /Aguardando análise/ });
+  await expect(group.locator('[data-open-review="synthetic-review"]')).toBeVisible();
+  // The trail of a parecer opened here returns to this tab.
+  await group.locator('[data-open-review="synthetic-review"]').click();
+  await page.getByRole('navigation', { name: 'Trilha de navegação' }).getByRole('link').click();
+  await expect(tabs.first()).toHaveAttribute('aria-selected', 'true');
+});
+
 test('a parecer held by a colleague is read only until assumed, and keeps the draft', async ({
   page,
   fixtureServer,

@@ -84,6 +84,30 @@ function queueOrder(status: Infer<typeof queueStatus>) {
   return status === 'enviado' ? 'asc' : 'desc';
 }
 
+/** One row of the review lists: the calendar, who holds its parecer, the submission and progress. */
+async function queueItem(ctx: QueryCtx, row: Doc<'calendars'>) {
+  const [campus, review, submission] = await Promise.all([
+    ctx.db.get(row.campusId),
+    reviewRow(ctx, row._id),
+    row.currentSubmissionId ? ctx.db.get(row.currentSubmissionId) : null,
+  ]);
+  if (!campus) fail('Campus não encontrado.', 404);
+  return {
+    // Only the administration and the reviewers reach the queue: every campus is theirs.
+    ...(await summary(ctx, row, campus, true)),
+    assignee: reviewAssignee(row),
+    submission: submission
+      ? {
+          id: submission._id,
+          sequence: submission.sequence,
+          submittedAt: iso(submission.submittedAt),
+          resubmission: submission.previousSubmissionId !== undefined,
+        }
+      : null,
+    review: review ? reviewProgress(review, row) : null,
+  };
+}
+
 /** The reviewer works by status; drafts never reach the queue. */
 export const reviewQueue = query({
   args: {
@@ -106,30 +130,7 @@ export const reviewQueue = query({
     )
       .order(queueOrder(status))
       .paginate(paginationOpts);
-    const page = await Promise.all(
-      result.page.map(async (row) => {
-        const [campus, review, submission] = await Promise.all([
-          ctx.db.get(row.campusId),
-          reviewRow(ctx, row._id),
-          row.currentSubmissionId ? ctx.db.get(row.currentSubmissionId) : null,
-        ]);
-        if (!campus) fail('Campus não encontrado.', 404);
-        return {
-          // Only the administration and the reviewers reach the queue: every campus is theirs.
-          ...(await summary(ctx, row, campus, true)),
-          assignee: reviewAssignee(row),
-          submission: submission
-            ? {
-                id: submission._id,
-                sequence: submission.sequence,
-                submittedAt: iso(submission.submittedAt),
-                resubmission: submission.previousSubmissionId !== undefined,
-              }
-            : null,
-          review: review ? reviewProgress(review, row) : null,
-        };
-      }),
-    );
+    const page = await Promise.all(result.page.map((row) => queueItem(ctx, row)));
     return { ...result, page };
   },
 });
@@ -162,6 +163,51 @@ export const reviewQueueCounts = query({
     };
     const [enviado, em_revisao] = await Promise.all([count('enviado'), count('em_revisao')]);
     return { enviado, em_revisao };
+  },
+});
+
+/** The situations in the order the review tabs show them, which also orders "Meus pareceres". */
+const queueStatuses = [
+  'enviado',
+  'em_revisao',
+  'revisado',
+  'devolvido',
+  'vigente',
+  'arquivado',
+] as const satisfies readonly Infer<typeof queueStatus>[];
+
+/** Per situation; one person's pareceres rarely reach it, and the tab says when they do. */
+const myReviewsCap = 50;
+
+/**
+ * Every parecer the person holds, in any situation. The holder stays recorded after the parecer
+ * closes, so a concluded, returned or published calendar still belongs to whoever held it.
+ */
+export const myReviews = query({
+  args: { campusId: v.optional(v.id('campuses')) },
+  returns: v.array(
+    v.object({
+      status: queueStatus,
+      items: v.array(contracts.reviewQueueItem),
+      more: v.boolean(),
+    }),
+  ),
+  handler: async (ctx, { campusId }) => {
+    const { user } = await requireNativeUser(ctx);
+    reviewer(user);
+    if (campusId) assertCampus(user, campusId);
+    const groups = await Promise.all(
+      queueStatuses.map(async (status) => {
+        const rows = await queueRows(ctx, status, campusId, { id: user.id })
+          .order(queueOrder(status))
+          .take(myReviewsCap + 1);
+        const items = await Promise.all(
+          rows.slice(0, myReviewsCap).map((row) => queueItem(ctx, row)),
+        );
+        return { status, items, more: rows.length > myReviewsCap };
+      }),
+    );
+    return groups.filter((group) => group.items.length);
   },
 });
 

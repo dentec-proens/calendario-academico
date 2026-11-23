@@ -145,6 +145,35 @@ function returnedRound() {
   };
 }
 
+/** The queue rows as the server lists them. */
+function queueRows() {
+  // As the server, saving the first parecer starts the review and moves the calendar there.
+  return calendars.map((calendar) => ({
+    ...calendar,
+    status: snapshot.review ? ('em_revisao' as const) : ('enviado' as const),
+    assignee: snapshot.assignee,
+    submission: {
+      id: 'synthetic-submission' as Id<'calendarSubmissions'>,
+      sequence: 1,
+      submittedAt: '2026-10-23T15:00:00Z',
+      resubmission: false,
+    },
+    review: snapshot.review
+      ? {
+          revision: snapshot.review.revision,
+          reviewerName: snapshot.review.reviewer.name,
+          updatedAt: snapshot.review.updatedAt,
+          reviewed: snapshot.review.entries.filter(
+            (entry) => entry.reviewed && entry.status !== 'PENDENTE',
+          ).length,
+          total: snapshot.criteria.length,
+          calendarChanged: snapshot.review.calendarVersion !== calendar.version,
+          otherSubmission: false,
+        }
+      : null,
+  }));
+}
+
 function query(
   reference: FunctionReference<'query'>,
   args: { status?: string; submissionId?: string } = {},
@@ -156,36 +185,20 @@ function query(
       return { page: calendars, isDone: true, continueCursor: '' };
     case 'reviews:reviewQueue':
       return {
-        // As the server, saving the first parecer starts the review and moves the calendar there.
-        page: calendars
-          .map((calendar) => ({
-            ...calendar,
-            status: snapshot.review ? ('em_revisao' as const) : ('enviado' as const),
-            assignee: snapshot.assignee,
-            submission: {
-              id: 'synthetic-submission' as Id<'calendarSubmissions'>,
-              sequence: 1,
-              submittedAt: '2026-10-23T15:00:00Z',
-              resubmission: false,
-            },
-            review: snapshot.review
-              ? {
-                  revision: snapshot.review.revision,
-                  reviewerName: snapshot.review.reviewer.name,
-                  updatedAt: snapshot.review.updatedAt,
-                  reviewed: snapshot.review.entries.filter(
-                    (entry) => entry.reviewed && entry.status !== 'PENDENTE',
-                  ).length,
-                  total: snapshot.criteria.length,
-                  calendarChanged: snapshot.review.calendarVersion !== calendar.version,
-                  otherSubmission: false,
-                }
-              : null,
-          }))
-          .filter((calendar) => calendar.status === (args.status ?? 'enviado')),
+        page: queueRows().filter((calendar) => calendar.status === (args.status ?? 'enviado')),
         isDone: true,
         continueCursor: '',
       };
+    case 'reviews:myReviews':
+      return (['enviado', 'em_revisao'] as const)
+        .map((status) => ({
+          status,
+          items: queueRows().filter(
+            (calendar) => calendar.status === status && calendar.assignee?.id === user.id,
+          ),
+          more: false,
+        }))
+        .filter((group) => group.items.length);
     case 'reviews:reviewQueueCounts': {
       const count = { count: calendars.length, more: false };
       const none = { count: 0, more: false };

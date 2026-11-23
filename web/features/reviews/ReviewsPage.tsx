@@ -1,4 +1,4 @@
-import { useNavigate } from '@tanstack/react-router';
+import { useNavigate, useSearch } from '@tanstack/react-router';
 import { useState } from 'react';
 import { usePaginatedQuery, useQuery } from 'convex/react';
 import {
@@ -9,6 +9,7 @@ import {
 import { useFeatureRoute } from '../../app/navigation.ts';
 import { functions } from '../../shared/convex/client.ts';
 import Pagination from '../../shared/forms/Pagination.tsx';
+import { LoadingIndicator } from '../../components/ui/LoadingIndicator.tsx';
 import { Notice } from '../../components/ui/Notice.tsx';
 import { useAppSession } from '../../app/session.tsx';
 import CampusFilter from '../calendar-list/CampusFilter.tsx';
@@ -16,53 +17,75 @@ import { useSelectedCampus } from '../calendar-list/selected-campus.ts';
 import ReviewQueue from './ReviewQueue.tsx';
 import './reviews.css';
 
+type QueueStatus = Exclude<CalendarStatus, 'rascunho'>;
+
 /** The reviewer works by status; drafts never reach the queue. */
-const tabs = [
+const statusTabs = [
   ['enviado', 'Aguardando análise'],
   ['em_revisao', 'Em análise'],
   ['revisado', 'Concluídos'],
   ['devolvido', 'Devolvidos'],
   ['vigente', 'Vigentes'],
   ['arquivado', 'Arquivados'],
-] as const satisfies readonly (readonly [Exclude<CalendarStatus, 'rascunho'>, string])[];
+] as const satisfies readonly (readonly [QueueStatus, string])[];
+
+/** "Meus pareceres" gathers the person's pareceres of every situation, before the status tabs. */
+const tabs = [['meus', 'Meus pareceres'], ...statusTabs] as const;
+type Tab = (typeof tabs)[number][0];
+
+const statusTabLabel = Object.fromEntries(statusTabs) as Record<QueueStatus, string>;
 
 export default function ReviewsPage() {
   const { info } = useAppSession();
   const route = useFeatureRoute();
+  const { aba } = useSearch({ strict: false });
   const campus = useSelectedCampus();
   const navigate = useNavigate();
+  const mine = aba === 'meus';
   // A situation the queue does not list, such as a draft, falls back to the default tab.
-  const status = tabs.find(([value]) => value === route.situacao)?.[0] ?? 'enviado';
+  const status = statusTabs.find(([value]) => value === route.situacao)?.[0] ?? 'enviado';
+  const selected: Tab = mine ? 'meus' : status;
   // Only a parecer still open has a holder, so the other tabs have nothing to filter by.
-  const responsavel = reviewEditable(status) ? route.responsavel : undefined;
-  const filters = {
-    campus: campus?.id,
-    situacao: status === 'enviado' ? undefined : status,
-    responsavel,
-  };
+  const responsavel = !mine && reviewEditable(status) ? route.responsavel : undefined;
+  const filters = mine
+    ? { campus: campus?.id, aba: 'meus' as const }
+    : {
+        campus: campus?.id,
+        situacao: status === 'enviado' ? undefined : status,
+        responsavel,
+      };
   const [error, setError] = useState('');
   const pagination = usePaginatedQuery(
     functions.reviews.reviewQueue,
-    {
-      status,
-      ...(campus ? { campusId: campus.id } : {}),
-      ...(responsavel ? { holder: responsavel === 'meus' ? 'mine' : 'none' } : {}),
-    } as const,
+    mine
+      ? 'skip'
+      : ({
+          status,
+          ...(campus ? { campusId: campus.id } : {}),
+          ...(responsavel ? { holder: responsavel === 'meus' ? 'mine' : 'none' } : {}),
+        } as const),
     { initialNumItems: 50 },
   );
   const counts = useQuery(functions.reviews.reviewQueueCounts, {
     ...(campus ? { campusId: campus.id } : {}),
     ...(responsavel ? { holder: responsavel === 'meus' ? 'mine' : 'none' } : {}),
   } as const);
-  function select(next: (typeof tabs)[number][0]) {
+  const myGroups = useQuery(
+    functions.reviews.myReviews,
+    mine ? (campus ? { campusId: campus.id } : {}) : 'skip',
+  );
+  function select(next: Tab) {
     setError('');
     void navigate({
       to: '/revisoes',
-      search: {
-        ...filters,
-        situacao: next === 'enviado' ? undefined : next,
-        responsavel: reviewEditable(next) ? route.responsavel : undefined,
-      },
+      search:
+        next === 'meus'
+          ? { campus: campus?.id, aba: 'meus' }
+          : {
+              campus: campus?.id,
+              situacao: next === 'enviado' ? undefined : next,
+              responsavel: reviewEditable(next) ? route.responsavel : undefined,
+            },
       replace: true,
     });
   }
@@ -87,6 +110,7 @@ export default function ReviewsPage() {
           }}
         >
           {tabs.map(([value, label]) => {
+            // The holder filter narrows the counts; "Meus pareceres" has no count of its own.
             const waiting = value === 'enviado' || value === 'em_revisao' ? counts?.[value] : null;
             return (
               <button
@@ -94,8 +118,8 @@ export default function ReviewsPage() {
                 type="button"
                 role="tab"
                 id={`review-tab-${value}`}
-                tabIndex={status === value ? 0 : -1}
-                aria-selected={status === value}
+                tabIndex={selected === value ? 0 : -1}
+                aria-selected={selected === value}
                 aria-controls="review-queue-panel"
                 onClick={() => select(value)}
               >
@@ -112,7 +136,7 @@ export default function ReviewsPage() {
             );
           })}
         </div>
-        <div id="review-queue-panel" role="tabpanel" aria-labelledby={`review-tab-${status}`}>
+        <div id="review-queue-panel" role="tabpanel" aria-labelledby={`review-tab-${selected}`}>
           <div className="calendar-list-tools review-queue-tools">
             <CampusFilter
               campuses={info.campuses}
@@ -125,7 +149,7 @@ export default function ReviewsPage() {
                 });
               }}
             />
-            {reviewEditable(status) ? (
+            {!mine && reviewEditable(status) ? (
               <label>
                 Filtrar por responsável
                 <select
@@ -153,20 +177,62 @@ export default function ReviewsPage() {
           <p className="review-queue-note">
             A revisão apoia o parecer; assinatura e tramitação ocorrem no SEI.
           </p>
-          <ReviewQueue
-            items={pagination.results}
-            filters={filters}
-            userId={info.user.id}
-            onError={setError}
-          />
-          <Pagination
-            pagination={pagination}
-            label="Carregar mais calendários"
-            loadingLabel="Carregando calendários para revisão…"
-          />
+          {mine ? (
+            <>
+              {myGroups === undefined ? (
+                <LoadingIndicator label="Carregando seus pareceres…" />
+              ) : null}
+              {myGroups?.map((group) => (
+                <section
+                  key={group.status}
+                  className="review-my-group"
+                  aria-labelledby={`review-my-${group.status}`}
+                  data-my-reviews={group.status}
+                >
+                  <h2 id={`review-my-${group.status}`} className="review-my-heading">
+                    {statusTabLabel[group.status]}
+                    <span className="review-tab-count">
+                      {group.more ? `${group.items.length}+` : group.items.length}
+                    </span>
+                  </h2>
+                  <ReviewQueue
+                    id={`review-calendars-${group.status}`}
+                    items={group.items}
+                    filters={filters}
+                    userId={info.user.id}
+                    onError={setError}
+                  />
+                  {group.more ? (
+                    <p className="review-queue-note">
+                      Mostrando os {group.items.length} mais recentes desta situação.
+                    </p>
+                  ) : null}
+                </section>
+              ))}
+            </>
+          ) : (
+            <>
+              <ReviewQueue
+                items={pagination.results}
+                filters={filters}
+                userId={info.user.id}
+                onError={setError}
+              />
+              <Pagination
+                pagination={pagination}
+                label="Carregar mais calendários"
+                loadingLabel="Carregando calendários para revisão…"
+              />
+            </>
+          )}
           <div id="review-message" role="status" aria-live="polite">
             {error ? <Notice tone="danger">{error}</Notice> : null}
-            {!pagination.results.length && pagination.status === 'Exhausted' ? (
+            {mine && myGroups?.length === 0 ? (
+              <Notice tone="info">
+                Nenhum parecer com você{campus ? ' neste campus' : ''} no momento.
+              </Notice>
+            ) : null}
+            {!mine && !pagination.results.length && pagination.status === 'Exhausted' ? (
               <Notice tone="info">
                 Nenhum calendário {statusLabels[status].toLowerCase()}
                 {campus ? ' neste campus' : ''}

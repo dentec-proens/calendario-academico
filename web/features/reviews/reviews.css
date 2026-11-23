@@ -375,3 +375,15 @@ html:has(.review-bar) {
     text-align: start;
   }
 }
+
+/* "Meus pareceres": one block per situation, in the order of the tabs. */
+.review-my-group + .review-my-group {
+  margin-top: var(--ui-space-5);
+}
+.review-my-heading {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-2);
+  margin: 0 0 var(--ui-space-2);
+  font-size: 1rem;
+}

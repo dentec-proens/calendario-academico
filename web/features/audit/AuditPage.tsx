@@ -35,7 +35,9 @@ export default function AuditPage() {
         <OperationsLog />
       </section>
     );
-  const selected: AuditTab = search.aba ?? 'operacoes';
+  // `aba` is shared with other screens; a value this page does not list opens the operations.
+  const selected: AuditTab =
+    search.aba === 'feedback' || search.aba === 'falhas' ? search.aba : 'operacoes';
   return (
     <section className="panel audit-page" aria-label="Registros">
       <Tabs

@@ -258,3 +258,39 @@ test('the tab counts stop at their cap and refuse the campus profile', async () 
   });
   await expect(f.campus.query(api.reviews.reviewQueueCounts, {})).rejects.toThrow();
 });
+
+test('"Meus pareceres" gathers the holder\'s calendars of every situation, in the tab order', async () => {
+  const f = await fixture();
+  const [returned, open, waiting, theirs, other] = [
+    await f.drafted(),
+    await f.drafted(),
+    await f.drafted(),
+    await f.drafted(),
+    await f.drafted(),
+  ];
+  // Set directly: this test is only about listing them.
+  await f.client.run(async (ctx) => {
+    const ana = { id: f.anaId, name: 'Ana', at: Date.now() };
+    await ctx.db.patch(returned, { status: 'devolvido', assignee: ana });
+    await ctx.db.patch(open, { status: 'em_revisao', assignee: ana });
+    await ctx.db.patch(waiting, { status: 'enviado', assignee: ana });
+    await ctx.db.patch(theirs, {
+      status: 'enviado',
+      assignee: { id: f.brunoId, name: 'Bruno', at: Date.now() },
+    });
+    await ctx.db.patch(other, { status: 'enviado' });
+  });
+  const groups = async (campusId?: Id<'campuses'>) =>
+    (await f.ana.query(api.reviews.myReviews, campusId ? { campusId } : {})).map((group) => [
+      group.status,
+      group.items.map((item) => item.id),
+      group.more,
+    ]);
+  expect(await groups()).toEqual([
+    ['enviado', [waiting], false],
+    ['em_revisao', [open], false],
+    ['devolvido', [returned], false],
+  ]);
+  expect(await groups(f.ids.campuses.b)).toEqual([]);
+  await expect(f.campus.query(api.reviews.myReviews, {})).rejects.toThrow();
+});

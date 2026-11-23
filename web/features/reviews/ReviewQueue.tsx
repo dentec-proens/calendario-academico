@@ -58,6 +58,7 @@ export function reviewState(review: QueueItem['review']) {
 
 type QueueFilters = {
   campus?: string;
+  aba?: 'meus';
   situacao?: Exclude<CalendarStatus, 'rascunho' | 'enviado'>;
   responsavel?: 'meus' | 'livres';
 };
@@ -162,11 +163,13 @@ function ReviewRowActions({
 }
 
 export default function ReviewQueue({
+  id = 'review-calendars',
   items,
   filters,
   userId,
   onError,
 }: {
+  id?: string;
   items: QueueItem[];
   /** The selected filters, carried to the parecer so that its trail returns here. */
   filters: QueueFilters;
@@ -253,7 +256,7 @@ export default function ReviewQueue({
   ];
   return (
     <CalendarTable
-      id="review-calendars"
+      id={id}
       items={items}
       columns={columns}
       rowProps={({ review }) => ({ 'data-review-state': reviewState(review).tone })}

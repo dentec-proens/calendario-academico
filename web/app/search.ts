@@ -60,8 +60,9 @@ export function applicationSearch(input: Record<string, unknown>) {
     ...(input.devtools === '1' ? { devtools: '1' } : {}),
     ...(input.aviso === 'acesso-negado' ? { aviso: 'acesso-negado' } : {}),
     // Operations log: the tab the administration reads; absent means the operations.
-    ...(input.aba === 'feedback' || input.aba === 'falhas'
-      ? { aba: input.aba as 'feedback' | 'falhas' }
+    // Review panel: `meus` lists the person's pareceres in every situation.
+    ...(input.aba === 'feedback' || input.aba === 'falhas' || input.aba === 'meus'
+      ? { aba: input.aba as 'feedback' | 'falhas' | 'meus' }
       : {}),
     ...(typeof input.atividadeBusca === 'string' && input.atividadeBusca.trim()
       ? { atividadeBusca: input.atividadeBusca.slice(0, 200) }
