@@ -1,7 +1,7 @@
 import { useNavigate } from '@tanstack/react-router';
 import { documentedYears } from '#src/domain/policies/registry.ts';
 import { windowLabel } from '#src/domain/policy-references.ts';
-import { compactDate } from '#src/domain/date-labels.ts';
+import { allowedObservanceDates } from '#src/domain/calendar/observances.ts';
 import { useFeatureRoute } from '../../app/navigation.ts';
 import { offerStatusLabels, rulesView, statusHelp, type RulesView } from './rules-view.ts';
 import './rules.css';
@@ -155,7 +155,7 @@ export default function RulesPage() {
         <section className="rules-section" aria-labelledby="rules-observances-title">
           <h3 id="rules-observances-title">Datas de observância</h3>
           <p className="help">
-            O campus escolhe uma das datas permitidas para cada calendário que contém o evento.
+            O campus escolhe uma data permitida para cada calendário que contém o evento.
           </p>
           <dl>
             {view.observances.map((rule) => (
@@ -163,7 +163,7 @@ export default function RulesPage() {
                 <dt>
                   <strong>{rule.label}</strong>
                 </dt>
-                <dd>{rule.allowedDates.map((date) => compactDate(date, view.year)).join(', ')}</dd>
+                <dd>{allowedObservanceDates(rule, view.year)}</dd>
               </div>
             ))}
           </dl>

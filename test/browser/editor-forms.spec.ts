@@ -479,7 +479,7 @@ test('vacation form supports duration and manual end dates and rejects overlappi
   expect(await savedState(page)).toEqual(before);
 });
 
-test('Teacher Day is applied and restored explicitly with exactly the policy options', async ({
+test('Teacher Day is applied and restored explicitly within the second semester', async ({
   page,
   fixtureServer,
 }) => {
@@ -487,7 +487,7 @@ test('Teacher Day is applied and restored explicitly with exactly the policy opt
   await page.locator('[data-view="events"]').click();
   await selectCampusEvents(page);
   await page.locator('#open-observance-teacher-day').click();
-  await page.locator('#observance-date-teacher-day').selectOption('2027-10-14');
+  await page.locator('#observance-date-teacher-day').fill('2027-10-25');
   expect(
     await page.evaluate(() => window.editorTest.record.state.observanceDates?.['teacher-day']),
   ).toBeUndefined();
@@ -496,11 +496,11 @@ test('Teacher Day is applied and restored explicitly with exactly the policy opt
     .poll(() =>
       page.evaluate(() => window.editorTest.record.state.observanceDates?.['teacher-day']),
     )
-    .toBe('2027-10-14');
+    .toBe('2027-10-25');
   await savedState(page);
   // Applying closes the panel and confirms the date on the page.
   await expect(page.locator('#event-panel')).toBeHidden();
-  await expect(page.locator('#message')).toContainText('Dia do Professor: 14 de outubro de 2027');
+  await expect(page.locator('#message')).toContainText('Dia do Professor: 25 de outubro de 2027');
   await page.locator('#open-observance-teacher-day').click();
   await page.locator('#reset-observance-teacher-day').click();
   await expect
@@ -512,20 +512,13 @@ test('Teacher Day is applied and restored explicitly with exactly the policy opt
   await page.locator('#open-observance-teacher-day').click();
   await expect(page.locator('#observance-date-teacher-day')).toHaveValue('2027-10-15');
   const before = await savedState(page);
-  await expect(page.locator('#observance-date-teacher-day option')).toHaveCount(7);
-  expect(
-    await page
-      .locator('#observance-date-teacher-day option')
-      .evaluateAll((options) => options.map((option) => (option as HTMLOptionElement).value)),
-  ).toEqual([
-    '2027-10-11',
-    '2027-10-12',
-    '2027-10-13',
-    '2027-10-14',
-    '2027-10-15',
-    '2027-10-16',
-    '2027-10-17',
-  ]);
+  const date = page.locator('#observance-date-teacher-day');
+  await expect(date).toHaveAttribute('type', 'date');
+  await expect(date).toHaveAttribute('min', '2027-07-01');
+  await expect(date).toHaveAttribute('max', '2027-12-31');
+  await expect(page.locator('#observance-help-teacher-day')).toHaveText(
+    'Data institucional: 15 de outubro de 2027. Escolha uma data entre 1 de julho de 2027 e 31 de dezembro de 2027.',
+  );
   expect(await savedState(page)).toEqual(before);
 });
 

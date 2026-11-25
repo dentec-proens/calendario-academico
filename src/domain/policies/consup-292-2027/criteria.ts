@@ -54,8 +54,8 @@ export const criteria = frozenCriteria([
     id: 'II',
     title: 'Feriados e recessos',
     requirement:
-      'Registrar os feriados e recessos do art. 2º. O campus pode ajustar o Dia do Professor dentro da semana de 15/10, de segunda a domingo, e o Dia do Servidor pode ser 28 ou 29/10. Outra alteração exige justificativa e deliberação da Proens.',
-    source: 'Art. 11, II; Arts. 2º e 3º; regra do sistema; decisão de 30/10/2026',
+      'Registrar os feriados e recessos do art. 2º. O campus pode ajustar o Dia do Professor para qualquer data do segundo semestre, e o Dia do Servidor pode ser 28 ou 29/10. Outra alteração exige justificativa e deliberação da Proens.',
+    source: 'Art. 11, II; Arts. 2º e 3º; decisões de 30/10/2026 e 25/11/2026',
     item: 'Art. 11, II',
     pattern: 'feriado|recesso',
   },

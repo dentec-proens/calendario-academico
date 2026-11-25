@@ -20,9 +20,9 @@ for (const width of [1440, 390]) {
     const opener = page.locator('#open-observance-teacher-day');
     await opener.click();
     const date = page.locator('#observance-date-teacher-day');
-    await expect(date).not.toHaveAttribute('aria-describedby');
+    await expect(date).toHaveAttribute('aria-describedby', 'observance-help-teacher-day');
     await expect(page.locator('#discard-observance-teacher-day')).toBeHidden();
-    await date.selectOption('2027-10-14');
+    await date.fill('2027-10-14');
     await page.locator('#close-event-panel').click();
     await expect(opener).toBeFocused();
     await opener.click();
@@ -35,7 +35,7 @@ for (const width of [1440, 390]) {
     await expect(opener).toBeFocused();
     await opener.click();
     await expect(page.locator('#discard-observance-teacher-day')).toBeHidden();
-    await date.selectOption('2027-10-13');
+    await date.fill('2027-10-25');
     const discard = page.locator('#discard-observance-teacher-day');
     await discard.focus();
     await expect

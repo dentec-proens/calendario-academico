@@ -14,12 +14,15 @@ for (const role of ['ADMIN', 'CAMPUS', 'PARECERISTA'] as const)
     await expect(link).toHaveAttribute('aria-current', 'page');
     await expect(page.locator('#panel-title')).toHaveText('Regras do calendário');
     await expect(page.locator('#rules-title')).toHaveText('Regras do calendário de 2027');
-    await expect(page.locator('.rules-summary')).toContainText('consup-292-2027-v13');
+    await expect(page.locator('.rules-summary')).toContainText('consup-292-2027-v14');
     await expect(
       page.locator('.rules-summary').getByRole('link', { name: 'Abrir publicação oficial' }),
     ).toHaveAttribute('href', /sei\.ifpr\.edu\.br.*id_documento=4606058/);
     await expect(page.locator('[data-observance-rule="public-servant-day"]')).toContainText(
       '28 out, 29 out',
+    );
+    await expect(page.locator('[data-observance-rule="teacher-day"]')).toContainText(
+      'qualquer data de 1 jul a 31 dez',
     );
     const family = page.locator('[data-rule="family-meeting"]');
     await expect(family).toContainText('Decisão: exigida apenas no técnico integrado');

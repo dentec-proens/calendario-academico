@@ -10,7 +10,12 @@ import type { ObservanceRule, CalendarWindow } from '../../src/domain/policies/c
 test('CivilDate is a validated primitive string, distinct from arbitrary input at compile time', () => {
   expectTypeOf<string>().not.toExtend<CivilDate>();
   expectTypeOf<CivilDate>().toExtend<string>();
-  expectTypeOf<ObservanceRule['allowedDates'][number]>().toEqualTypeOf<CivilDate>();
+  expectTypeOf<
+    Extract<ObservanceRule['allowed'], { kind: 'list' }>['dates'][number]
+  >().toEqualTypeOf<CivilDate>();
+  expectTypeOf<
+    Extract<ObservanceRule['allowed'], { kind: 'range' }>['start']
+  >().toEqualTypeOf<CivilDate>();
   expectTypeOf<CalendarEvent['start']>().toEqualTypeOf<CivilDate>();
   expectTypeOf<CalendarContent['observanceDates']>().toEqualTypeOf<
     Record<string, CivilDate> | undefined

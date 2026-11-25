@@ -50,7 +50,7 @@ test('server saves Servidor choices in snapshots, rejects other dates and protec
           },
         })
         .then(calendarSaveDates),
-    ).rejects.toThrow('permitidas');
+    ).rejects.toThrow('permitida');
   await expect(
     actor.mutation(api.catalogue.saveCatalogue, {
       body: {
@@ -66,5 +66,5 @@ test('server saves Servidor choices in snapshots, rejects other dates and protec
         active: true,
       },
     }),
-  ).rejects.toThrow('permitidas');
+  ).rejects.toThrow('permitida');
 });

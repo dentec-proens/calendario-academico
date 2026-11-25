@@ -171,6 +171,7 @@ const currentFingerprints: Record<string, string> = {
   'consup-292-2027-v11': '5e8c4a8a35b1feba8d021c736422e4987a38f2aa499588917158ebf582c34e7c',
   'consup-292-2027-v12': 'bd4b7f261e406dec2d5dca713d53116e5cb7666ad46cdacf5ca6954b762742ba',
   'consup-292-2027-v13': 'abe0073ad62ce36bb8768f4fd804fd0da91b21c82debcc283c9e12cb05a50e43',
+  'consup-292-2027-v14': '7d6e16810db6c2b585d4526b2b04d16734a2980f0d39f63564b6c1a824937482',
 };
 
 test('the expanded catalogue of the current version keeps its fingerprint', () => {
@@ -237,6 +238,7 @@ const observanceFingerprints: Record<string, string> = {
   'consup-292-2027-v11': 'afa2cb2556353696ba3b20ec0f40eac2058fb230108a031380c68dde5801d0c2',
   'consup-292-2027-v12': 'afa2cb2556353696ba3b20ec0f40eac2058fb230108a031380c68dde5801d0c2',
   'consup-292-2027-v13': 'afa2cb2556353696ba3b20ec0f40eac2058fb230108a031380c68dde5801d0c2',
+  'consup-292-2027-v14': 'b7ef3919e87c62b0d4d1215a1f915a451655f78264f8bb75b3d20da2078aaf64',
 };
 test('observance permissions are bound to the current ruleset history', () => {
   for (const policy of boundPolicies) {
@@ -246,6 +248,8 @@ test('observance permissions are bound to the current ruleset history', () => {
     );
   }
   expect(equivalentRulesets('consup-292-2027-v3', 'consup-292-2027-v4')).toBe(true);
+  // Opening the Teacher Day to the second semester only relaxes: v14 keeps the v13 reviews.
+  expect(equivalentRulesets('consup-292-2027-v13', 'consup-292-2027-v14')).toBe(true);
 });
 
 /** The art. 5º classification has its own baseline: changing it needs a new ruleset version. */
@@ -259,6 +263,7 @@ const schoolDayFingerprints: Record<string, string> = {
   'consup-292-2027-v11': 'd87ba71081c910887995df3fb28fc342e22cb9846d881e597754de209f24e6f7',
   'consup-292-2027-v12': 'd87ba71081c910887995df3fb28fc342e22cb9846d881e597754de209f24e6f7',
   'consup-292-2027-v13': 'd87ba71081c910887995df3fb28fc342e22cb9846d881e597754de209f24e6f7',
+  'consup-292-2027-v14': 'd87ba71081c910887995df3fb28fc342e22cb9846d881e597754de209f24e6f7',
 };
 test('school-day classification is bound to the current ruleset history', () => {
   for (const policy of boundPolicies) {

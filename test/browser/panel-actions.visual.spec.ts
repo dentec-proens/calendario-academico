@@ -20,7 +20,7 @@ test('Teacher Day groups the field and actions in the shared panel', async ({
   await selectCampusEvents(page);
   await page.locator('#open-observance-teacher-day').click();
   await expect(page.locator('#event-panel')).toHaveScreenshot('teacher-day.png');
-  await page.locator('#observance-date-teacher-day').selectOption('2027-10-14');
+  await page.locator('#observance-date-teacher-day').fill('2027-10-25');
   await expect(page.locator('#event-panel')).toHaveScreenshot('teacher-day-draft.png');
 });
 

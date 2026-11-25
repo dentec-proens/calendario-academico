@@ -114,5 +114,15 @@ export const rulesetChanges: readonly RulesetChange[] = [
     summary:
       'Os editais do Processo Seletivo 2028 são publicados pela Reitoria até 15/06/2027 (Art. 10), prazo que já consta da base institucional (Art. 2º). O campus deixa de registrar essa publicação, e a revisão deixa de ter critério próprio para ela. As datas registradas nos calendários em edição foram removidas; os envios e os calendários fora de edição as conservam.',
   },
+  {
+    version: 'consup-292-2027-v14',
+    date: civilDate('2026-11-25'),
+    effect: 'relaxes',
+    criteria: ['II'],
+    source:
+      'Resolução 292 (ajuste do Dia do Professor conforme a organização do campus) e decisão da gestão do sistema em 25/11/2026',
+    summary:
+      'O Dia do Professor pode ser ajustado para qualquer data do segundo semestre de 2027, e não só para a semana de 15/10; as escolhas já feitas continuam válidas.',
+  },
 ];
 export const rulesetVersion = rulesetChanges.at(-1)!.version;

@@ -3,7 +3,7 @@ import { civilDate } from '../../../../src/domain/civil-date.ts';
 import { calendarObservances, chooseObservance } from '#src/domain/calendar/observances.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useCalendarForm } from './useCalendarForm.ts';
-import { Select } from './fields.tsx';
+import { Input, Select } from './fields.tsx';
 import { FormFeedback } from '../../../shared/forms/FormFeedback.tsx';
 import { PanelFooter } from '../../../components/ui/Panel.tsx';
 import { Button } from '../../../components/ui/Button.tsx';
@@ -62,27 +62,46 @@ export default function ObservanceForm({
           {entry?.rule && entry.event ? (
             <>
               <form.Field name="date">
-                {(field) => (
-                  <Select
-                    field={field}
-                    label={`${entry.label} neste calendário`}
-                    id={`observance-date-${observanceKey}`}
-                    required
-                  >
-                    {!entry.rule!.allowedDates.some((date) => date === field.state.value) && (
-                      <option value={field.state.value}>
-                        Escolha registrada: {field.state.value && longDate(field.state.value)}
-                      </option>
-                    )}
-                    {entry.rule!.allowedDates.map((allowed) => (
-                      <option key={allowed} value={allowed}>
-                        {longDate(allowed)}
-                        {allowed === reference ? ' — data institucional' : ''}
-                      </option>
-                    ))}
-                  </Select>
-                )}
+                {(field) => {
+                  const allowed = entry.rule!.allowed;
+                  const label = `${entry.label} neste calendário`;
+                  const id = `observance-date-${observanceKey}`;
+                  if (allowed.kind === 'range')
+                    return (
+                      <Input
+                        field={field}
+                        label={label}
+                        id={id}
+                        type="date"
+                        min={allowed.start}
+                        max={allowed.end}
+                        aria-describedby={`observance-help-${observanceKey}`}
+                        required
+                      />
+                    );
+                  return (
+                    <Select field={field} label={label} id={id} required>
+                      {!allowed.dates.some((date) => date === field.state.value) && (
+                        <option value={field.state.value}>
+                          Escolha registrada: {field.state.value && longDate(field.state.value)}
+                        </option>
+                      )}
+                      {allowed.dates.map((date) => (
+                        <option key={date} value={date}>
+                          {longDate(date)}
+                          {date === reference ? ' — data institucional' : ''}
+                        </option>
+                      ))}
+                    </Select>
+                  );
+                }}
               </form.Field>
+              {entry.rule.allowed.kind === 'range' && (
+                <p className="help" id={`observance-help-${observanceKey}`}>
+                  Data institucional: {longDate(reference)}. Escolha uma data entre{' '}
+                  {longDate(entry.rule.allowed.start)} e {longDate(entry.rule.allowed.end)}.
+                </p>
+              )}
             </>
           ) : (
             <Notice tone="warning">

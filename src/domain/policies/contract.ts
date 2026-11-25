@@ -48,11 +48,16 @@ export interface Minimum {
  * selected by `policyFor(year)` instead of comparing years, so a new year is one new module
  * registered in `registry.ts`.
  */
+/** Dates a campus may choose: a closed list, or any day of an inclusive interval. */
+export type ObservanceDates =
+  | { kind: 'list'; dates: readonly CivilDate[] }
+  | { kind: 'range'; start: CivilDate; end: CivilDate };
+
 export interface ObservanceRule {
   key: string;
   eventCode: string;
   label: string;
-  allowedDates: readonly CivilDate[];
+  allowed: ObservanceDates;
   basis: string;
 }
 

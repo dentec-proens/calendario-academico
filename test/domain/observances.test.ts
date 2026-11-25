@@ -19,11 +19,11 @@ const offers = [
 const state = { year: 2027, offers: [...offers], weekdays: [1, 2, 3, 4, 5], weekConfirmed: true };
 const base = () => inheritedEvents(initialCatalogue(), state.year, state.offers);
 
-test('Professor preserves all seven options, Servidor accepts exactly the two declared dates', () => {
-  for (const day of [11, 12, 13, 14, 15, 16, 17]) {
-    const chosen = chooseObservance(state, 'teacher-day', civilDate(`2027-10-${day}`), base());
+test('Professor accepts any day of the second semester, Servidor exactly the two declared dates', () => {
+  for (const date of ['2027-07-01', '2027-10-11', '2027-10-17', '2027-10-25', '2027-12-31']) {
+    const chosen = chooseObservance(state, 'teacher-day', civilDate(date), base());
     expect(applyObservances(base(), chosen).find((event) => event.id === teacherDayId)?.start).toBe(
-      `2027-10-${day}`,
+      date,
     );
   }
   for (const day of [28, 29])
@@ -32,8 +32,11 @@ test('Professor preserves all seven options, Servidor accepts exactly the two de
     ).not.toThrow();
   for (const date of ['2027-10-27', '2027-10-30', '2027-11-01', '2027-11-02', '2028-10-28'])
     expect(() => chooseObservance(state, 'public-servant-day', civilDate(date), base())).toThrow();
-  for (const date of ['2027-10-10', '2027-10-18', '2027-02-30'])
+  for (const date of ['2027-06-30', '2028-01-01', '2027-02-30'])
     expect(() => chooseObservance(state, 'teacher-day', civilDate(date), base())).toThrow();
+  expect(() => chooseObservance(state, 'teacher-day', civilDate('2027-06-30'), base())).toThrow(
+    'qualquer data de 1 jul a 31 dez 2027',
+  );
 });
 
 test('choices are local, explicit reference dates remain pinned, restoring removes only the selected choice', () => {
@@ -86,7 +89,7 @@ test('29 October is excluded once and 28 October becomes eligible, including dur
 test('invalid and orphaned choices stay readable, cannot be confirmed, and can always be cleared', () => {
   const chosen = chooseObservance(state, 'teacher-day', civilDate('2027-10-13'), base());
   const confirmed = applyObservances(base(), chosen);
-  const invalid = { ...state, observanceDates: { 'teacher-day': civilDate('2027-10-20') } };
+  const invalid = { ...state, observanceDates: { 'teacher-day': civilDate('2028-01-20') } };
   expect(
     applyObservances(confirmed, invalid).find((event) => event.id === teacherDayId)?.start,
   ).toBe('2027-10-13');

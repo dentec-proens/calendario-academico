@@ -1,4 +1,4 @@
-import { compactDate } from '../date-labels.ts';
+import { compactDate, compactRange } from '../date-labels.ts';
 import { civilDate, type CivilDate } from '../civil-date.ts';
 import type { ObservanceRule } from '../policies/contract.ts';
 import { policyFor } from '../policies/registry.ts';
@@ -17,6 +17,14 @@ interface ObservanceEvent {
 }
 export const observanceEventId = (rule: ObservanceRule) => `inst:${rule.eventCode}`;
 export const observanceRules = (year: number) => policyFor(year).observances;
+export const isAllowedObservanceDate = (rule: ObservanceRule, date: CivilDate) =>
+  rule.allowed.kind === 'list'
+    ? rule.allowed.dates.includes(date)
+    : rule.allowed.start <= date && date <= rule.allowed.end;
+export const allowedObservanceDates = (rule: ObservanceRule, calendarYear?: number) =>
+  rule.allowed.kind === 'list'
+    ? rule.allowed.dates.map((date) => compactDate(date, calendarYear)).join(', ')
+    : `qualquer data de ${compactRange(rule.allowed, calendarYear)}`;
 export const observanceForEvent = (year: number, id: string) =>
   observanceRules(year).find((rule) => observanceEventId(rule) === id);
 
@@ -63,17 +71,17 @@ export function observanceIssues(events: ObservanceEvent[], state: ObservanceSta
     }
     const originalStart = event.originalStart ?? event.start;
     const originalEnd = event.originalEnd ?? event.end;
-    if (originalStart !== originalEnd || !rule.allowedDates.includes(originalStart))
+    if (originalStart !== originalEnd || !isAllowedObservanceDate(rule, originalStart))
       issues.push({
         key,
         kind: 'base',
         message: `${label}: a referência institucional não corresponde às datas permitidas. Confira a base institucional.`,
       });
-    if (selected !== undefined && !rule.allowedDates.includes(selected))
+    if (selected !== undefined && !isAllowedObservanceDate(rule, selected))
       issues.push({
         key,
         kind: 'choice',
-        message: `${label}: escolha uma das datas permitidas: ${rule.allowedDates.map((date) => compactDate(date)).join(', ')}.`,
+        message: `${label}: escolha uma data permitida (${allowedObservanceDates(rule)}).`,
       });
   }
   return issues;
@@ -129,8 +137,10 @@ export function chooseObservance<S extends ObservanceState>(
     const rule = observanceRules(state.year).find((item) => item.key === key);
     if (!rule || !events.some((event) => event.id === observanceEventId(rule)))
       throw new DomainError('Observância não disponível na base deste calendário.');
-    if (!rule.allowedDates.includes(date))
-      throw new DomainError(`${rule.label}: escolha uma das datas permitidas.`);
+    if (!isAllowedObservanceDate(rule, date))
+      throw new DomainError(
+        `${rule.label}: escolha uma data permitida (${allowedObservanceDates(rule)}).`,
+      );
     choices[key] = date;
   }
   return { ...state, observanceDates: Object.keys(choices).length ? choices : undefined };
@@ -168,8 +178,8 @@ export function validateObservanceCatalogueEvent(
     ...(previous ? observanceRules(previous.year) : []),
   ].filter((rule) => rule.eventCode === (previous?.code ?? event.code));
   for (const rule of rules)
-    if (event.start !== event.end || !rule.allowedDates.includes(event.start))
+    if (event.start !== event.end || !isAllowedObservanceDate(rule, event.start))
       throw new DomainError(
-        `${rule.label}: a referência institucional deve usar uma das datas permitidas na policy.`,
+        `${rule.label}: a referência institucional deve usar uma data permitida na policy (${allowedObservanceDates(rule)}).`,
       );
 }

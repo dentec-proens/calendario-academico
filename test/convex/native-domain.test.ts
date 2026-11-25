@@ -299,7 +299,7 @@ test('native calendar retains the campus teacher-day choice in immutable PDF inp
     loaded.institutionalSnapshot.find((e: CalendarEvent) => e.id === teacherDayId)!.start,
     '2027-10-13',
   );
-  for (const teacherDayDate of ['2028-10-13', '2027-10-10', '2027-10-18']) {
+  for (const teacherDayDate of ['2028-10-13', '2027-06-30', '2028-01-01']) {
     await assert.rejects(
       campus.write(
         path,
