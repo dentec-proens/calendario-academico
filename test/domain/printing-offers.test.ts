@@ -6,6 +6,7 @@ import { proensLayout } from '../../src/printing/calendar-layout.ts';
 import { teachingDayBreakdown } from '../../src/printing/teaching-day-breakdown.ts';
 import { reviewDocument } from '../../src/printing/review-export.ts';
 import { evaluateCalendar } from '../../src/domain/calendar/counting/evaluation.ts';
+import type { StageActivityRef } from '../../src/domain/calendar/activities/activity-ref.ts';
 
 test('calendar print identifies each offer in the header, periods, event scopes and teaching totals', () => {
   const state = calendarOffersFixture();
@@ -237,4 +238,154 @@ test('a Saturday of one offer prints with that offer and counts only for it', ()
   expect(proensLayout(state, events, result, null, '')).toContain(
     'Sábado letivo [Técnico integrado]',
   );
+});
+
+test('multi-day assessment stages print only start and end markers in monthly lists and update the legend', () => {
+  const state = {
+    year: 2027,
+    campus: 'Foz',
+    periods: [],
+    offers: [
+      {
+        id: 'integrado',
+        kind: 'integrado' as const,
+        delivery: 'presencial' as const,
+        organization: 'anual' as const,
+      },
+    ],
+  };
+  const events = [
+    {
+      id: 'stage-1',
+      name: '1ª etapa de avaliação — Técnico integrado',
+      activity: {
+        activityId: 'stage',
+        offerId: 'integrado',
+        position: { term: 'annual', number: 1 },
+      } as StageActivityRef,
+      start: civilDate('2027-02-03'),
+      end: civilDate('2027-05-10'),
+      effect: 'note' as const,
+      category: 'limite',
+      offers: ['integrado'],
+    },
+    {
+      id: 'stage-2',
+      name: '2ª etapa de avaliação — Técnico integrado',
+      activity: {
+        activityId: 'stage',
+        offerId: 'integrado',
+        position: { term: 'annual', number: 2 },
+      } as StageActivityRef,
+      start: civilDate('2027-06-01'),
+      end: civilDate('2027-06-30'),
+      effect: 'note' as const,
+      category: 'limite',
+      offers: ['integrado'],
+    },
+  ];
+  const html = proensLayout(state, events, null, null, '');
+  const monthList = (month: string) => {
+    const marker = `<section class="proens-month"><div><h3>${month}</h3>`;
+    const start = html.indexOf(marker);
+    if (start < 0) return '';
+    const section = html.slice(start, html.indexOf('</section>', start));
+    return section.slice(section.indexOf('<div class="event-columns'));
+  };
+  expect(monthList('fevereiro')).toContain(
+    '<td class="cat-limite">3</td><td>Início — 1ª etapa de avaliação — Técnico integrado</td>',
+  );
+  expect(monthList('março')).not.toContain('1ª etapa de avaliação');
+  expect(monthList('março')).not.toContain('cat-limite');
+  expect(monthList('abril')).not.toContain('1ª etapa de avaliação');
+  expect(monthList('abril')).not.toContain('cat-limite');
+  expect(monthList('maio')).toContain(
+    '<td class="cat-limite">10</td><td>Término — 1ª etapa de avaliação — Técnico integrado</td>',
+  );
+  expect(monthList('junho')).toContain(
+    '<td class="cat-limite">1</td><td>Início — 2ª etapa de avaliação — Técnico integrado</td>',
+  );
+  expect(monthList('junho')).toContain(
+    '<td class="cat-limite">30</td><td>Término — 2ª etapa de avaliação — Técnico integrado</td>',
+  );
+  expect(html).toContain('Início e término de período ou etapa letiva');
+});
+
+test('events on the same date and visual color merge their date cell with rowspan while distinct colors stay separate', () => {
+  const state = {
+    year: 2027,
+    campus: 'Foz',
+    periods: [
+      {
+        id: 'p1',
+        name: '1º semestre',
+        start: civilDate('2027-02-11'),
+        end: civilDate('2027-07-09'),
+        association: { status: 'defined' as const, offers: ['graduacao'], term: 'first' as const },
+      },
+    ],
+    offers: [
+      {
+        id: 'graduacao',
+        kind: 'graduacao' as const,
+        delivery: 'presencial' as const,
+        organization: 'semestral' as const,
+      },
+    ],
+  };
+  const events = [
+    {
+      id: 'stage-1',
+      name: '1ª etapa de avaliação — Graduação',
+      activity: {
+        activityId: 'stage',
+        offerId: 'graduacao',
+        position: { term: 'first', number: 1 },
+      } as StageActivityRef,
+      start: civilDate('2027-02-11'),
+      end: civilDate('2027-04-30'),
+      effect: 'note' as const,
+      category: 'limite',
+      offers: ['graduacao'],
+    },
+    {
+      id: 'prazo-1',
+      name: 'Prazo de entrega do Plano de Ensino',
+      start: civilDate('2027-02-26'),
+      end: civilDate('2027-02-26'),
+      effect: 'note' as const,
+      category: 'prazo',
+      offers: ['graduacao'],
+    },
+    {
+      id: 'inst-1',
+      name: 'Prazo de entrega do RIT',
+      start: civilDate('2027-02-26'),
+      end: civilDate('2027-02-26'),
+      effect: 'note' as const,
+      category: 'institucional',
+      offers: ['graduacao'],
+    },
+    {
+      id: 'sat-1',
+      name: 'Sábado letivo',
+      start: civilDate('2027-02-26'),
+      end: civilDate('2027-02-26'),
+      effect: 'include' as const,
+      category: 'sabado',
+      offers: ['graduacao'],
+    },
+  ];
+  const html = proensLayout(state, events, null, null, '');
+  const febStart = html.indexOf('<section class="proens-month"><div><h3>fevereiro</h3>');
+  const feb = html.slice(febStart, html.indexOf('</section>', febStart));
+  const febList = feb.slice(feb.indexOf('<div class="event-columns'));
+  expect(febList).toContain(
+    '<tr><td class="cat-limite" rowspan="2">11</td><td>Início — 1ª etapa de avaliação — Graduação</td></tr><tr><td>Início — 1º semestre</td></tr>',
+  );
+  // Colorless categories (prazo + institucional) merge together, while sabado keeps its own green cell.
+  expect(febList).toContain(
+    '<tr><td class="cat-prazo" rowspan="2">26</td><td>Prazo de entrega do Plano de Ensino</td></tr><tr><td>Prazo de entrega do RIT</td></tr>',
+  );
+  expect(febList).toContain('<tr><td class="cat-sabado">26</td><td>Sábado letivo</td></tr>');
 });

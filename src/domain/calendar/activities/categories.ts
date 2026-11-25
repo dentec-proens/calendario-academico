@@ -1,6 +1,6 @@
 // Colors sampled from the supplied PROENS 2026 graphical legend.
 export const categories: [string, string, string | null][] = [
-  ['limite', 'Início e término de período letivo', '#ffff00'],
+  ['limite', 'Início e término de período ou etapa letiva', '#ffff00'],
   ['feriado', 'Feriado', '#ff0000'],
   ['recesso', 'Recesso acadêmico e administrativo', '#fabf8f'],
   ['ferias', 'Férias docentes ou escolares', '#bfbfbf'],

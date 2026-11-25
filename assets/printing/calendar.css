@@ -117,12 +117,12 @@
 .event-columns.single {
   grid-template-columns: 1fr;
 }
-.event-grid td:first-child {
+.event-grid td:not(:last-child) {
   width: 16%;
   text-align: center;
   color: #15518e;
 }
-.event-columns.single .event-grid td:first-child {
+.event-columns.single .event-grid td:not(:last-child) {
   width: 9%;
 }
 .event-grid small,

@@ -6,6 +6,7 @@ import type { CalendarPeriod } from '../domain/calendar/model.ts';
 import { termLabels } from '../domain/calendar/config.ts';
 import { teachingDayBreakdown } from './teaching-day-breakdown.ts';
 import { categories, eventCategory } from '../domain/calendar/activities/categories.ts';
+import { isAssessmentStage } from '../domain/calendar/activities/activity-ref.ts';
 import {
   defaultSchoolVacationName,
   isVacationActivity,
@@ -166,6 +167,21 @@ function publicationDetails(
   return labels.length ? `<small>${labels.map(esc).join(' · ')}</small>` : '';
 }
 
+/** Multi-day boundary intervals (teaching periods and assessment stages) print as start/end markers. */
+const isBoundaryInterval = (event: PrintEvent) =>
+  event.start !== event.end &&
+  (eventCategory(event) === 'limite' || isAssessmentStage(event.activity));
+
+const boundaryEntry = (edge: 'Início' | 'Término', event: PrintEvent): PrintEvent => {
+  const date = edge === 'Início' ? event.start : event.end;
+  return {
+    ...event,
+    start: date,
+    end: date,
+    name: event.name ? `${edge} — ${event.name}` : edge,
+  };
+};
+
 /**
  * Whether a date colors this day of the grid. A long stage marks only its first and last days; a
  * commemoration of several days, such as a national month or week, marks none, since it occupies
@@ -173,7 +189,8 @@ function publicationDetails(
  */
 function paintsDay(e: PrintEvent, date: string) {
   const category = eventCategory(e);
-  if (category === 'limite') return e.start === date || e.end === date;
+  if (category === 'limite' || isAssessmentStage(e.activity))
+    return e.start === date || e.end === date;
   if (category === 'comemorativo') return e.start === e.end;
   return true;
 }
@@ -259,7 +276,15 @@ export function proensLayout(
         timeZone: 'UTC',
       });
     const monthEvents: PrintEvent[] = listed
-      .filter((e) => e.start.slice(0, 7) <= prefix && e.end.slice(0, 7) >= prefix)
+      .flatMap((e) => {
+        if (isBoundaryInterval(e)) {
+          const edges: PrintEvent[] = [];
+          if (e.start.startsWith(prefix)) edges.push(boundaryEntry('Início', e));
+          if (e.end.startsWith(prefix)) edges.push(boundaryEntry('Término', e));
+          return edges;
+        }
+        return e.start.slice(0, 7) <= prefix && e.end.slice(0, 7) >= prefix ? [e] : [];
+      })
       .sort((a, b) => a.start.localeCompare(b.start));
     for (const p of state.periods) {
       if (p.start.startsWith(prefix))
@@ -322,8 +347,16 @@ export function proensLayout(
     for (let i = 0; i < cells.length; i += 7)
       rows += '<tr>' + cells.slice(i, i + 7).join('') + '</tr>';
 
-    const entries = mergedEntries(state, monthEvents)
-      .sort((a, b) => a.start.localeCompare(b.start))
+    interface EventEntry {
+      a: number;
+      b: number;
+      dateText: string;
+      category: string;
+      colorKey: string;
+      internal: boolean;
+      body: string;
+    }
+    const entries: EventEntry[] = mergedEntries(state, monthEvents)
       .map((e) => {
         const untilYearEnd =
           isVacationActivity(e.activity) && startsDecemberVacation(e, state.year);
@@ -331,16 +364,67 @@ export function proensLayout(
           b = untilYearEnd ? a : e.end.startsWith(prefix) ? Number(e.end.slice(8)) : length;
         const crossesYear = e.start < `${state.year}-01-01`;
         const scope = eventOffers(state, e);
+        const category = eventCategory(e);
+        const colored = colorKeys.includes(category);
         // The key explains the colors of the lists too, such as a commemoration the grid omits.
-        if (colorKeys.includes(eventCategory(e))) usedCategories.add(eventCategory(e));
-        return `<tr${printsAsInternal(e) ? ' class="internal-date"' : ''}><td class="cat-${eventCategory(e)}">${a === b ? a : a + ' a ' + b}</td><td>${esc(printedVacationName(e, state.year))}${internalLabel(e)}${crossesYear ? `<small>Intervalo integral: ${esc(fullInterval(e))}</small>` : ''}${publicationDetails(e, state.year)}${(state.offers || !e.institutional) && scope ? ' [' + esc(scope) + ']' : ''}</td></tr>`;
-      });
+        if (colored) usedCategories.add(category);
+        return {
+          a,
+          b,
+          dateText: a === b ? String(a) : `${a} a ${b}`,
+          category,
+          colorKey: colored ? category : '',
+          internal: printsAsInternal(e),
+          body: `${esc(printedVacationName(e, state.year))}${internalLabel(e)}${crossesYear ? `<small>Intervalo integral: ${esc(fullInterval(e))}</small>` : ''}${publicationDetails(e, state.year)}${(state.offers || !e.institutional) && scope ? ' [' + esc(scope) + ']' : ''}`,
+        };
+      })
+      .sort((x, y) => x.a - y.a || x.b - y.b || x.colorKey.localeCompare(y.colorKey));
+    const groups: EventEntry[][] = [];
+    for (const entry of entries) {
+      const previous = groups[groups.length - 1];
+      if (
+        previous &&
+        previous[0]!.dateText === entry.dateText &&
+        previous[0]!.colorKey === entry.colorKey
+      )
+        previous.push(entry);
+      else groups.push([entry]);
+    }
     // Up to six dates, as many as the grid has weeks, fit one table beside it; more split
-    // evenly in two. No blank rows: the grid already sets the height of the month.
-    const half = Math.ceil(entries.length / 2),
-      columns = entries.length > 6 ? [entries.slice(0, half), entries.slice(half)] : [entries];
+    // evenly in two without breaking a merged date group. No blank rows: the grid sets the height.
+    const columns: EventEntry[][][] =
+      entries.length > 6 && groups.length > 1
+        ? (() => {
+            const target = entries.length / 2;
+            let bestIndex = 1,
+              bestDiff = Infinity,
+              running = 0;
+            for (let i = 0; i < groups.length - 1; i++) {
+              running += groups[i]!.length;
+              const diff = Math.abs(running - target);
+              if (diff < bestDiff) {
+                bestDiff = diff;
+                bestIndex = i + 1;
+              }
+            }
+            return [groups.slice(0, bestIndex), groups.slice(bestIndex)];
+          })()
+        : [groups];
+    const renderGroup = (group: EventEntry[]) =>
+      group
+        .map((entry, index) => {
+          const dateCell =
+            index === 0
+              ? `<td class="cat-${entry.category}"${group.length > 1 ? ` rowspan="${group.length}"` : ''}>${entry.dateText}</td>`
+              : '';
+          return `<tr${entry.internal ? ' class="internal-date"' : ''}>${dateCell}<td>${entry.body}</td></tr>`;
+        })
+        .join('');
     const eventTables = columns
-      .map((column) => `<table class="event-grid"><tbody>${column.join('')}</tbody></table>`)
+      .map(
+        (column) =>
+          `<table class="event-grid"><tbody>${column.map(renderGroup).join('')}</tbody></table>`,
+      )
       .join('');
     return `<section class="proens-month"><div><h3>${name}</h3><table class="month-grid"><thead><tr>${['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map((d) => '<th>' + d + '</th>').join('')}</tr></thead><tbody>${rows}</tbody></table><p class="monthly-total">${result ? total : '—'} dias letivos</p></div><div><h3>${name}</h3><div class="event-columns${columns.length === 1 ? ' single' : ''}">${eventTables}</div></div></section>`;
   }).join('');
