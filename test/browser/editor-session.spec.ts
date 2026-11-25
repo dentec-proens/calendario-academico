@@ -234,8 +234,7 @@ for (const viewport of [
       page,
       fixtureServer,
     }) => {
-      // Maintenance arrives while the applied date is still unsaved, as with the real wait.
-      await page.goto(await fixtureServer('editor-session', { autosave: 'real' }));
+      await page.goto(await fixtureServer('editor-session'));
       await expect(page.locator('#record-title')).toBeVisible();
       await editAppliedEvent(page, 'Evento antes da manutenção');
       await expect
@@ -243,6 +242,12 @@ for (const viewport of [
         .toBe('Evento antes da manutenção');
       await editCampusEvent(page, 'local-event');
       await page.locator('#event-name').fill('Campo mantido durante manutenção');
+      // fill() scrolls the page behind the modal panel through the browser protocol. If the
+      // pause lands before that scroll is rendered, Chromium later restores the offset from
+      // before it, over the notice's own scroll; people's focus and typing don't do this.
+      await page.evaluate(
+        () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
+      );
       await page.evaluate(() => window.editorSessionTest.maintenance(true));
       const notice = page.locator('#editor-access-notice');
       await expect(notice.getByRole('heading', { level: 2 })).toHaveText('Portal em manutenção');
