@@ -123,8 +123,9 @@ export default function ObservanceForm({
               )}
               {entry.rule.allowed.kind === 'range' && (
                 <p className="help" id={`observance-help-${observanceKey}`}>
-                  Data institucional: {longDate(reference)}. Escolha uma data de{' '}
-                  {longDate(entry.rule.allowed.start)} a {longDate(entry.rule.allowed.end)}.
+                  Data institucional: {longDate(reference)}.{' '}
+                  {entry.rule.guidance ??
+                    `Escolha uma data de ${longDate(entry.rule.allowed.start)} a ${longDate(entry.rule.allowed.end)}.`}
                 </p>
               )}
             </>

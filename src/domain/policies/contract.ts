@@ -58,6 +58,8 @@ export interface ObservanceRule {
   eventCode: string;
   label: string;
   allowed: ObservanceDates;
+  /** What the campus reads instead of the technical limits, as the norm words it. */
+  guidance?: string;
   basis: string;
 }
 

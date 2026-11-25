@@ -517,7 +517,7 @@ test('Teacher Day is applied and restored explicitly within the second semester'
   await expect(date).toHaveAttribute('min', '2027-07-01');
   await expect(date).toHaveAttribute('max', '2027-12-31');
   await expect(page.locator('#observance-help-teacher-day')).toHaveText(
-    'Data institucional: 15 de outubro de 2027. Escolha uma data de 1 de julho de 2027 a 31 de dezembro de 2027.',
+    'Data institucional: 15 de outubro de 2027. O feriado escolar referente ao Dia do Professor poderá ser ajustado de acordo com a organização do campus.',
   );
   // The browser refuses dates outside the semester and an empty field; nothing is applied.
   for (const value of ['2027-06-30', '2028-01-01', '']) {

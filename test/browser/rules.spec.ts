@@ -22,7 +22,7 @@ for (const role of ['ADMIN', 'CAMPUS', 'PARECERISTA'] as const)
       '28 out, 29 out',
     );
     await expect(page.locator('[data-observance-rule="teacher-day"]')).toContainText(
-      'qualquer data de 1 jul a 31 dez',
+      'O feriado escolar referente ao Dia do Professor poderá ser ajustado de acordo com a organização do campus.',
     );
     const family = page.locator('[data-rule="family-meeting"]');
     await expect(family).toContainText('Decisão: exigida apenas no técnico integrado');

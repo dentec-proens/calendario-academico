@@ -7,6 +7,8 @@ export const observances: readonly ObservanceRule[] = [
     eventCode: 'ifpr2027-16',
     label: 'Dia do Professor',
     allowed: { kind: 'range', start: civilDate('2027-07-01'), end: civilDate('2027-12-31') },
+    guidance:
+      'O feriado escolar referente ao Dia do Professor poderá ser ajustado de acordo com a organização do campus.',
     basis:
       'Resolução 292: o Dia do Professor poderá ser ajustado de acordo com a organização do campus. Decisão da gestão do sistema em 25/11/2026: qualquer data do segundo semestre de 2027.',
   },

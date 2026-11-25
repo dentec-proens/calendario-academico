@@ -171,7 +171,7 @@ const currentFingerprints: Record<string, string> = {
   'consup-292-2027-v11': '5e8c4a8a35b1feba8d021c736422e4987a38f2aa499588917158ebf582c34e7c',
   'consup-292-2027-v12': 'bd4b7f261e406dec2d5dca713d53116e5cb7666ad46cdacf5ca6954b762742ba',
   'consup-292-2027-v13': 'abe0073ad62ce36bb8768f4fd804fd0da91b21c82debcc283c9e12cb05a50e43',
-  'consup-292-2027-v14': '7d6e16810db6c2b585d4526b2b04d16734a2980f0d39f63564b6c1a824937482',
+  'consup-292-2027-v14': '67f31c7b9d9bf7bc8149bb13d931c23b5f7cebe4bac10a244a5b54661c677a3f',
 };
 
 test('the expanded catalogue of the current version keeps its fingerprint', () => {
@@ -238,7 +238,7 @@ const observanceFingerprints: Record<string, string> = {
   'consup-292-2027-v11': 'afa2cb2556353696ba3b20ec0f40eac2058fb230108a031380c68dde5801d0c2',
   'consup-292-2027-v12': 'afa2cb2556353696ba3b20ec0f40eac2058fb230108a031380c68dde5801d0c2',
   'consup-292-2027-v13': 'afa2cb2556353696ba3b20ec0f40eac2058fb230108a031380c68dde5801d0c2',
-  'consup-292-2027-v14': 'b7ef3919e87c62b0d4d1215a1f915a451655f78264f8bb75b3d20da2078aaf64',
+  'consup-292-2027-v14': '4adcbc4dd27bc43a6277d4e5121a3fc82c05a374fe605a055bae65c373900425',
 };
 test('observance permissions are bound to the current ruleset history', () => {
   for (const policy of boundPolicies) {

@@ -122,7 +122,7 @@ export const rulesetChanges: readonly RulesetChange[] = [
     source:
       'Resolução 292 (ajuste do Dia do Professor conforme a organização do campus) e decisão da gestão do sistema em 25/11/2026',
     summary:
-      'O Dia do Professor pode ser ajustado para qualquer data do segundo semestre de 2027, e não só para a semana de 15/10; as escolhas já feitas continuam válidas.',
+      'O feriado escolar do Dia do Professor deixa de se limitar à semana de 15/10 e pode ser ajustado de acordo com a organização do campus, como prevê a Resolução 292; as escolhas já feitas continuam válidas.',
   },
 ];
 export const rulesetVersion = rulesetChanges.at(-1)!.version;
