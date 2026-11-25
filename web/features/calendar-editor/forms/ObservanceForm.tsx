@@ -1,6 +1,12 @@
+import { useStore } from '@tanstack/react-form';
 import { longDate } from '#src/domain/date-labels.ts';
-import { civilDate } from '../../../../src/domain/civil-date.ts';
-import { calendarObservances, chooseObservance } from '#src/domain/calendar/observances.ts';
+import { civilDate, optionalCivilDate } from '../../../../src/domain/civil-date.ts';
+import {
+  calendarObservances,
+  chooseObservance,
+  observanceCoincidences,
+  observanceEventId,
+} from '#src/domain/calendar/observances.ts';
 import { useCalendarEditor } from '../session/CalendarEditorProvider.tsx';
 import { useCalendarForm } from './useCalendarForm.ts';
 import { Input, Select } from './fields.tsx';
@@ -9,6 +15,14 @@ import { PanelFooter } from '../../../components/ui/Panel.tsx';
 import { Button } from '../../../components/ui/Button.tsx';
 import { Notice } from '../../../components/ui/Notice.tsx';
 
+function safeDate(value: string) {
+  try {
+    return optionalCivilDate(value);
+  } catch {
+    return undefined;
+  }
+}
+
 export default function ObservanceForm({
   observanceKey,
   onClose,
@@ -16,7 +30,7 @@ export default function ObservanceForm({
   observanceKey: string;
   onClose: () => void;
 }) {
-  const { state, record, session, readOnly, notify } = useCalendarEditor();
+  const { state, record, events, session, readOnly, notify } = useCalendarEditor();
   const entry = calendarObservances(record.institutionalEvents, state).find(
     (item) => item.key === observanceKey,
   );
@@ -43,6 +57,11 @@ export default function ObservanceForm({
       onSubmit: onClose,
     },
   );
+  const selected = safeDate(useStore(form.store, (current) => current.values.date));
+  const coincidences =
+    entry?.rule && selected
+      ? observanceCoincidences(events, state, observanceEventId(entry.rule), selected)
+      : [];
   function restore() {
     try {
       applyDate(undefined);
@@ -96,10 +115,16 @@ export default function ObservanceForm({
                   );
                 }}
               </form.Field>
+              {coincidences.length > 0 && (
+                <Notice tone="info" id={`observance-coincidence-${observanceKey}`}>
+                  Nesta data já não há aula ({coincidences.join('; ')}). A escolha é permitida, mas
+                  o {entry.label} não retira nenhum dia letivo.
+                </Notice>
+              )}
               {entry.rule.allowed.kind === 'range' && (
                 <p className="help" id={`observance-help-${observanceKey}`}>
-                  Data institucional: {longDate(reference)}. Escolha uma data entre{' '}
-                  {longDate(entry.rule.allowed.start)} e {longDate(entry.rule.allowed.end)}.
+                  Data institucional: {longDate(reference)}. Escolha uma data de{' '}
+                  {longDate(entry.rule.allowed.start)} a {longDate(entry.rule.allowed.end)}.
                 </p>
               )}
             </>

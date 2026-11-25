@@ -24,7 +24,12 @@ export const isAllowedObservanceDate = (rule: ObservanceRule, date: CivilDate) =
 export const allowedObservanceDates = (rule: ObservanceRule, calendarYear?: number) =>
   rule.allowed.kind === 'list'
     ? rule.allowed.dates.map((date) => compactDate(date, calendarYear)).join(', ')
-    : `qualquer data de ${compactRange(rule.allowed, calendarYear)}`;
+    : compactRange(rule.allowed, calendarYear);
+/** “uma destas datas: 28 out 2027, 29 out 2027” or “uma data de 1 jul a 31 dez 2027”. */
+const allowedChoice = (rule: ObservanceRule) =>
+  rule.allowed.kind === 'list'
+    ? `uma destas datas: ${allowedObservanceDates(rule)}`
+    : `uma data de ${allowedObservanceDates(rule)}`;
 export const observanceForEvent = (year: number, id: string) =>
   observanceRules(year).find((rule) => observanceEventId(rule) === id);
 
@@ -81,7 +86,7 @@ export function observanceIssues(events: ObservanceEvent[], state: ObservanceSta
       issues.push({
         key,
         kind: 'choice',
-        message: `${label}: escolha uma data permitida (${allowedObservanceDates(rule)}).`,
+        message: `${label}: escolha ${allowedChoice(rule)}.`,
       });
   }
   return issues;
@@ -138,9 +143,7 @@ export function chooseObservance<S extends ObservanceState>(
     if (!rule || !events.some((event) => event.id === observanceEventId(rule)))
       throw new DomainError('Observância não disponível na base deste calendário.');
     if (!isAllowedObservanceDate(rule, date))
-      throw new DomainError(
-        `${rule.label}: escolha uma data permitida (${allowedObservanceDates(rule)}).`,
-      );
+      throw new DomainError(`${rule.label}: escolha ${allowedChoice(rule)}.`);
     choices[key] = date;
   }
   return { ...state, observanceDates: Object.keys(choices).length ? choices : undefined };
@@ -180,6 +183,42 @@ export function validateObservanceCatalogueEvent(
   for (const rule of rules)
     if (event.start !== event.end || !isAllowedObservanceDate(rule, event.start))
       throw new DomainError(
-        `${rule.label}: a referência institucional deve usar uma data permitida na policy (${allowedObservanceDates(rule)}).`,
+        `${rule.label}: a referência institucional deve usar ${allowedChoice(rule)}, conforme a regra do ano.`,
       );
+}
+
+interface CoincidenceEvent {
+  id: string;
+  name: string;
+  start: CivilDate;
+  end: CivilDate;
+  effect: string;
+  category?: string;
+}
+
+/**
+ * Why a chosen observance date would remove no school day: another exclusion or vacation on it,
+ * a day outside the class week, or no school period. Advisory only: the norm lets the campus
+ * choose the date, so this never becomes a check that stops the calendar.
+ */
+export function observanceCoincidences(
+  events: readonly CoincidenceEvent[],
+  state: { weekdays: readonly number[]; periods: readonly { start: CivilDate; end: CivilDate }[] },
+  ownId: string,
+  date: CivilDate,
+): string[] {
+  const reasons = events
+    .filter(
+      (event) =>
+        event.id !== ownId &&
+        event.start <= date &&
+        date <= event.end &&
+        (event.effect === 'exclude' || event.category === 'ferias'),
+    )
+    .map((event) => event.name);
+  const weekday = new Date(`${date}T00:00:00Z`).getUTCDay();
+  if (!state.weekdays.includes(weekday)) reasons.push('dia fora da semana letiva');
+  if (state.periods.length && !state.periods.some((p) => p.start <= date && date <= p.end))
+    reasons.push('fora dos períodos letivos');
+  return [...new Set(reasons)];
 }

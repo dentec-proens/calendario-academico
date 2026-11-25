@@ -50,7 +50,7 @@ test('server saves Servidor choices in snapshots, rejects other dates and protec
           },
         })
         .then(calendarSaveDates),
-    ).rejects.toThrow('permitida');
+    ).rejects.toThrow('escolha uma destas datas: 28 out 2027, 29 out 2027.');
   await expect(
     actor.mutation(api.catalogue.saveCatalogue, {
       body: {
@@ -66,5 +66,7 @@ test('server saves Servidor choices in snapshots, rejects other dates and protec
         active: true,
       },
     }),
-  ).rejects.toThrow('permitida');
+  ).rejects.toThrow(
+    'deve usar uma destas datas: 28 out 2027, 29 out 2027, conforme a regra do ano',
+  );
 });

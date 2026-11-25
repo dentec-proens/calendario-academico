@@ -163,7 +163,10 @@ export default function RulesPage() {
                 <dt>
                   <strong>{rule.label}</strong>
                 </dt>
-                <dd>{allowedObservanceDates(rule, view.year)}</dd>
+                <dd>
+                  {rule.allowed.kind === 'range' && 'qualquer data de '}
+                  {allowedObservanceDates(rule, view.year)}
+                </dd>
               </div>
             ))}
           </dl>

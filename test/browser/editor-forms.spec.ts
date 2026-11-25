@@ -517,8 +517,22 @@ test('Teacher Day is applied and restored explicitly within the second semester'
   await expect(date).toHaveAttribute('min', '2027-07-01');
   await expect(date).toHaveAttribute('max', '2027-12-31');
   await expect(page.locator('#observance-help-teacher-day')).toHaveText(
-    'Data institucional: 15 de outubro de 2027. Escolha uma data entre 1 de julho de 2027 e 31 de dezembro de 2027.',
+    'Data institucional: 15 de outubro de 2027. Escolha uma data de 1 de julho de 2027 a 31 de dezembro de 2027.',
   );
+  // The browser refuses dates outside the semester and an empty field; nothing is applied.
+  for (const value of ['2027-06-30', '2028-01-01', '']) {
+    await date.fill(value);
+    await page.locator('#apply-observance-teacher-day').click();
+    await expect(page.locator('#event-panel')).toBeVisible();
+    expect(await date.evaluate((input) => (input as HTMLInputElement).validity.valid)).toBe(false);
+  }
+  // A date that already has no classes is allowed, with an advisory notice.
+  const coincidence = page.locator('#observance-coincidence-teacher-day');
+  await date.fill('2027-10-16');
+  await expect(coincidence).toContainText('dia fora da semana letiva');
+  await expect(coincidence).toContainText('A escolha é permitida');
+  await date.fill('2027-10-25');
+  await expect(coincidence).toBeHidden();
   expect(await savedState(page)).toEqual(before);
 });
 
