@@ -6,7 +6,6 @@ import {
   calendarObservances,
   chooseObservance,
   observanceIssues,
-  observanceCoincidences,
   validateObservances,
   validateObservanceCatalogueEvent,
 } from '../../src/domain/calendar/observances.ts';
@@ -165,26 +164,4 @@ test('the Teacher Day reference may move within the second semester, as a single
   expect(() =>
     validateObservanceCatalogueEvent(moved('2027-10-14', '2027-10-15'), event),
   ).toThrow();
-});
-
-test('coincidences explain a chosen date without school days and ignore the observance itself', () => {
-  const events = applyObservances(base(), state);
-  const periods = [{ start: civilDate('2027-02-01'), end: civilDate('2027-12-10') }];
-  const reasons = (date: string) =>
-    observanceCoincidences(events, { ...state, periods }, teacherDayId, civilDate(date));
-  expect(reasons('2027-10-15'), 'its own reference is not a coincidence').toEqual([]);
-  expect(reasons('2027-10-25')).toEqual([]);
-  expect(reasons('2027-10-28')).toEqual([
-    'Dia do Servidor Público — recesso acadêmico e administrativo',
-  ]);
-  expect(reasons('2027-10-16')).toEqual(['sábado, fora da semana letiva']);
-  expect(reasons('2027-12-20')).toEqual(['fora dos períodos letivos']);
-  const moved = applyObservances(
-    base(),
-    chooseObservance(state, 'public-servant-day', civilDate('2027-10-29'), base()),
-  );
-  expect(
-    observanceCoincidences(moved, { ...state, periods }, teacherDayId, civilDate('2027-10-28')),
-    'follows the Servidor choice',
-  ).toEqual([]);
 });

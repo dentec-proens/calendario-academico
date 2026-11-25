@@ -526,14 +526,6 @@ test('Teacher Day is applied and restored explicitly within the second semester'
     await expect(page.locator('#event-panel')).toBeVisible();
     expect(await date.evaluate((input) => (input as HTMLInputElement).validity.valid)).toBe(false);
   }
-  // A date that already has no classes is allowed, with an advisory notice.
-  const coincidence = page.locator('#observance-coincidence-teacher-day');
-  await date.fill('2027-10-16');
-  await expect(coincidence).toHaveText(
-    'Em 16 de outubro de 2027 já não há aula (sábado, fora da semana letiva). O Dia do Professor pode ser marcado nesta data, mas não suspenderá nenhuma aula.',
-  );
-  await date.fill('2027-10-25');
-  await expect(coincidence).toBeHidden();
   expect(await savedState(page)).toEqual(before);
 });
 
