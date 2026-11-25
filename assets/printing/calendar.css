@@ -164,10 +164,26 @@
 .cat-criacao {
   background: var(--cat-criacao) !important;
 }
-/* A date of several categories: diagonal bands in order of priority, corner to corner whatever
-   the cell's proportion, painted once over the whole cell. */
+/* A date of several categories: equal vertical bands in order of priority, rendered with pure CSS
+   classes (no inline style attribute) so Content-Security-Policy: style-src 'self' never drops it. */
 .cat-split {
-  background: linear-gradient(to bottom right, var(--bands)) border-box no-repeat !important;
+  position: relative;
+  z-index: 0;
+}
+.cat-bands {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  z-index: 0;
+  pointer-events: none;
+}
+.cat-bands > i {
+  display: block;
+  flex: 1 1 0;
+}
+.day-number {
+  position: relative;
+  z-index: 1;
 }
 
 /* Key */

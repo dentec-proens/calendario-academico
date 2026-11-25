@@ -197,14 +197,9 @@ function paintsDay(e: PrintEvent, date: string) {
   return true;
 }
 
-/** Equal diagonal bands, one per category, for a date that belongs to several. */
+/** Equal color bands, one per category in priority order, with no inline styles (CSP-safe). */
 const splitBands = (keys: string[]) =>
-  keys
-    .map(
-      (key, i) =>
-        `var(--cat-${key}) ${Math.round((i * 100) / keys.length)}% ${Math.round(((i + 1) * 100) / keys.length)}%`,
-    )
-    .join(', ');
+  `<span class="cat-bands" aria-hidden="true">${keys.map((key) => `<i class="cat-${key}"></i>`).join('')}</span>`;
 
 function externalReferences(state: PrintState, events: PrintEvent[]) {
   const rows = events.filter((event) => event.start < `${state.year}-01-01`);
@@ -339,9 +334,15 @@ export function proensLayout(
         ordered.length === 1 ? `cat-${ordered[0]}` : ordered.length ? 'cat-split' : '',
         d?.counted ? 'school-day' : '',
       ].filter(Boolean);
-      const bands = ordered.length > 1 ? ` style="--bands: ${splitBands(ordered)}"` : '';
+      const internalMark = list.some(printsAsInternal)
+        ? '<i class="internal-day-mark" aria-label="Data interna"></i>'
+        : '';
+      const content =
+        ordered.length > 1
+          ? `${splitBands(ordered)}<span class="day-number">${day}${internalMark}</span>`
+          : `${day}${internalMark}`;
       cells.push(
-        `<td class="${classes.join(' ')}"${bands} title="${esc(list.map((e) => e.name).join('; '))}">${day}${list.some(printsAsInternal) ? '<i class="internal-day-mark" aria-label="Data interna"></i>' : ''}</td>`,
+        `<td class="${classes.join(' ')}" title="${esc(list.map((e) => e.name).join('; '))}">${content}</td>`,
       );
     }
     while (cells.length % 7) cells.push('<td></td>');

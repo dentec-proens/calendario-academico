@@ -37,12 +37,13 @@ test('PROENS palette matches reference and simultaneous classifications remain v
     null,
   );
   assert(html.includes('class="cat-feriado"'));
-  // Every category of the date shares the cell in equal diagonal bands, by priority.
+  // Every category of the date shares the cell in equal bands, by priority, without inline styles.
   assert(
     html.includes(
-      '<td class="cat-split" style="--bands: var(--cat-feriado) 0% 10%, var(--cat-recesso) 10% 20%, var(--cat-ferias) 20% 30%, var(--cat-limite) 30% 40%, var(--cat-sabado) 40% 50%, var(--cat-formacao) 50% 60%, var(--cat-conselho) 60% 70%, var(--cat-criacao) 70% 80%, var(--cat-evento) 80% 90%, var(--cat-comemorativo) 90% 100%"',
+      '<span class="cat-bands" aria-hidden="true"><i class="cat-feriado"></i><i class="cat-recesso"></i><i class="cat-ferias"></i><i class="cat-limite"></i><i class="cat-sabado"></i><i class="cat-formacao"></i><i class="cat-conselho"></i><i class="cat-criacao"></i><i class="cat-evento"></i><i class="cat-comemorativo"></i></span><span class="day-number">6</span></td>',
     ),
   );
+  assert(!html.includes('style='), 'proensLayout must not emit inline style attributes');
   // February, with its ten dates, splits in two columns; the other months keep one.
   assert.equal((html.match(/class="event-columns"/g) || []).length, 1);
   assert.equal((html.match(/class="event-columns single"/g) || []).length, 11);
