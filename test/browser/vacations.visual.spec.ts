@@ -4,7 +4,8 @@ test('the vacations step lists both kinds, with their particularities', async ({
   page,
   fixtureServer,
 }) => {
-  const origin = new URL(await fixtureServer('editor')).origin;
+  // The references show the step before the autosave finishes, as with the real wait.
+  const origin = new URL(await fixtureServer('editor', { autosave: 'real' })).origin;
   await page.goto(origin + '/calendarios/synthetic-calendar/ferias');
   await page.locator('#vacation-add-school').click();
   await page.locator('#vacation-start').fill('2027-07-05');

@@ -1,3 +1,7 @@
+// After this wait the notice offers to cancel. Update fixtures shorten it through Vite's `define`;
+// Vite only exposes VITE_ variables from the environment, so real builds keep 10 s.
+const delayedAfter: number = import.meta.env.DENTEC_FIXTURE_TRANSITION_DELAY ?? 10_000;
+
 export interface DocumentTransition {
   id: symbol;
   delayed: boolean;
@@ -25,7 +29,7 @@ export function createDocumentTransition() {
         if (current?.id !== id) return;
         current = { id, delayed: true };
         publish();
-      }, 10_000);
+      }, delayedAfter);
       publish();
       return id;
     },

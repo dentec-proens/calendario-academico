@@ -234,7 +234,8 @@ for (const viewport of [
       page,
       fixtureServer,
     }) => {
-      await page.goto(await fixtureServer('editor-session'));
+      // Maintenance arrives while the applied date is still unsaved, as with the real wait.
+      await page.goto(await fixtureServer('editor-session', { autosave: 'real' }));
       await expect(page.locator('#record-title')).toBeVisible();
       await editAppliedEvent(page, 'Evento antes da manutenção');
       await expect

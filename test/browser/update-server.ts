@@ -1,3 +1,4 @@
+import { rmSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { mkdtemp, mkdir, readFile, writeFile, rm, copyFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -7,17 +8,61 @@ import { staticPortal } from '../../src/runtime/app-server.ts';
 import type { Cleanup } from './test.ts';
 import { retainFrontendAssets } from '../../scripts/frontend-assets.ts';
 
+type RetainAssets = boolean | 'legacy';
+/** `transitionDelay` shortens the wait before a slow update offers to cancel (10 s in the app). */
+type UpdateServerOptions = { transitionDelay?: number };
+
+// Tests only serve the builds, never write to them, so each worker builds every A/B pair once and
+// removes them when it exits. Every test still gets its own server, selection and delays.
+const builds = new Map<string, Promise<string>>();
+const directories: string[] = [];
+process.once('exit', () => {
+  for (const directory of directories) rmSync(directory, { recursive: true, force: true });
+});
+
+function buildVersions(entry: string, retainAssets: RetainAssets, options: UpdateServerOptions) {
+  const key = `${entry}:${String(retainAssets)}:${options.transitionDelay ?? 'real'}`;
+  let directory = builds.get(key);
+  if (!directory) {
+    directory = buildPair(entry, retainAssets, options);
+    // A failed build is retried by the next test instead of failing it with a stale error.
+    directory.catch(() => builds.delete(key));
+    builds.set(key, directory);
+  }
+  return directory;
+}
+
+async function buildPair(entry: string, retainAssets: RetainAssets, options: UpdateServerOptions) {
+  const directory = await mkdtemp(join(tmpdir(), 'portal-update-'));
+  directories.push(directory);
+  await mkdir(resolve('test/.temp'), { recursive: true });
+  const source = await mkdtemp(resolve('test/.temp/update-'));
+  try {
+    await buildInto(directory, source, entry, retainAssets, options);
+  } finally {
+    await rm(source, { recursive: true, force: true });
+  }
+  return directory;
+}
+
 /** Production route tree and bundler with local services and observable build/state probes. */
 export async function startUpdateServer(
   cleanup: Cleanup,
   entry = 'editor',
-  retainAssets: boolean | 'legacy' = false,
+  retainAssets: RetainAssets = false,
+  options: UpdateServerOptions = {},
 ) {
-  const directory = await mkdtemp(join(tmpdir(), 'portal-update-'));
-  await mkdir(resolve('test/.temp'), { recursive: true });
-  const source = await mkdtemp(resolve('test/.temp/update-'));
-  cleanup(() => rm(directory, { recursive: true, force: true }));
-  cleanup(() => rm(source, { recursive: true, force: true }));
+  const directory = await buildVersions(entry, retainAssets, options);
+  return serveVersions(directory, cleanup);
+}
+
+async function buildInto(
+  directory: string,
+  source: string,
+  entry: string,
+  retainAssets: RetainAssets,
+  { transitionDelay }: UpdateServerOptions,
+) {
   await writeFile(
     join(source, 'index.html'),
     `<!doctype html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="data:,"></head><body><div id="root"></div><script type="module" src="/test/fixtures/${entry}.ts"></script></body></html>`,
@@ -30,6 +75,9 @@ export async function startUpdateServer(
       logLevel: 'silent',
       define: {
         'import.meta.env.VITE_CONVEX_URL': JSON.stringify('https://synthetic.convex.cloud'),
+        ...(transitionDelay === undefined
+          ? {}
+          : { 'import.meta.env.DENTEC_FIXTURE_TRANSITION_DELAY': JSON.stringify(transitionDelay) }),
       },
       resolve: {
         alias: [
@@ -101,6 +149,9 @@ export async function startUpdateServer(
       });
     }
   }
+}
+
+async function serveVersions(directory: string, cleanup: Cleanup) {
   let selected = 'a';
   let manifest: 'a' | 'b' | undefined;
   const delays = new Map<string, { wait: Promise<void>; arrived: () => void }>();

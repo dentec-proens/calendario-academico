@@ -1,3 +1,7 @@
+// Wait after the last change before saving. Synthetic browser fixtures shorten it through Vite's
+// `define`; Vite only exposes VITE_ variables from the environment, so real builds keep 1.5 s.
+const saveDelay: number = import.meta.env.DENTEC_FIXTURE_AUTOSAVE_DELAY ?? 1500;
+
 export type AutosaveStatus = 'scheduled' | 'saving' | 'pending' | 'saved' | 'blocked' | 'error';
 
 export interface AutosaverOptions<Snapshot, Result> {
@@ -42,7 +46,7 @@ export function createAutosaver<Snapshot, Result>({
     timer = setTimeout(() => {
       timer = null;
       void save();
-    }, 1500);
+    }, saveDelay);
   }
 
   function save(manual = false) {

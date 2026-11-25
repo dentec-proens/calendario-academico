@@ -44,7 +44,8 @@ test('registered Saturday uses shared header and action hierarchy', async ({
   page,
   fixtureServer,
 }) => {
-  await page.goto(await fixtureServer('editor'));
+  // The reference shows the panel before the autosave finishes, as with the real wait.
+  await page.goto(await fixtureServer('editor', { autosave: 'real' }));
   await expect(page.locator('#record-title')).toBeVisible();
   await addPeriod(page, '2027-03-01', '2027-04-30');
   await fillRequiredVacations(page);

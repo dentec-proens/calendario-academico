@@ -13,7 +13,8 @@ for (const width of [1440, 390]) {
   }) => {
     await page.setViewportSize({ width, height: 1000 });
     await page.clock.install({ time: clockStart });
-    await page.goto(await fixtureServer('editor'));
+    // This test measures the application's own 1.5 s wait.
+    await page.goto(await fixtureServer('editor', { autosave: 'real' }));
     await expect(page.locator('#weekdays input[value="5"]')).toBeVisible();
     await expect(page.locator('#record-heading')).toHaveText(/Rascunho/);
     await page.clock.pauseAt(new Date(clockStart.getTime() + 60_000));

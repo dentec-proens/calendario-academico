@@ -224,9 +224,9 @@ test('a date put under review by an unsaved organization is corrected after the 
   page,
   fixtureServer,
 }) => {
-  // Frozen timers keep the organization in the autosave debounce.
+  // The real autosave wait keeps the organization unsaved; the controlled clock then saves it.
   await page.clock.install();
-  await page.goto(await fixtureServer('editor'));
+  await page.goto(await fixtureServer('editor', { autosave: 'real' }));
   await expect(page.locator('#record-title')).toBeVisible();
   await page.evaluate(async (state) => {
     const { record } = window.editorTest;

@@ -21,7 +21,14 @@ type Fixture =
   | 'notice'
   | 'online-users';
 
-export type FixtureServer = (fixture: Fixture) => Promise<string>;
+/**
+ * `autosave: 'real'` keeps the application's 1.5 s autosave wait, for tests about what happens
+ * inside it; every other server saves 100 ms after the last change, so tests don't wait for it.
+ */
+export type FixtureOptions = { autosave?: 'real' };
+export type FixtureServer = (fixture: Fixture, options?: FixtureOptions) => Promise<string>;
+
+const fixtureAutosaveDelay = 100;
 
 type FixtureDefinition = {
   path: string;
@@ -93,6 +100,8 @@ async function startServer(
   fixture: FixtureDefinition,
   cleanup: Cleanup,
   convexUrl = 'https://synthetic.convex.cloud',
+  // `null` keeps the application's own wait; an omitted argument takes the fixture wait.
+  autosaveDelay: number | null = fixtureAutosaveDelay,
 ) {
   let html: string | undefined;
   if (fixture.entry) {
@@ -103,7 +112,12 @@ async function startServer(
     envDir: false,
     root,
     cacheDir: `node_modules/.vite-playwright-${name}-worker-${process.env.TEST_WORKER_INDEX ?? '0'}`,
-    define: { 'import.meta.env.VITE_CONVEX_URL': JSON.stringify(convexUrl) },
+    define: {
+      'import.meta.env.VITE_CONVEX_URL': JSON.stringify(convexUrl),
+      ...(autosaveDelay === null
+        ? {}
+        : { 'import.meta.env.DENTEC_FIXTURE_AUTOSAVE_DELAY': JSON.stringify(autosaveDelay) }),
+    },
     optimizeDeps: {
       entries: [],
       // Keep React's optimized module graph stable for the entire worker.
@@ -187,8 +201,21 @@ async function startServer(
 }
 
 /** Serve real UI and CSS with a named synthetic client, without deployment credentials. */
-export async function startFixtureServer(fixture: Fixture, cleanup: Cleanup) {
-  return (await startServer(fixture, fixtures[fixture], cleanup)).url;
+export async function startFixtureServer(
+  fixture: Fixture,
+  cleanup: Cleanup,
+  options: FixtureOptions = {},
+) {
+  const real = options.autosave === 'real';
+  return (
+    await startServer(
+      real ? `${fixture}-real-autosave` : fixture,
+      fixtures[fixture],
+      cleanup,
+      undefined,
+      real ? null : fixtureAutosaveDelay,
+    )
+  ).url;
 }
 
 /** Exercise connection failures against an unused loopback port, never a real deployment. */

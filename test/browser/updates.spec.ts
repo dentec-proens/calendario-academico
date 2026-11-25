@@ -235,7 +235,10 @@ for (const { width, switchIdentity } of [
     cleanup,
   }) => {
     await page.setViewportSize({ width, height: 1000 });
-    const server = await startUpdateServer(cleanup, 'portal-navigation');
+    // The cancel action appears after 1 s instead of the app's 10 s; the steps before it still run.
+    const server = await startUpdateServer(cleanup, 'portal-navigation', false, {
+      transitionDelay: 1000,
+    });
     server.selectManifest('b');
     await page.goto(server.origin + '/calendarios');
     await expect(page.locator('#calendar-list')).toBeVisible();

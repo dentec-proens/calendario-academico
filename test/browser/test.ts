@@ -20,12 +20,13 @@ export const test = base.extend<{ cleanup: Cleanup }, { fixtureServer: FixtureSe
   fixtureServer: [
     async ({ browserName }, provide) => {
       const callbacks: Parameters<Cleanup>[0][] = [];
-      const servers = new Map<Parameters<FixtureServer>[0], Promise<string>>();
-      const fixtureServer: FixtureServer = (fixture) => {
-        let server = servers.get(fixture);
+      const servers = new Map<string, Promise<string>>();
+      const fixtureServer: FixtureServer = (fixture, options = {}) => {
+        const key = `${fixture}:${options.autosave ?? 'fixture'}`;
+        let server = servers.get(key);
         if (!server) {
-          server = startFixtureServer(fixture, (callback) => callbacks.push(callback));
-          servers.set(fixture, server);
+          server = startFixtureServer(fixture, (callback) => callbacks.push(callback), options);
+          servers.set(key, server);
         }
         return server;
       };

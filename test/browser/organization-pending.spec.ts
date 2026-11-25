@@ -100,9 +100,9 @@ test('a second organization change waits until the first one is saved', async ({
   page,
   fixtureServer,
 }) => {
-  // Frozen timers keep the first confirmation in the autosave debounce.
+  // The real autosave wait keeps the first confirmation unsaved; the controlled clock then saves it.
   await page.clock.install();
-  await page.goto(await fixtureServer('editor'));
+  await page.goto(await fixtureServer('editor', { autosave: 'real' }));
   await expect(page.locator('#record-title')).toBeVisible();
   await selectEditorSection(page, 'periods');
   const stages = async (dates: [string, string][]) => {
