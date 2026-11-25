@@ -174,11 +174,13 @@ const isBoundaryInterval = (event: PrintEvent) =>
 
 const boundaryEntry = (edge: 'Início' | 'Término', event: PrintEvent): PrintEvent => {
   const date = edge === 'Início' ? event.start : event.end;
+  // Saved stage names generated from the checklist may already contain "— início e término".
+  const label = event.name?.replace(/\s*[—–-]\s*início e término\b/i, '').trim();
   return {
     ...event,
     start: date,
     end: date,
-    name: event.name ? `${edge} — ${event.name}` : edge,
+    name: label ? `${edge} — ${label}` : edge,
   };
 };
 

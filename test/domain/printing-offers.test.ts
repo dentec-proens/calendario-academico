@@ -271,7 +271,7 @@ test('multi-day assessment stages print only start and end markers in monthly li
     },
     {
       id: 'stage-2',
-      name: '2ª etapa de avaliação — Técnico integrado',
+      name: '2ª etapa de avaliação — início e término — trimestral',
       activity: {
         activityId: 'stage',
         offerId: 'integrado',
@@ -303,10 +303,10 @@ test('multi-day assessment stages print only start and end markers in monthly li
     '<td class="cat-limite">10</td><td>Término — 1ª etapa de avaliação — Técnico integrado</td>',
   );
   expect(monthList('junho')).toContain(
-    '<td class="cat-limite">1</td><td>Início — 2ª etapa de avaliação — Técnico integrado</td>',
+    '<td class="cat-limite">1</td><td>Início — 2ª etapa de avaliação — trimestral</td>',
   );
   expect(monthList('junho')).toContain(
-    '<td class="cat-limite">30</td><td>Término — 2ª etapa de avaliação — Técnico integrado</td>',
+    '<td class="cat-limite">30</td><td>Término — 2ª etapa de avaliação — trimestral</td>',
   );
   expect(html).toContain('Início e término de período ou etapa letiva');
 });
