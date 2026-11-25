@@ -117,8 +117,8 @@ export default function ObservanceForm({
               </form.Field>
               {coincidences.length > 0 && (
                 <Notice tone="info" id={`observance-coincidence-${observanceKey}`}>
-                  Nesta data já não há aula ({coincidences.join('; ')}). A escolha é permitida, mas
-                  o {entry.label} não retira nenhum dia letivo.
+                  Em {longDate(selected!)} já não há aula ({coincidences.join('; ')}). O{' '}
+                  {entry.label} pode ser marcado nesta data, mas não suspenderá nenhuma aula.
                 </Notice>
               )}
               {entry.rule.allowed.kind === 'range' && (

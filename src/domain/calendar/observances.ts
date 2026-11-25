@@ -187,6 +187,8 @@ export function validateObservanceCatalogueEvent(
       );
 }
 
+const weekdayNames = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
+
 interface CoincidenceEvent {
   id: string;
   name: string;
@@ -217,7 +219,8 @@ export function observanceCoincidences(
     )
     .map((event) => event.name);
   const weekday = new Date(`${date}T00:00:00Z`).getUTCDay();
-  if (!state.weekdays.includes(weekday)) reasons.push('dia fora da semana letiva');
+  if (!state.weekdays.includes(weekday))
+    reasons.push(`${weekdayNames[weekday]}, fora da semana letiva`);
   if (state.periods.length && !state.periods.some((p) => p.start <= date && date <= p.end))
     reasons.push('fora dos períodos letivos');
   return [...new Set(reasons)];

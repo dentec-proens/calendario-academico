@@ -177,7 +177,7 @@ test('coincidences explain a chosen date without school days and ignore the obse
   expect(reasons('2027-10-28')).toEqual([
     'Dia do Servidor Público — recesso acadêmico e administrativo',
   ]);
-  expect(reasons('2027-10-16')).toEqual(['dia fora da semana letiva']);
+  expect(reasons('2027-10-16')).toEqual(['sábado, fora da semana letiva']);
   expect(reasons('2027-12-20')).toEqual(['fora dos períodos letivos']);
   const moved = applyObservances(
     base(),
