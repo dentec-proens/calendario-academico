@@ -100,7 +100,9 @@
 }
 .month-grid .school-day,
 .school-day-sample {
-  font-weight: 700;
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 0.12em;
 }
 .monthly-total {
   text-align: center;

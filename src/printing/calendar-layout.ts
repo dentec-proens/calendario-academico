@@ -328,7 +328,7 @@ export function proensLayout(
         'comemorativo',
       ];
       // The color of highest priority fills the cell; a date of several categories splits it
-      // diagonally, in that order, and a school day prints its number in bold.
+      // diagonally, in that order, and a school day underlines its number.
       const ordered = priority.filter((c) => marks.includes(c));
       const classes = [
         ordered.length === 1 ? `cat-${ordered[0]}` : ordered.length ? 'cat-split' : '',
@@ -461,7 +461,7 @@ export function proensLayout(
   )}</p></div>${months}<section class="proens-legend">${
     // The grid marks the days of the first offer; with one offer the heading already names it.
     offerIds(state).length > 1
-      ? `<p>Os dias letivos em negrito seguem a contagem de ${esc(labelFor(state, offerIds(state)[0]))}.</p>`
+      ? `<p>Os dias letivos sublinhados seguem a contagem de ${esc(labelFor(state, offerIds(state)[0]))}.</p>`
       : ''
   }<div class="proens-key"><div><span class="swatch school-day-sample">15</span>Dia letivo</div>${categories
     .filter((c) => c[2] && usedCategories.has(c[0]))
